@@ -7,8 +7,8 @@ CKDMIP_TOOL=${CKDMIP_DIR}/bin/ckdmip_tool
 CKDMIP_LW=${CKDMIP_DIR}/bin/ckdmip_lw
 CKDMIP_SW=${CKDMIP_DIR}/bin/ckdmip_sw
 
-# FSCK directory for executables
-BINDIR=../src/fsck
+# Directory for executables
+BINDIR=../src/ecckd
 REORDER_SPECTRUM_LW=${BINDIR}/reorder_spectrum_lw
 FIND_G_POINTS_LW=${BINDIR}/find_g_points_lw
 CREATE_LOOK_UP_TABLE=${BINDIR}/create_look_up_table

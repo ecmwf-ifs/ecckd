@@ -1,5 +1,5 @@
-noinst_LIBRARIES = libfsck.a
-libfsck_a_SOURCES = \
+noinst_LIBRARIES = libecckd.a
+libecckd_a_SOURCES = \
 	adept_scalar.h \
 	constants.h \
 	heating_rate.h \
@@ -43,4 +43,4 @@ lw_spectra_SOURCES = lw_spectra.cpp
 
 optimize_lut_SOURCES = optimize_lut.cpp
 
-LDADD = ./libfsck.a ../tools/libtools.a ../lbfgs/liblbfgs.a
+LDADD = ./libecckd.a ../tools/libtools.a ../lbfgs/liblbfgs.a

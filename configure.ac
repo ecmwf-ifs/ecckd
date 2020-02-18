@@ -4,7 +4,7 @@
 AC_PREREQ([2.63])
 
 # Remember to update the version number for a new release
-AC_INIT([FSCK], [0.3], [r.j.hogan@ecmwf.int], [fsck])
+AC_INIT([ECCKD], [0.4], [r.j.hogan@ecmwf.int], [ecckd])
 
 # Most code is C++
 AC_LANG([C++])
@@ -41,7 +41,7 @@ AM_COND_IF([HAVE_NETCDF], AC_SUBST([NETCDF_DIR], [$netcdf_prefix]))
 # Makefiles to create
 AC_CONFIG_FILES([Makefile
                  src/tools/Makefile
-                 src/fsck/Makefile
+                 src/ecckd/Makefile
 		 src/lbfgs/Makefile])
 
 # Provide a summary to the user
