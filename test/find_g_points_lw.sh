@@ -4,6 +4,12 @@ set -e
 
 . set_paths.sh
 
+# Interpret first argument as a script to be sourced
+if [ "$#" -gt 0 ]
+then
+    . $1
+fi
+
 ${BANNER} Finding g-points
 
 if [ ! ${MODEL_CODE} ]
