@@ -1,0 +1,9 @@
+Makefile
+Makefile.in
+*~
+*.o
+*.a
+*.so
+*.la
+*.tar*
+.deps
