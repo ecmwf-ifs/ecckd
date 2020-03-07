@@ -24,7 +24,9 @@ libecckd_a_SOURCES = \
 	solve_lbfgs_lw.h \
 	solve_lbfgs_lw.cpp \
 	single_gas_data.h \
-	single_gas_data.cpp
+	single_gas_data.cpp \
+	equipartition.h \
+	equipartition.cpp
 
 bin_PROGRAMS = reorder_spectrum_lw find_g_points_lw merge_spectra create_look_up_table \
 	lw_ckd lw_spectra optimize_lut
