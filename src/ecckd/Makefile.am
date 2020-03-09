@@ -28,8 +28,9 @@ libecckd_a_SOURCES = \
 	equipartition.h \
 	equipartition.cpp
 
-bin_PROGRAMS = reorder_spectrum_lw find_g_points_lw merge_spectra create_look_up_table \
-	lw_ckd lw_spectra optimize_lut
+bin_PROGRAMS = reorder_spectrum_lw find_g_points_lw merge_spectra \
+	create_look_up_table lw_ckd lw_spectra optimize_lut \
+	test_equipartition
 
 reorder_spectrum_lw_SOURCES = reorder_spectrum_lw.cpp
 
@@ -44,5 +45,7 @@ lw_ckd_SOURCES = lw_ckd.cpp
 lw_spectra_SOURCES = lw_spectra.cpp
 
 optimize_lut_SOURCES = optimize_lut.cpp
+
+test_equipartition_SOURCES = test_equipartition.cpp
 
 LDADD = ./libecckd.a ../tools/libtools.a ../lbfgs/liblbfgs.a
