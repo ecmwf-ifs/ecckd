@@ -12,9 +12,35 @@
 typedef enum {
   EP_SUCCESS = 0,
   EP_MAX_ITERATIONS_REACHED,
+  EP_FAILED_TO_CONVERGE,
+  EP_RESOLUTION_LIMIT_REACHED,
   EP_FAILURE,
   EP_INPUT_ERROR // Error in initial bounds (e.g. not monotonic)
 } EpStatus;
+
+inline
+const char* ep_status_string(EpStatus status) {
+  switch(status) {
+  case EP_SUCCESS:
+    return "Converged";
+  case EP_MAX_ITERATIONS_REACHED:
+    return "Maximum iterations reached";
+  case EP_RESOLUTION_LIMIT_REACHED:
+    return "Resolution limit reached";
+  case EP_FAILED_TO_CONVERGE:
+    return "Failed to converge";
+  case EP_FAILURE:
+    return "Failure";
+  case EP_INPUT_ERROR:
+    return "Input error";
+  default:
+    return "Unknown convergence status";
+  }
+}
+
+ep_real ep_cost_function(int ni, ep_real* error);
+void ep_stats(int ni, ep_real* error, ep_real& mean_error,
+	      ep_real& cost_fn, ep_real* frac_std, ep_real* frac_range);
 
 /// Class for partitioning a 1D space such that the "error" in each
 /// space is approximately equal.  This class should be inherited by a
@@ -45,6 +71,10 @@ public:
 			   std::vector<ep_real>& bounds,
 			   std::vector<ep_real>& error);
 
+  /// Find the optimum bound[1] that partitions two intervals such
+  /// that error[0] is close to equal error[1]
+  EpStatus equipartition_2(ep_real* bounds, ep_real* error);
+
   /// This function should be implemented by a child class, and should
   /// return the error associated with an interval bounded by "bound1"
   /// and "bound2".
@@ -57,19 +87,49 @@ public:
     }
   }
 
+  void set_verbose(bool v) { iverbose = v; }
+  void set_partition_max_iterations(int max_it) {
+    partition_max_iterations = max_it;
+  }
+  void set_line_search_max_iterations(int max_it) {
+    line_search_max_iterations = max_it;
+  }
+  void set_partition_tolerance(ep_real pt) {
+    partition_tolerance = pt;
+  }
+  void set_cubic_interpolation(ep_real ci) {
+    cubic_interpolation = ci;
+  }
+  void set_resolution(ep_real res) {
+    resolution = res;
+  }
+
+  void print_bounds(int ni, ep_real* bounds);
+  void print_error(int ni, ep_real* error);
+
 
 private:
   ep_real next_bound_above(ep_real target_error,
     ep_real bound1, ep_real boundn, 
     ep_real bound2_test, ep_real* error_test = 0);
+
   ep_real next_bound_below(ep_real target_error,
     ep_real bound0, ep_real bound2,
     ep_real bound1_test, ep_real* error_test = 0);
 
+  EpStatus line_search(int ni, ep_real* bounds, ep_real* newbounds,
+		       ep_real* error);
+
   ep_real next_bound_error_tolerance = 0.05;
   ep_real partition_tolerance = 0.05;
-  ep_real next_bound_max_iterations = 20;
-  ep_real partition_max_iterations = 20;
+  ep_real resolution = 0.0; // Minimum meaningful distance between bounds
+  int next_bound_max_iterations = 20;
+  int partition_max_iterations = 20;
+  int line_search_max_iterations = 10;
+
+  bool iverbose = false;
+  bool dump_error_iteration = false;
+  bool cubic_interpolation = true;
 
 };
 
