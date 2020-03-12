@@ -1,5 +1,7 @@
 #!/bin/bash
 
+unset OMP_NUM_THREADS
+
 set -e
 
 . set_paths.sh
@@ -38,9 +40,11 @@ fi
 
 mkdir -p ${WORK_LW_GPOINTS_DIR}
 
-debug ${FIND_G_POINTS_LW} \
+time ${FIND_G_POINTS_LW} \
     append_path="${MMM_LW_SPECTRA_DIR}:${WORK_LW_SPECTRA_DIR}:${WORK_LW_ORDER_DIR}" \
     heating_rate_tolerance=${TOLERANCE} \
-    min_pressure=${MIN_PRESSURE} repartition_factor=1 repartition_repeat=5 tolerance_tolerance=0.05 \
+    min_pressure=${MIN_PRESSURE} tolerance_tolerance=0.02 \
     output=${WORK_LW_GPOINTS_DIR}/lw_gpoints_${MODEL_CODE}.h5 \
-    config_find_g_points_lw_${APP}.cfg
+    config_find_g_points_lw_${APP}.cfg \
+    | tee ${WORK_LW_GPOINTS_DIR}/lw_gpoints_${MODEL_CODE}.log
+#repartition_factor=1 repartition_repeat=5 

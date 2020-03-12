@@ -1,11 +1,15 @@
 #!/bin/bash
 
+set -ex
+
 # Compile options
 #CXXFLAGS="-Wall -g -O0 -march=native -std=c++11 -DADEPT_BOUNDS_CHECKING"
 CXXFLAGS="-Wall -g -O3 -march=native -std=c++11 -DADEPT_BOUNDS_CHECKING"
+CXXFLAGS="-Wall -g -O3 -march=native -std=c++11 -DADEPT_FAST_EXPONENTIAL"
+#CXXFLAGS="-Wall -g -O3 -march=native -std=c++11"
 
 # Location of Adept automatic differentiation library
-ADEPT_VER=adept-2.0.5
+ADEPT_VER=adept-2.0.6-fastexp
 ADEPT_DIR=/home/rd/parr/apps/$ADEPT_VER
 ADEPT_FLAGS="--with-adept=$ADEPT_DIR"
 
