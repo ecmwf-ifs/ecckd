@@ -4,24 +4,63 @@
 
 #include "equipartition.h"
 
-ep_real ep_cost_function(int ni, ep_real* error) {
 
-  ep_real mean_error = 0.0;
-  for (int ii = 0; ii < ni; ++ii) {
-    mean_error += error[ii];
+// abound <= ascale*abound + bscale*bbound
+static void merge_bounds(int ni, ep_real* abound, ep_real* bbound,
+			 ep_real ascale, ep_real bscale) {
+  for (int ii = 0; ii <= ni; ++ii) {
+    abound[ii] = ascale*abound[ii] + bscale*bbound[ii];
   }
-  mean_error /= ni;
-
-  ep_real cost_fn = 0.0;
-  for (int ii = 0; ii < ni; ++ii) {
-    cost_fn += (error[ii]-mean_error)*(error[ii]-mean_error);
-  }
-
-  return cost_fn;
 }
 
+static void print_bounds(int ni, ep_real* bounds)
+{
+  std::cout << "      bounds = [";
+  for (int ii = 0; ii <= ni; ++ii) {
+    std::cout << " " << bounds[ii];
+  }
+  std::cout << "]\n";
+}
+
+static void print_error(int ni, ep_real* error)
+{
+  std::cout << "      error  = [";
+  for (int ii = 0; ii < ni; ++ii) {
+    std::cout << " " << error[ii];
+  }
+  std::cout << "]\n";
+}
+
+
+/// Return pointer to a string describing the status
+const char* ep_status_string(EpStatus status) {
+  switch(status) {
+  case EP_SUCCESS:
+    return "Converged";
+  case EP_MAX_ITERATIONS_REACHED:
+    return "Maximum iterations reached";
+  case EP_RESOLUTION_LIMIT_REACHED:
+    return "Resolution limit reached";
+  case EP_FAILED_TO_CONVERGE:
+    return "Failed to converge";
+  case EP_NO_PROGRESS:
+    return "No progress made";
+  case EP_FAILURE:
+    return "Unspecified failure";
+  case EP_INPUT_ERROR:
+    return "Input error";
+  default:
+    return "Unknown convergence status";
+  }
+}
+
+/// Compute statistics from "ni" "error" values: the mean error
+/// "mean_error", chi-squared "chi2" (sum of squared differences from
+/// the mean), and optionally the fractional standard deviation
+/// "frac_std" and the fractional range "frac_range" (only assigned if
+/// passed a non-NULL pointer
 void ep_stats(int ni, ep_real* error, ep_real& mean_error,
-	      ep_real& cost_fn, ep_real* frac_std, ep_real* frac_range) {
+	      ep_real& chi2, ep_real* frac_std, ep_real* frac_range) {
   mean_error = 0.0;
   for (int ii = 0; ii < ni; ++ii) {
     mean_error += error[ii];
@@ -40,95 +79,124 @@ void ep_stats(int ni, ep_real* error, ep_real& mean_error,
   }
 
   if (frac_range) {
-    *frac_range = 0.5 * (max_error - min_error) / mean_error;
+    *frac_range = (max_error - min_error) / mean_error;
   }
 
-  cost_fn = 0.0;
+  chi2 = 0.0;
   for (int ii = 0; ii < ni; ++ii) {
-    cost_fn += (error[ii]-mean_error)*(error[ii]-mean_error);
+    chi2 += (error[ii]-mean_error)*(error[ii]-mean_error);
   }
 
   if (frac_std) {
-    *frac_std = sqrt(cost_fn / ni) / mean_error;
+    *frac_std = sqrt(chi2 / ni) / mean_error;
   }
-  
 }
 
-static
-int loc_min_error(int ni, const ep_real* error) {
+/// Print a summary of the result of an equipartition call to standard
+/// output
+void ep_print_result(EpStatus istatus, int iverbose,
+		     int ni, ep_real* bounds, ep_real* error)
+{
+  ep_real mean_error, chi2;
+  ep_real frac_std, frac_range;
+  ep_stats(ni, &error[0], mean_error, chi2,
+	   &frac_std, &frac_range);
+
+  std::cout << "  Equipartition status: " << ep_status_string(istatus)
+	    << "\n      fractional range = " << frac_range
+	    << "\n      fractional standard deviation = " << frac_std
+	    << std::endl;
+  if (iverbose > 1) {
+    print_bounds(ni, bounds);
+    print_error(ni, error);
+  }
+}
+
+/// Calculate "cost function" from a list of errors: this is either
+/// the "fractional range" (maximum error minus minimum error divided
+/// by mean error) or the "fractional standard deviation".
+ep_real
+Equipartition::cost_function(int ni, ep_real* error) {
+
+  ep_real mean_error = 0.0;
   ep_real min_error = +std::numeric_limits<ep_real>::infinity();
-  int imin = -1;
+  ep_real max_error = -std::numeric_limits<ep_real>::infinity();
   for (int ii = 0; ii < ni; ++ii) {
+    mean_error += error[ii];
     if (error[ii] < min_error) {
       min_error = error[ii];
-      imin = ii;
     }
-  }
-  return imin;
-}
-
-static
-int loc_max_error(int ni, const ep_real* error) {
-  ep_real max_error = -std::numeric_limits<ep_real>::infinity();
-  int imax = -1;
-  for (int ii = 0; ii < ni; ++ii) {
     if (error[ii] > max_error) {
       max_error = error[ii];
-      imax = ii;
     }
   }
-  return imax;
-}
+  mean_error /= ni;
 
-// abound <= ascale*abound + bscale*bbound
-static
-void merge_bounds(int ni, ep_real* abound, ep_real* bbound,
-		  ep_real ascale, ep_real bscale) {
-  for (int ii = 0; ii <= ni; ++ii) {
-    abound[ii] = ascale*abound[ii] + bscale*bbound[ii];
+  if (do_minimize_frac_range) {
+    return (max_error - min_error) / mean_error;
+  }
+  else {
+    ep_real chi2 = 0.0;
+    for (int ii = 0; ii < ni; ++ii) {
+      chi2 += (error[ii]-mean_error)*(error[ii]-mean_error);
+    }
+    return sqrt(chi2/ni) / mean_error;
   }
 }
-
 
 EpStatus
 Equipartition::line_search(int ni, ep_real* bounds, ep_real* newbounds,
 			   ep_real* error) {
+  if (!errors_up_to_date) {
+    calc_error_all(ni, bounds, error);
+    errors_up_to_date = true;
+  }
   int iterations_remaining = line_search_max_iterations;
-  ep_real start_cost_fn = ep_cost_function(ni, error);
+  ep_real start_cost_fn = cost_function(ni, error);
   if (iverbose) {
-    std::cout << "Line search: " << start_cost_fn;
+    std::cout << "      line search" << std::flush; 
   }
   merge_bounds(ni, newbounds, bounds, 0.5, 0.5);
   while (iterations_remaining > 0) {
     calc_error_all(ni, newbounds, error);
-    ep_real cost_fn = ep_cost_function(ni, error);
+    errors_up_to_date = false;
+    ep_real cost_fn = cost_function(ni, error);
     if (cost_fn < start_cost_fn) {
       merge_bounds(ni, bounds, newbounds, 0.0, 1.0);
-      if (iverbose) {
-	std::cout << " " << cost_fn << "\n";
-      }
+      std::cout << std::endl;
+      errors_up_to_date = true;
       return EP_SUCCESS;
     }
     else {
       if (iverbose) {
-	std::cout << ".";
+	std::cout << "." << std::flush;
       }
       merge_bounds(ni, newbounds, bounds, 0.5, 0.5);
     }
     --iterations_remaining;
   }
   if (iverbose) {
-    std::cout << " FAILED\n";
+    std::cout << "FAILED" << std::endl;
   }
-  return EP_FAILED_TO_CONVERGE;
+  return EP_NO_PROGRESS;
 }
 
+/// Find the optimum bound[1] that partitions two intervals such that
+/// error[0] is close to equal error[1]
 EpStatus
 Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
 {
+  if (iverbose) {
+    std::cout << "      Equipartitioning pair of intervals" << std::flush;
+  }
+  if (!errors_up_to_date) {
+    calc_error_all(2, bounds, error);
+    errors_up_to_date = true;
+  }
+
   ep_real bound_left = bounds[0], bound_right = bounds[2];
   ep_real ediff_left, ediff_right;
-  ep_real frac_error = 0.5*abs(error[1]-error[0])/(error[0]+error[1]);
+  ep_real frac_error = 0.5*std::fabs(error[1]-error[0])/(error[0]+error[1]);
 
   ep_real local_tolerance = partition_tolerance;
 
@@ -137,6 +205,7 @@ Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
   ep_real newerror[2]  = {error[0], error[1]};
 
   int iterations_remaining = 10;
+
   if (error[0] > error[1]) {
     // Found an upper (right) limit on the middle bound; now find a
     // lower (left) limit
@@ -146,6 +215,7 @@ Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
       newbounds[1] = (-ediff_right*newbounds[0] + (newerror[0]+ediff_right)*newbounds[1])
 	/ newerror[0];
       calc_error_all(2, newbounds, newerror);
+
       if (newerror[0] < newerror[1]) {
 	// Found left limit
 	bound_left = newbounds[1];
@@ -164,6 +234,7 @@ Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
       newbounds[1] = (ediff_left*newbounds[2] + (newerror[1]-ediff_left)*newbounds[1])
 	/ newerror[1];
       calc_error_all(2, newbounds, newerror);
+
       if (newerror[0] > newerror[1]) {
 	// Found right limit
 	bound_right = newbounds[1];
@@ -187,13 +258,18 @@ Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
       newbounds[1] = (ediff_left*bound_right - ediff_right*bound_left) / (ediff_left-ediff_right);
     }
     calc_error_all(2, newbounds, newerror);
+
     ep_real ediff = newerror[1]-newerror[0];
-    frac_error = 0.5*abs(ediff)/(newerror[0]+newerror[1]);
+    frac_error = 0.5*std::fabs(ediff)/(newerror[0]+newerror[1]);
     if (frac_error < local_tolerance && frac_error < frac_error_orig) {
       // Converged
       bounds[1] = newbounds[1];
       error[0] = newerror[0];
       error[1] = newerror[1];
+      if (iverbose) {
+	std::cout << " " << ep_status_string(EP_SUCCESS) << std::endl;
+      }
+      errors_up_to_date = true;
       return EP_SUCCESS;
     }
     else if (frac_error == prev_frac_error) {
@@ -216,25 +292,54 @@ Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
     --iterations_remaining;
   }
 
+  EpStatus istatus = EP_SUCCESS;
+
   // Bounds not found; did we reduce the error difference?
   if (frac_error < frac_error_orig) {
     // Yes: save results
     bounds[1] = newbounds[1];
     error[0] = newerror[0];
     error[1] = newerror[1];
-  }
-  if (bound_right-bound_left < resolution) {
-    return EP_RESOLUTION_LIMIT_REACHED;
+    if (iverbose) {
+      std::cout << " " << frac_error_orig << "=>" << frac_error << std::flush;
+    }
+    errors_up_to_date = true;
+
+    if (bound_right-bound_left < resolution) {
+      istatus = EP_RESOLUTION_LIMIT_REACHED;
+    }
+    else if (!iterations_remaining) {
+      istatus = EP_MAX_ITERATIONS_REACHED;
+    }
   }
   else {
-    return EP_FAILED_TO_CONVERGE;
+    istatus = EP_NO_PROGRESS;
   }
 
+  if (iverbose) {
+    std::cout << " " << ep_status_string(istatus) << std::endl;
+  }
+  return istatus;
 }
 
+/// Partition a 1D space into "ni" intervals bounded by "bounds",
+/// which points to a vector of length ni+1.  The user supplies the
+/// initial bounds. The end values (0 and ni) are not modified, while
+/// the interior bounds (1 to ni-1) are. The error associated with
+/// each interval is returned in "error" which should point to a
+/// vector of length ni.
 EpStatus
 Equipartition::equipartition_n(int ni, ep_real* bounds_out, ep_real* error)
 {
+  if (ni == 2) {
+    return equipartition_2(bounds_out, error);
+  }
+
+  if (iverbose) {
+    std::cout << "  Equipartitioning into " << ni << " intervals, partition tolerance "
+	      << partition_tolerance << std::endl;
+  }
+
   EpStatus istatus = EP_SUCCESS;
 
   int n_shuffle_remaining = 5;
@@ -259,26 +364,30 @@ Equipartition::equipartition_n(int ni, ep_real* bounds_out, ep_real* error)
 
   while (iterations_remaining > 0) {
     if (iverbose) {
-      std::cout << "Iterations remaining = " << iterations_remaining << "\n";
-      print_bounds(ni, &bounds[0]);
+      std::cout << "    " << iterations_remaining
+		<< " iterations remaining" << std::flush;
+      if (iverbose > 1) {
+	print_bounds(ni, &bounds[0]);
+      }
     }
-    calc_error_all(ni, &bounds[0], error);
+
+    if (!errors_up_to_date) {
+      calc_error_all(ni, &bounds[0], error);
+      errors_up_to_date = true;
+    }
+
+    if (iverbose > 1) {
+      print_error(ni, error);
+    }
+
+    ep_real cost_fn = cost_function(ni, error);
+
     if (iverbose) {
-      std::cout << "  error = ";
-      print_error(ni, error);
-      std::cout << "\n  cost = " << ep_cost_function(ni, error) << "\n";
-    }
-    else if (dump_error_iteration) {
-      print_error(ni, error);
-      std::cout << "\n";
+      std::cout << "\n      cost function = "
+		<< cost_fn << std::endl;
     }
 
-    ep_real mean_error, cost_fn;
-    ep_real frac_std, frac_range;
-
-    ep_stats(ni, error, mean_error, cost_fn,
-	     &frac_std, &frac_range);
-    if (frac_range < partition_tolerance) {
+    if (cost_fn < partition_tolerance) {
       break;
     }
     std::valarray<ep_real> cum_error(ni+1);
@@ -348,12 +457,13 @@ Equipartition::equipartition_n(int ni, ep_real* bounds_out, ep_real* error)
 	  / (cum_error[iold+1]-cum_error[iold]);
       }
     }
+
     // Check if resolution limit reached: all newbounds are within
     // "resolution" of old bounds
     if (resolution > 0.0) {
       bool found_significant_jump = false;
       for (int ii = 1; ii < ni; ++ii) {
-	if (std::abs(newbounds[ii]-bounds[ii]) > resolution) {
+	if (std::fabs(newbounds[ii]-bounds[ii]) > resolution) {
 	  found_significant_jump = true;
 	  break;
 	}
@@ -368,33 +478,34 @@ Equipartition::equipartition_n(int ni, ep_real* bounds_out, ep_real* error)
 
     EpStatus ls_status = line_search(ni, &bounds[0], &newbounds[0], error);
     if (ls_status != EP_SUCCESS) {
-      istatus = ls_status;
-      int nresreached = 0;
-      if (ni > 3 && n_shuffle_remaining > 0) {
+      istatus = EP_FAILED_TO_CONVERGE;
+      int nnoprogress = 0;
+      if (ni > 2 && n_shuffle_remaining > 0) {
+	std::cout << "    Shuffle" << std::endl;
 	for (int ii = 0; ii < ni-1; ++ii) {
 	  EpStatus iistatus = equipartition_2(&bounds[ii], &error[ii]);
-	  if (iistatus = EP_RESOLUTION_LIMIT_REACHED) {
-	    ++nresreached;
+	  if (iistatus == EP_NO_PROGRESS) {
+	    ++nnoprogress;
 	  }
 	}
 	for (int ii = ni-3; ii >= 0; --ii) {
 	  EpStatus iistatus = equipartition_2(&bounds[ii], &error[ii]);
-	  if (iistatus = EP_RESOLUTION_LIMIT_REACHED) {
-	    ++nresreached;
+	  if (iistatus == EP_NO_PROGRESS) {
+	    ++nnoprogress;
 	  }
 	}
 	--n_shuffle_remaining;
 
-	ep_stats(ni, error, mean_error, cost_fn,
-		 &frac_std, &frac_range);
-	if (frac_range < partition_tolerance) {
+	if (cost_function(ni, error) < partition_tolerance) {
 	  istatus = EP_SUCCESS;
 	  break;
 	}
-	else if (nresreached >= ni*2-3) {
-	  istatus = EP_RESOLUTION_LIMIT_REACHED;
+	else if (nnoprogress >= ni*2-3) {
+	  istatus = EP_FAILED_TO_CONVERGE;
 	}
 	else {
+	  // Success here means I reduced the fractional range a bit
+	  // and should try again with the general minimization
 	  istatus = EP_SUCCESS;
 	}
       }
@@ -413,10 +524,18 @@ Equipartition::equipartition_n(int ni, ep_real* bounds_out, ep_real* error)
     istatus = EP_MAX_ITERATIONS_REACHED;
   }
 
+  errors_up_to_date = false; // Just in case a subsequent call
+			     // provides new bounds...
+
   return istatus;
 
 }
 
+/// Partition a 1D space bounded by "bound0" and "boundn" into
+/// intervals, each with an "error" no more than "target_error". The
+/// results are written in terms of the number of intervals needed
+/// "ni" and the bounds to those intervals "bounds" (will be resized
+/// to length n+1) and "error" (resized to length ni).
 EpStatus
 Equipartition::equipartition_e(ep_real target_error,
 			       ep_real bound0, ep_real boundn,
@@ -427,6 +546,11 @@ Equipartition::equipartition_e(ep_real target_error,
   // Check bounds increasing
   if (boundn <= bound0) {
     return EP_INPUT_ERROR;
+  }
+
+  if (iverbose) {
+    std::cout << "  Working out many intervals are needed for target error of "
+	      << target_error << std::endl;
   }
 
   // Find uppermost interval
@@ -466,28 +590,15 @@ Equipartition::equipartition_e(ep_real target_error,
 
   ni = error.size();
 
+  if (iverbose) {
+    std::cout << "  " << ni << " intervals needed" << std::endl;
+  }
+
   // Repartition
+  errors_up_to_date = true;
   return equipartition_n(error.size(), &bounds[0], &error[0]);
-
 }
 
-void
-Equipartition::print_bounds(int ni, ep_real* bounds)
-{
-  std::cout << "  bounds = [";
-  for (int ii = 0; ii <= ni; ++ii) {
-    std::cout << " " << bounds[ii];
-  }
-  std::cout << "]\n";
-}
-
-void
-Equipartition::print_error(int ni, ep_real* error)
-{
-  for (int ii = 0; ii < ni; ++ii) {
-    std::cout << " " << error[ii];
-  }
-}
 
 ep_real
 Equipartition::next_bound_below(ep_real target_error,
@@ -503,6 +614,10 @@ Equipartition::next_bound_below(ep_real target_error,
   ep_real error_test;
   int iterations_remaining = next_bound_max_iterations;
 
+  if (iverbose) {
+    std::cout << "    Finding next bound below " << bound2;
+  }
+
   if (*error_test_value < 0.0) {
     error_test = calc_error(bound1_test, bound2);
   }
@@ -512,6 +627,9 @@ Equipartition::next_bound_below(ep_real target_error,
 
   while (iterations_remaining > 0 
 	 && (error_test > max_error || error_test < min_error)) {
+    if (iverbose) {
+      std::cout << "." << std::flush;
+    }
     if (error_test > target_error) {
       // Found a lower possible value for bound1
       bound1_low = bound1_test;
@@ -521,6 +639,12 @@ Equipartition::next_bound_below(ep_real target_error,
       // Found an upper possible value for bound1
       bound1_high = bound1_test;
       error_high  = error_test;
+    }
+
+    if (bound1_low == bound1_high) {
+      // No further progress to be made; perhaps we have filled domain
+      // with a single interval
+      break;
     }
     
     if (error_low > 0.0) {
@@ -554,6 +678,10 @@ Equipartition::next_bound_below(ep_real target_error,
     *error_test_value = error_test;
   }
 
+  if (iverbose) {
+    std::cout << " " << bound1_test << std::endl;
+  }
+
   return bound1_test;
 }
 
@@ -571,6 +699,9 @@ Equipartition::next_bound_above(ep_real target_error,
   ep_real error_test;
   int iterations_remaining = next_bound_max_iterations;
 
+  if (iverbose) {
+    std::cout << "    Finding next bound above " << bound1;
+  }
   if (*error_test_value < 0.0) {
     error_test = calc_error(bound1, bound2_test);
   }
@@ -580,6 +711,10 @@ Equipartition::next_bound_above(ep_real target_error,
 
   while (iterations_remaining > 0 
 	 && (error_test > max_error || error_test < min_error)) {
+    if (iverbose) {
+      std::cout << "." << std::flush;
+    }
+
     if (error_test > target_error) {
       // Found an upper possible value for bound2
       bound2_high = bound2_test;
@@ -589,6 +724,12 @@ Equipartition::next_bound_above(ep_real target_error,
       // Found a lower possible value for bound2
       bound2_low = bound2_test;
       error_low  = error_test;
+    }
+
+    if (bound2_low == bound2_high) {
+      // No further progress to be made; perhaps we have filled domain
+      // with a single interval
+      break;
     }
     
     if (error_high > 0.0) {
@@ -620,6 +761,10 @@ Equipartition::next_bound_above(ep_real target_error,
 
   if (error_test_value) {
     *error_test_value = error_test;
+  }
+
+  if (iverbose) {
+    std::cout << " " << bound2_test << std::endl;
   }
 
   return bound2_test;
