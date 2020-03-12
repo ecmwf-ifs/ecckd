@@ -48,7 +48,7 @@ struct SingleGasData {
     LOG << "  number of g-points in each band     = " << n_g_points << "\n";
     LOG << "  band associated with each g-point   = " << band_number << "\n";
     LOG << "  wavenumber rank lower bound         = " << rank1 << "\n";
-    LOG << "  wavenumber rank upper bound         = " << rank1 << "\n";
+    LOG << "  wavenumber rank upper bound         = " << rank2 << "\n";
     LOG << "  heating-rate error for each g-point = " << error << "\n";
     LOG << "  sorting variable for each g-point   = " << sorting_variable << "\n";
   }

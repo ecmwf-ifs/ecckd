@@ -7,6 +7,7 @@
 #include "calc_cost_function_lw.h"
 #include "OutputDataFile.h"
 #include "single_gas_data.h"
+#include "equipartition.h"
 
 using namespace adept;
 
@@ -16,45 +17,40 @@ using namespace adept;
 Real
 calc_median_sorting_variable(const Vector& sorting_variable,
 			     const Vector& planck,
-			     const intVector& rank,
-			     const intVector& index) {
-  Real half_planck = 0.5 * sum(planck(index));
-  int rank1 = minval(rank(index));
-  int nindex = index.size();
-  intVector ordered_index(nindex);
-  ordered_index(rank(index)-rank1) = index;
+			     int i1, int i2) {
+  Real half_planck = 0.5 * sum(planck(range(i1,i2)));
   Real cum_planck = 0.0;
-  int iind = 0;
-  for ( ; iind < nindex; ++iind) {
-    cum_planck += planck(ordered_index(iind));
+  int iind = i1;
+  for ( ; iind < i2; ++iind) {
+    cum_planck += planck(iind);
     if (cum_planck >= half_planck) {
       break;
     }
   }
-  return sorting_variable(ordered_index(iind));   
+  return sorting_variable(iind);
 }
 
 // Calculate the "fitted" optical depth averaged over a range of
 // wavenumbers selected via "index", using the Planck function to
 // weight at each height
 Vector fit_optical_depth(const std::string& averaging_method,
-			 const intVector& index,
+			 int i1, int i2,
 			 const Matrix& planck_hl,
 			 const Matrix& metric) {
   Vector optical_depth_fit;
 
   if (averaging_method == "linear") {
-    optical_depth_fit = sum(metric(__,index) * planck_hl(range(1,end),index), 1)
-      / sum(planck_hl(range(1,end),index),1);
+    optical_depth_fit = sum(metric(__,range(i1,i2)) * planck_hl(range(1,end),range(i1,i2)), 1)
+      / sum(planck_hl(range(1,end),range(i1,i2)),1);
   }
   else if (averaging_method == "transmission") {
-    optical_depth_fit = min(0.999999999,sum(metric(__,index) * planck_hl(range(1,end),index), 1)
-			    / sum(planck_hl(range(1,end),index),1));
+    optical_depth_fit = min(0.999999999,sum(metric(__,range(i1,i2)) * planck_hl(range(1,end),range(i1,i2)), 1)
+			    / sum(planck_hl(range(1,end),range(i1,i2)),1));
     optical_depth_fit = -log(1.0-optical_depth_fit)/LW_DIFFUSIVITY;
   }
   else if (averaging_method == "square_root") {
-    optical_depth_fit = sum(metric(__,index) * planck_hl(range(1,end),index), 1)
-      / sum(planck_hl(range(1,end),index),1);
+    optical_depth_fit = sum(metric(__,range(i1,i2)) * planck_hl(range(1,end),range(i1,i2)), 1)
+      / sum(planck_hl(range(1,end),range(i1,i2)),1);
     optical_depth_fit *= optical_depth_fit;
   }
   else {
@@ -63,10 +59,79 @@ Vector fit_optical_depth(const std::string& averaging_method,
   }
   return optical_depth_fit;
 }
+
+
+class CkdEquipartition : public Equipartition {
+public:
+  CkdEquipartition(std::string am, Real fw, const Vector& lw,
+		   const Vector& prhl, const Vector& se,
+		   const Vector& sp, const Vector& fds, const Vector& fut,
+		   const Matrix& plhl, const Matrix& bod, const Matrix& met,
+		   const Matrix& h, int i1, int i2)
+    : averaging_method(am), flux_weight(fw), layer_weight(lw), 
+      pressure_hl(prhl), surf_emissivity(se(range(i1,i2))), surf_planck(sp(range(i1,i2))),
+      flux_dn_surf(fds(range(i1,i2))), flux_up_toa(fut(range(i1,i2))), planck_hl(plhl(__,range(i1,i2))),
+      bg_optical_depth(bod(__,range(i1,i2))), metric(met(__,range(i1,i2))), hr(h(__,range(i1,i2))),
+    npoints(i2-i1+1), total_comp_cost(0.0) { 
+    
+    set_resolution(1.0 / npoints);
+    set_parallel(true);
+    set_verbose(true);
+    set_minimize_frac_range(true);
+
+  }
+
+  int lower_index(ep_real bound) {
+    return std::ceil(bound*(npoints-1));
+  }
+  int upper_index(ep_real bound) {
+    return std::floor(bound*(npoints-1));
+  }
+
+  ep_real calc_error(ep_real bound1, ep_real bound2) {
+    std::cout << "." << std::flush;
+    int ibound1 = static_cast<int>(std::ceil(bound1*(npoints-1)));
+    int ibound2 = std::max(ibound1,static_cast<int>(std::floor(bound2*(npoints-1))));
+    
+    //    std::cerr << "bounds = [" << bound1 << "," << bound2 << "]\n" << std::flush;
+
+    //total_comp_cost += ibound2-ibound1+1;
+    total_comp_cost += bound2-bound1;
+
+    Vector optical_depth_fit = fit_optical_depth(averaging_method,
+						 ibound1, ibound2,
+						 planck_hl.soft_link(),
+						 metric.soft_link());
+	  
+    return calc_cost_function_lw(pressure_hl.soft_link(),
+				 planck_hl(__,range(ibound1,ibound2)).soft_link(),
+				 surf_emissivity(range(ibound1,ibound2)).soft_link(),
+				 surf_planck(range(ibound1,ibound2)).soft_link(),
+				 bg_optical_depth(__,range(ibound1,ibound2)).soft_link(),
+				 optical_depth_fit.soft_link(),
+				 flux_dn_surf(range(ibound1,ibound2)).soft_link(),
+				 flux_up_toa(range(ibound1,ibound2)).soft_link(),
+				 hr(__,range(ibound1,ibound2)).soft_link(),
+				 flux_weight, layer_weight.soft_link());
+  }
+
+  std::string averaging_method;
+  Real flux_weight;
+  Vector layer_weight;
+  Vector pressure_hl;
+  Vector surf_emissivity, surf_planck, flux_dn_surf, flux_up_toa;
+  Matrix planck_hl, bg_optical_depth, metric, hr;
+  int npoints;
+  ep_real total_comp_cost;
+};
+
+
 // Main program 
 int
 main(int argc, const char* argv[])
 {
+
+  adept::set_array_print_style(PRINT_STYLE_MATLAB);
 
   // CONFIGURATION
 
@@ -111,10 +176,11 @@ main(int argc, const char* argv[])
     THROW(PARAMETER_ERROR);
   }
 
-  Real tolerance_tolerance = 0.0;
+  // Aim for errors in each g point to be within 2% of each other
+  Real tolerance_tolerance = 0.02;
   config.read(tolerance_tolerance, "tolerance_tolerance");
-  Real heating_rate_upper_tolerance = heating_rate_tolerance * (1.0+tolerance_tolerance);
-  Real heating_rate_lower_tolerance = heating_rate_tolerance * (1.0-tolerance_tolerance);
+  //  Real heating_rate_upper_tolerance = heating_rate_tolerance * (1.0+tolerance_tolerance);
+  //  Real heating_rate_lower_tolerance = heating_rate_tolerance * (1.0-tolerance_tolerance);
 
   int max_iterations = 100;
   config.read(max_iterations, "max_iterations");
@@ -133,12 +199,12 @@ main(int argc, const char* argv[])
   config.read(repartition_repeat, "repartition_repeat");
 
   int ngas = 0;
+  int nband = 0;
   std::string gas_str;
 
   Matrix planck_hl;
   Vector surf_planck;
   Vector band_bound1, band_bound2;
-  int nband = 0;
 
   std::vector<SingleGasData> single_gas_data;
 
@@ -160,6 +226,31 @@ main(int argc, const char* argv[])
     std::string Gas = gas_str;
     std::transform(Gas.begin(), Gas.end(), Gas.begin(), ::toupper);
     LOG << "*** FINDING G POINTS FOR " << Gas << "\n";
+
+    // READ ORDERING
+    std::string reordering_input;
+    if (!config.read(reordering_input, gas_str, "reordering_input")) {
+      ERROR << "No reordering_input found\n";
+      THROW(PARAMETER_ERROR);
+    }
+    LOG << "Reading " << reordering_input << "\n";
+    DataFile order_file(reordering_input);
+    Vector sorting_variable;
+    intVector irank, iband;
+    order_file.read(irank, "rank");
+    order_file.read(iband, "band_number");
+    order_file.read(band_bound1, "wavenumber1_band");
+    order_file.read(band_bound2, "wavenumber2_band");
+    order_file.read(sorting_variable, "sorting_variable");
+    nband = band_bound1.size();
+
+    // "irank" is the rank of each point of the spectrum from the
+    // least to the most absorbing.  We want an index that will
+    // reorder an array.
+    intVector ireorder(irank.size());
+    ireorder(irank) = range(0,irank.size()-1);
+
+    sorting_variable = eval(sorting_variable(ireorder));
 
     // BACKGROUND
   
@@ -185,6 +276,13 @@ main(int argc, const char* argv[])
 			   wavenumber_cm_1, d_wavenumber_cm_1,
 			   bg_optical_depth, bg_molecules, vmr_fl);
       have_background = true;
+
+      LOG << "  Reordering\n";
+      bg_optical_depth = eval(bg_optical_depth(__,ireorder));
+    }
+    else {
+      bg_optical_depth.resize(bg_optical_depth.dimensions());
+      bg_optical_depth = 0.0;
     }
   
     // TARGET GAS
@@ -197,11 +295,12 @@ main(int argc, const char* argv[])
 			 pressure_hl, temperature_hl,
 			 wavenumber_cm_1, d_wavenumber_cm_1,
 			 optical_depth, molecule, vmr_fl);
-    
-    if (!have_background) {
-      bg_optical_depth.resize(optical_depth.dimensions());
-    }
 
+    LOG << "  Reordering\n";
+    optical_depth = eval(optical_depth(__,ireorder));
+    wavenumber_cm_1 = eval(wavenumber_cm_1(ireorder));
+    d_wavenumber_cm_1 = eval(d_wavenumber_cm_1(ireorder));
+ 
     int nlay = pressure_hl.size()-1;
     nwav = wavenumber_cm_1.size();
 
@@ -253,25 +352,6 @@ main(int argc, const char* argv[])
     flux_dn.clear();
     flux_up.clear();
 
-    // READ ORDERING
-    std::string reordering_input;
-    if (!config.read(reordering_input, gas_str, "reordering_input")) {
-      ERROR << "No reordering_input found\n";
-      THROW(PARAMETER_ERROR);
-    }
-
-    LOG << "Reading " << reordering_input << "\n";
-    
-    DataFile order_file(reordering_input);
-    Vector rank, iband, sorting_variable;
-    order_file.read(rank, "rank");
-    order_file.read(iband, "band_number");
-    order_file.read(band_bound1, "wavenumber1_band");
-    order_file.read(band_bound2, "wavenumber2_band");
-    order_file.read(sorting_variable, "sorting_variable");
-
-    nband = band_bound1.size();
-
     Vector layer_weight = sqrt(pressure_hl(range(1,end)))-sqrt(pressure_hl(range(0,end-1)));
     Vector pressure_fl = 0.5*(pressure_hl(range(1,end))+pressure_hl(range(0,end-1)));
     
@@ -287,7 +367,7 @@ main(int argc, const char* argv[])
 
     std::vector<int> n_g_points_per_band;
     // Lower and upper g
-    std::vector<int> rank1_per_g_point, rank2_per_g_point;
+    std::vector<int> rank1_per_g_point, rank2_per_g_point, band_num;
     // Heating rate error, K d-1
     std::vector<Real> error_K_d_1;
     // Median of the sorting variable (pseudo height of max cooling)
@@ -319,8 +399,49 @@ main(int argc, const char* argv[])
     for (int jband = 0; jband < nband; ++jband) {
       LOG << "Band " << jband << "\n";
       intVector band_index = find(iband == jband);
-      //int nwav_band = band_index.size();
-      intVector rank_band = rank(band_index);
+      int ibegin = band_index(0);
+      int iend   = band_index(end);
+      intVector rank_band = irank(band_index);
+      CkdEquipartition Eq(averaging_method, flux_weight, layer_weight,
+			  pressure_hl, surf_emissivity,
+			  surf_planck, flux_dn_surf, flux_up_toa, planck_hl,
+			  bg_optical_depth, metric, hr, ibegin, iend);
+      Eq.set_partition_max_iterations(max_iterations);
+      Eq.set_partition_tolerance(tolerance_tolerance);
+      int ng = 10;
+#define PARTITION_BY_ERROR 1
+#ifdef PARTITION_BY_ERROR
+      std::vector<ep_real> bounds, error;
+      EpStatus istatus = Eq.equipartition_e(heating_rate_tolerance, 
+					    0.0, 1.0, ng, bounds, error);
+#else
+      Vector bounds(ng+1), error(ng);
+      bounds = sqrt(linspace(0.0, 1.0, ng+1));
+      EpStatus istatus = Eq.equipartition_n(ng, &bounds[0], &error[0]);
+#endif
+
+      ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
+      std::cout << "      computational cost = " << Eq.total_comp_cost << "\n";
+      Vector bnds(&bounds[0], dimensions(bounds.size()));
+      Vector err(&error[0], dimensions(error.size()));
+      std::cout << "      bounds = " << bnds << "\n";
+      std::cout << "      error  = " << err << "\n";
+      n_g_points_per_band.push_back(ng);
+      for (int ig = 0; ig < ng; ++ig) {
+	int ind1 = Eq.lower_index(bounds[ig]);
+	int ind2 = Eq.upper_index(bounds[ig+1]);
+	rank1_per_g_point.push_back(ind1);
+	rank2_per_g_point.push_back(ind2);
+	error_K_d_1.push_back(error[ig]);
+	band_num.push_back(jband);
+	//	std::cout << "Indices: " << ind1 << " " << ind2 << std::endl;
+	//	std::cout << "sorting_variable: " << sorting_variable.info_string() << "n";
+	//	std::cout << "surf_planck: " << surf_planck.info_string() << "n";
+	median_sorting_var.push_back(calc_median_sorting_variable(sorting_variable, surf_planck, ind1, ind2));
+	g_point(rank_band(range(ind1,ind2))) = ig;
+      }
+      /*
+
       // Range of wavenumbers defining the band
       int lower_rank_band = minval(rank_band);
       int upper_rank_band = maxval(rank_band);
@@ -330,6 +451,11 @@ main(int argc, const char* argv[])
       // Upper rank of current g point
       int upper_rank = upper_rank_band;
       while (!finished_band) {
+
+
+
+
+
 	// Range of possible values for the lower rank: the minimum
 	// possible is the lower end of the band, for which the
 	// corresponding cost function has not yet been calculated so is
@@ -347,7 +473,7 @@ main(int argc, const char* argv[])
 	int test_rank = 0.99*max_lower_rank + 0.01*min_lower_rank;
 	int niter = 0;
 	while (!finished_g_point) {
-	  intVector index = find(rank >= test_rank && rank <= upper_rank);
+	  ////intVector index = find(rank >= test_rank && rank <= upper_rank);
 	  Vector optical_depth_fit = fit_optical_depth(averaging_method, index, planck_hl, metric);
 	  
 	  Real rmse = calc_cost_function_lw(pressure_hl, planck_hl, surf_emissivity, surf_planck,
@@ -440,12 +566,18 @@ main(int argc, const char* argv[])
       n_g_points_per_band.push_back(ig);
     } // Loop over bands
     
-    //metric.clear();
+
+    */
+
+    }
+    metric.clear();
 
     // Create intVector pointing to std::vector
     intVector n_g_points(&n_g_points_per_band[0], dimensions(nband));
-
     int ng = rank1_per_g_point.size();
+
+    /*
+
     intVector rank1(ng), rank2(ng), band_number(ng);
     Vector error(ng), median_sorting_variable(ng);
     int ig = 0;
@@ -453,9 +585,6 @@ main(int argc, const char* argv[])
     for (int jband = 0; jband < nband; ++jband) {
       ig_band_end += n_g_points(jband);
       for (int jg = 0; jg < n_g_points(jband); ++jg) {
-	// Need to re-order since g points computed from most optically
-	// thick and working down, but we store them from most optically
-	// thin and working up
 	rank1(ig) = rank1_per_g_point[ig_band_end-jg];
 	rank2(ig) = rank2_per_g_point[ig_band_end-jg];
 	error(ig) = error_K_d_1[ig_band_end-jg];
@@ -464,12 +593,20 @@ main(int argc, const char* argv[])
 	++ig;
       }
     }
+    */
 
-    // Create SingleGasData object
+    intVector rank1(&rank1_per_g_point[0], dimensions(ng));
+    intVector rank2(&rank2_per_g_point[0], dimensions(ng));
+    Vector error(&error_K_d_1[0], dimensions(ng));
+    Vector median_sorting_variable(&median_sorting_var[0], dimensions(ng));
+    intVector band_number(&band_num[0], dimensions(ng));
+
     SingleGasData raw_single_gas_data(gas_str, n_g_points, band_number,
 				      rank1, rank2, error, median_sorting_variable,
-				      rank);
+				      irank);
     raw_single_gas_data.print();
+
+    /*
     if (repartition_factor > 0.0) {
       SingleGasData new_single_gas_data;
       LOG << "n_g_points = " << n_g_points << "\n";
@@ -502,7 +639,9 @@ main(int argc, const char* argv[])
       // Save information without modification
       single_gas_data.push_back(raw_single_gas_data);
     }
+    */
 
+    single_gas_data.push_back(raw_single_gas_data);
     ++ngas;
     LOG << "\n";
   } // Loop over gases
@@ -514,6 +653,7 @@ main(int argc, const char* argv[])
 
   // Work out to which multi-gas g point each wavenumber is assigned
   intVector g_point(nwav);
+  
   g_point = -1;
   boolVector is_found(nwav);
   for (int ig = 0; ig < ng; ++ig) {

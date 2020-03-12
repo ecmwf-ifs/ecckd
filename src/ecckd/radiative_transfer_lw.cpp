@@ -71,7 +71,8 @@ radiative_transfer_lw<false>(const adept::Matrix& planck,               ///< Pla
 template <bool IsActive>
 void
 radiative_transfer_lw_bb(const adept::Matrix& planck,                  ///< Planck function in W m-2
-			 const adept::Array<2,adept::Real,IsActive>& optical_depth, ///< Layer optical depth
+			 const adept::Array<2,adept::Real,IsActive>& spectral_od, ///< Spectral layer optical depth
+			 const adept::Array<1,adept::Real,IsActive>& grey_od,     ///< Grey layer optical depth
 			 const adept::Vector& surf_emissivity,         ///< Surface emissivity
 			 const adept::Vector& surf_planck,             ///< Surface Planck function in W m-2
 			 adept::Array<1,adept::Real,IsActive> flux_dn, ///< Broadband flux down in W m-2
@@ -79,8 +80,12 @@ radiative_transfer_lw_bb(const adept::Matrix& planck,                  ///< Plan
 			 ) {
   using namespace adept;
 
-  int nlay = optical_depth.size(0);
-  int nwav = optical_depth.size(1);
+  // "factor" below is only reliable when emissivity is greater than
+  // this number, below it factor=0.5*emissivity
+  static const Real THRESHOLD_EMISSIVITY = 1.0e-5;
+
+  int nlay = spectral_od.size(0);
+  int nwav = spectral_od.size(1);
 
   // 1D only to conserve memory
   adept::Array<1,Real,IsActive> emissivity(nwav), factor(nwav);
@@ -92,9 +97,12 @@ radiative_transfer_lw_bb(const adept::Matrix& planck,                  ///< Plan
   flux = 0.0;
   flux_dn(0) = 0.0;
   for (int ilay = 0; ilay < nlay; ++ilay) {
-    emissivity = 1.0 - exp(-LW_DIFFUSIVITY*optical_depth(ilay,__));
-    factor.where(emissivity > 1.0e-5) = either_or(1.0 - emissivity*(1.0/LW_DIFFUSIVITY)/optical_depth(ilay,__),
-						  0.5 * emissivity);
+    emissivity = 1.0 - exp(-LW_DIFFUSIVITY*(spectral_od(ilay,__)+grey_od(ilay)));
+    //    factor.where(emissivity > 1.0e-5) = either_or(1.0 - emissivity*(1.0/LW_DIFFUSIVITY)/optical_depth(ilay,__),
+    //						  0.5 * emissivity);
+    factor = max(1.0 - (1.0/LW_DIFFUSIVITY)*max(emissivity, THRESHOLD_EMISSIVITY)
+		 / max(spectral_od(ilay,__)+grey_od(ilay), THRESHOLD_EMISSIVITY/LW_DIFFUSIVITY),
+		 0.5*THRESHOLD_EMISSIVITY);
     flux = flux * (1.0 - emissivity)
       + planck(ilay,__)   * (emissivity-factor)
       + planck(ilay+1,__) * factor;
@@ -106,9 +114,12 @@ radiative_transfer_lw_bb(const adept::Matrix& planck,                  ///< Plan
   flux_up(nlay) = sum(flux);
   // Work up from surface
   for (int ilay = nlay-1; ilay >= 0; --ilay) {
-    emissivity = 1.0 - exp(-LW_DIFFUSIVITY*optical_depth(ilay,__));
-    factor.where(emissivity > 1.0e-5) = either_or(1.0 - emissivity*(1.0/LW_DIFFUSIVITY)/optical_depth(ilay,__),
-						  0.5 * emissivity);
+    emissivity = 1.0 - exp(-LW_DIFFUSIVITY*(spectral_od(ilay,__)+grey_od(ilay)));
+    //    factor.where(emissivity > 1.0e-5) = either_or(1.0 - emissivity*(1.0/LW_DIFFUSIVITY)/optical_depth(ilay,__),
+    //						  0.5 * emissivity);
+    factor = max(1.0 - (1.0/LW_DIFFUSIVITY)*max(emissivity, THRESHOLD_EMISSIVITY)
+		 / max(spectral_od(ilay,__)+grey_od(ilay), THRESHOLD_EMISSIVITY/LW_DIFFUSIVITY),
+		 0.5*THRESHOLD_EMISSIVITY);
     flux = flux * (1.0 - emissivity)
       + planck(ilay+1,__) * (emissivity-factor)
       + planck(ilay,__)   * factor;
@@ -120,7 +131,8 @@ radiative_transfer_lw_bb(const adept::Matrix& planck,                  ///< Plan
 template
 void
 radiative_transfer_lw_bb<true>(const adept::Matrix& planck,              ///< Planck function in W m-2
-			    const adept::Array<2,adept::Real,true>& optical_depth, ///< Layer optical depth
+			    const adept::Array<2,adept::Real,true>& spectral_od, ///< Spectral layer optical depth
+			    const adept::Array<1,adept::Real,true>& grey_od,     ///< Grey layer optical depth
 			    const adept::Vector& surf_emissivity,     ///< Surface emissivity
 			    const adept::Vector& surf_planck,         ///< Surface Planck function in W m-2
 			    adept::Array<1,adept::Real,true> flux_dn, ///< Broadband flux down in W m-2
@@ -129,7 +141,8 @@ radiative_transfer_lw_bb<true>(const adept::Matrix& planck,              ///< Pl
 template
 void
 radiative_transfer_lw_bb<false>(const adept::Matrix& planck,               ///< Planck function in W m-2
-			     const adept::Array<2,adept::Real,false>& optical_depth, ///< Layer optical depth
+			     const adept::Array<2,adept::Real,false>& spectral_od, ///< Spectral layer optical depth
+			     const adept::Array<1,adept::Real,false>& grey_od,     ///< Grey layer optical depth
 			     const adept::Vector& surf_emissivity,      ///< Surface emissivity
 			     const adept::Vector& surf_planck,          ///< Surface Planck function in W m-2
 			     adept::Array<1,adept::Real,false> flux_dn, ///< Broadband flux down in W m-2

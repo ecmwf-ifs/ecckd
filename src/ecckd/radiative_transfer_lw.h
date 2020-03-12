@@ -27,7 +27,8 @@ radiative_transfer_lw(const adept::Matrix& planck,                  ///< Planck 
 template <bool IsActive>
 void
 radiative_transfer_lw_bb(const adept::Matrix& planck,                  ///< Planck function in W m-2
-			 const adept::Array<2,adept::Real,IsActive>& optical_depth, ///< Layer optical depth
+			 const adept::Array<2,adept::Real,IsActive>& spectral_od, ///< Spectral layer optical depth
+			 const adept::Array<1,adept::Real,IsActive>& grey_od,     ///< Grey layer optical depth
 			 const adept::Vector& surf_emissivity,         ///< Surface emissivity
 			 const adept::Vector& surf_planck,             ///< Surface Planck function in W m-2
 			 adept::Array<1,adept::Real,IsActive> flux_dn, ///< Broadband flux down in W m-2

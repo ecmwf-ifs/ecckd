@@ -1,7 +1,6 @@
 #include "radiative_transfer_lw.h"
 #include "ckd_model.h"
 #include "lbl_fluxes.h"
-#include "calc_cost_function_lw.h"
 #include "solve_lbfgs_lw.h"
 #include "OutputDataFile.h"
 #include "floating_point_exceptions.h"

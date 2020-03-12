@@ -26,11 +26,22 @@ calc_cost_function_lw(const adept::Vector& pressure_hl,       ///< Pressure (Pa)
   static const Real hr_weight = 3600.0*24.0;
 
   int nlay = pressure_hl.size()-1;
-  int nwav = index.size();
+  int nwav = surf_planck.size();
 
-  Vector hr_true         = sum(hr(__,index),1);
-  Real flux_dn_surf_true = sum(flux_dn_surf(index));
-  Real flux_up_toa_true  = sum(flux_up_toa(index));
+  Vector hr_true;
+  Real flux_dn_surf_true;
+  Real flux_up_toa_true;
+
+  if (index.empty()) {
+    hr_true           = sum(hr,1);
+    flux_dn_surf_true = sum(flux_dn_surf);
+    flux_up_toa_true  = sum(flux_up_toa);
+  }
+  else {
+    hr_true           = sum(hr(__,index),1);
+    flux_dn_surf_true = sum(flux_dn_surf(index));
+    flux_up_toa_true  = sum(flux_up_toa(index));
+  }
 
 #ifdef WASTE_MEMORY
 
@@ -50,17 +61,32 @@ calc_cost_function_lw(const adept::Vector& pressure_hl,       ///< Pressure (Pa)
 
   Vector flux_dn_fit(nlay+1);
   Vector flux_up_fit(nlay+1);
-  radiative_transfer_lw_bb(planck_hl(__,index),
-			   eval(bg_optical_depth(__,index) + spread<1>(optical_depth_fit,nwav)),
-			   surf_emissivity(index),
-			   surf_planck(index),
-			   flux_dn_fit,
-			   flux_up_fit);
+  if (index.empty()) {
+    radiative_transfer_lw_bb(planck_hl,
+			     bg_optical_depth,
+			     optical_depth_fit,
+			     surf_emissivity,
+			     surf_planck,
+			     flux_dn_fit,
+			     flux_up_fit);
+  }
+  else {
+    radiative_transfer_lw_bb(planck_hl(__,index),
+			     eval(bg_optical_depth(__,index)),
+			     optical_depth_fit,
+			     surf_emissivity(index),
+			     surf_planck(index),
+			     flux_dn_fit,
+			     flux_up_fit);
+  }
 
 #endif
 
   Vector hr_fit(nlay);
   heating_rate_single(pressure_hl, flux_dn_fit, flux_up_fit, hr_fit);
+
+  //  std::cerr << "HRtrue = " << hr_true << "\n";
+  //  std::cerr << "HRfit = " << hr_fit << "\n";
 
   return sqrt(hr_weight*hr_weight*sum(layer_weight*((hr_fit-hr_true)*(hr_fit-hr_true)))
 	      + flux_weight*((flux_dn_fit(end)-flux_dn_surf_true)*(flux_dn_fit(end)-flux_dn_surf_true)
@@ -71,19 +97,19 @@ calc_cost_function_lw(const adept::Vector& pressure_hl,       ///< Pressure (Pa)
 /// Compute the cost function, in the form of the mean-squared error
 /// in heating rate, of a CKD scheme
 adept::aReal
-calc_cost_function_lw(const adept::Vector& pressure_hl,       ///< Pressure (Pa)
-		      const adept::Matrix& planck_hl,         ///< Planck function (W m-2)
-		      const adept::Vector& surf_emissivity,   ///< Surface emissivity
-		      const adept::Vector& surf_planck,       ///< Surface spectral Planck function (W m-2)
-		      const adept::aMatrix& optical_depth,    ///< Optical depth of gases
-		      const adept::Matrix& flux_dn,           ///< True downwelling flux (W m-2)
-		      const adept::Matrix& flux_up,           ///< True upwelling flux (W m-2)
-		      const adept::Matrix& hr,                ///< True heating rate (K s-1)
-		      adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
-		      adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
-		      adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
-		      const adept::Vector& layer_weight       ///< Weight applied to heating rates in each layer
-		      )
+calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure (Pa)
+			  const adept::Matrix& planck_hl,         ///< Planck function (W m-2)
+			  const adept::Vector& surf_emissivity,   ///< Surface emissivity
+			  const adept::Vector& surf_planck,       ///< Surface spectral Planck function (W m-2)
+			  const adept::aMatrix& optical_depth,    ///< Optical depth of gases
+			  const adept::Matrix& flux_dn,           ///< True downwelling flux (W m-2)
+			  const adept::Matrix& flux_up,           ///< True upwelling flux (W m-2)
+			  const adept::Matrix& hr,                ///< True heating rate (K s-1)
+			  adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
+			  adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
+			  adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
+			  const adept::Vector& layer_weight       ///< Weight applied to heating rates in each layer
+			  )
 {
   using namespace adept;
 

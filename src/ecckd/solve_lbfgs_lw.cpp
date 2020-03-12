@@ -38,16 +38,16 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
     for (int iprof = 0; iprof < nprof; ++iprof) {
       Vector layer_weight = sqrt(data.pressure_hl_(iprof,range(1,end)))-sqrt(data.pressure_hl_(iprof,range(0,end-1)));
       layer_weight /= sum(layer_weight);
-      cost += calc_cost_function_lw(data.pressure_hl_(iprof,__),
-				    data.planck_hl_(iprof,__,__),
-				    data.surf_emissivity_(iprof,__),
-				    data.surf_planck_(iprof,__),
-				    optical_depth(iprof,__,__),
-				    data.spectral_flux_dn_(iprof,__,__),
-				    data.spectral_flux_up_(iprof,__,__),
-				    data.spectral_heating_rate_(iprof,__,__),
-				    flux_weight, flux_profile_weight, broadband_weight,
-				    layer_weight);
+      cost += calc_cost_function_ckd_lw(data.pressure_hl_(iprof,__),
+					data.planck_hl_(iprof,__,__),
+					data.surf_emissivity_(iprof,__),
+					data.surf_planck_(iprof,__),
+					optical_depth(iprof,__,__),
+					data.spectral_flux_dn_(iprof,__,__),
+					data.spectral_flux_up_(iprof,__,__),
+					data.spectral_heating_rate_(iprof,__,__),
+					flux_weight, flux_profile_weight, broadband_weight,
+					layer_weight);
     } 
   }
   cost.set_gradient(1.0);
