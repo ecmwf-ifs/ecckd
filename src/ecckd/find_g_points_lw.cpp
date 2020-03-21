@@ -88,6 +88,8 @@ public:
     return std::floor(bound*(npoints-1));
   }
 
+  // Need to take care that this is thread safe: soft_link() ensures
+  // no reference counting for read-only objects
   ep_real calc_error(ep_real bound1, ep_real bound2) {
     std::cout << "." << std::flush;
     int ibound1 = static_cast<int>(std::ceil(bound1*(npoints-1)));
@@ -104,14 +106,14 @@ public:
 						 metric.soft_link());
 	  
     return calc_cost_function_lw(pressure_hl.soft_link(),
-				 planck_hl(__,range(ibound1,ibound2)).soft_link(),
-				 surf_emissivity(range(ibound1,ibound2)).soft_link(),
-				 surf_planck(range(ibound1,ibound2)).soft_link(),
-				 bg_optical_depth(__,range(ibound1,ibound2)).soft_link(),
+				 planck_hl.soft_link()(__,range(ibound1,ibound2)),
+				 surf_emissivity.soft_link()(range(ibound1,ibound2)),
+				 surf_planck.soft_link()(range(ibound1,ibound2)),
+				 bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
 				 optical_depth_fit.soft_link(),
-				 flux_dn_surf(range(ibound1,ibound2)).soft_link(),
-				 flux_up_toa(range(ibound1,ibound2)).soft_link(),
-				 hr(__,range(ibound1,ibound2)).soft_link(),
+				 flux_dn_surf.soft_link()(range(ibound1,ibound2)),
+				 flux_up_toa.soft_link()(range(ibound1,ibound2)),
+				 hr.soft_link()(__,range(ibound1,ibound2)),
 				 flux_weight, layer_weight.soft_link());
   }
 
