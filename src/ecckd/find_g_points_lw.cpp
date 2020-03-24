@@ -95,7 +95,8 @@ public:
     int ibound1 = static_cast<int>(std::ceil(bound1*(npoints-1)));
     int ibound2 = std::max(ibound1,static_cast<int>(std::floor(bound2*(npoints-1))));
     
-    //    std::cerr << "bounds = [" << bound1 << "," << bound2 << "]\n" << std::flush;
+    //    std::cout << "bounds = [" << bound1 << "," << bound2
+    //	      << "," << ibound1 << "," << ibound2 << "]" << std::endl;
 
     //total_comp_cost += ibound2-ibound1+1;
     total_comp_cost += bound2-bound1;
@@ -403,7 +404,7 @@ main(int argc, const char* argv[])
       intVector band_index = find(iband == jband);
       int ibegin = band_index(0);
       int iend   = band_index(end);
-      intVector rank_band = irank(band_index);
+      //      intVector rank_band = irank(band_index);
       CkdEquipartition Eq(averaging_method, flux_weight, layer_weight,
 			  pressure_hl, surf_emissivity,
 			  surf_planck, flux_dn_surf, flux_up_toa, planck_hl,
@@ -430,8 +431,15 @@ main(int argc, const char* argv[])
       std::cout << "      error  = " << err << "\n";
       n_g_points_per_band.push_back(ng);
       for (int ig = 0; ig < ng; ++ig) {
-	int ind1 = Eq.lower_index(bounds[ig]);
-	int ind2 = Eq.upper_index(bounds[ig+1]);
+	int ind1 = Eq.lower_index(bounds[ig])+ibegin;
+	int ind2 = Eq.upper_index(bounds[ig+1])+ibegin;
+	if (ig == 0) {
+	  std::cout << "!!! 0 " << ind1 << " " << ibegin << " " << bounds[ig] << std::endl;
+	}
+	if (ig == ng-1) {
+	  std::cout << "??? " << ig << " " << ind2 << " " << iend << " " << bounds[ig+1] << std::endl;
+	}
+
 	rank1_per_g_point.push_back(ind1);
 	rank2_per_g_point.push_back(ind2);
 	error_K_d_1.push_back(error[ig]);
@@ -440,7 +448,9 @@ main(int argc, const char* argv[])
 	//	std::cout << "sorting_variable: " << sorting_variable.info_string() << "n";
 	//	std::cout << "surf_planck: " << surf_planck.info_string() << "n";
 	median_sorting_var.push_back(calc_median_sorting_variable(sorting_variable, surf_planck, ind1, ind2));
-	g_point(rank_band(range(ind1,ind2))) = ig;
+	//	std::cout << "!!! " << ind1 << " " << ind2 << " " << ig << std::endl;
+	//g_point(rank_band(range(ind1,ind2))) = ig;
+	g_point(irank(range(ind1,ind2))) = ig;
       }
       /*
 
@@ -670,7 +680,7 @@ main(int argc, const char* argv[])
   is_found.clear();
 
   if (any(g_point == -1)) {
-    WARNING << "Some wavenumbers are not assigned to a g point";
+    WARNING << count(g_point == -1) << " wavenumbers are not assigned to a g point";
     ENDWARNING;
   }
 
@@ -799,7 +809,7 @@ main(int argc, const char* argv[])
   for (int igas = 0; igas < ngas; ++igas) {
     const SingleGasData& this_gas = single_gas_data[igas];
     const std::string& molecule = this_gas.molecule;
-    file.write(this_gas.rank1.size(), molecule + "_n_g_points");
+    file.write(this_gas.n_g_points, molecule + "_n_g_points");
     file.write(this_gas.band_number, molecule + "_band_number");
     file.write(this_gas.rank1, molecule + "_rank1");
     file.write(this_gas.rank2, molecule + "_rank2");

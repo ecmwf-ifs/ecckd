@@ -83,9 +83,17 @@ overlap_g_points(std::vector<SingleGasData>& gas_data) {
 	  gas_data[igas].g_min(ig) = ig_gas_start(igas);
 	  gas_data[igas].g_max(ig) = ig_gas(igas);
   	}
-      }
-      
+      } 
     }
+
+    // Need to make sure that the indices are incremented ready for
+    // the first "intersection of weakest" merged-gpoint of the next
+    // band
+    ++ig;
+    for (int igas = 0; igas < ngas; ++igas) {
+      ++ig_gas(igas);
+    }
+
   }
   return ng;
 }
