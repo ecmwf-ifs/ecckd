@@ -2,7 +2,7 @@
 # the locations of data and executables on your system
 
 # CKDMIP installation directory and CKDMIP executables
-CKDMIP_DIR=/home/pa/parr/src/ckdmip-0.7
+CKDMIP_DIR=/home/pa/parr/src/ckdmip-0.9
 CKDMIP_TOOL=${CKDMIP_DIR}/bin/ckdmip_tool
 CKDMIP_LW=${CKDMIP_DIR}/bin/ckdmip_lw
 CKDMIP_SW=${CKDMIP_DIR}/bin/ckdmip_sw
