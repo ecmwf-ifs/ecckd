@@ -81,22 +81,32 @@ public:
 
   }
 
-  int lower_index(ep_real bound) {
-    return std::ceil(bound*(npoints-1));
+  int lower_index(ep_real bound) const {
+    return static_cast<int>(std::ceil(bound*(npoints-1)));
   }
-  int upper_index(ep_real bound) {
-    return std::floor(bound*(npoints-1));
+  int upper_index(ep_real bound) const {
+    return static_cast<int>(std::floor(bound*(npoints-1)));
   }
 
   // Need to take care that this is thread safe: soft_link() ensures
   // no reference counting for read-only objects
   ep_real calc_error(ep_real bound1, ep_real bound2) {
     std::cout << "." << std::flush;
-    int ibound1 = static_cast<int>(std::ceil(bound1*(npoints-1)));
-    int ibound2 = std::max(ibound1,static_cast<int>(std::floor(bound2*(npoints-1))));
-    
-    //    std::cout << "bounds = [" << bound1 << "," << bound2
-    //	      << "," << ibound1 << "," << ibound2 << "]" << std::endl;
+    int ibound1 = lower_index(bound1);
+    //int ibound2 = std::max(ibound1,upper_index(bound2));
+    int ibound2 = upper_index(bound2);
+    //std::cout << "[" << bound1 << " " << bound2 << " " << ibound1 << " " << ibound2 << "]" << std::flush;
+    if (ibound1 < 0 || ibound2 >= npoints) {
+      std::cout << "*** ERROR: requested bounds " << bound1 << "-" << bound2
+		<< " corresponding to indices " << ibound1 << "-" << ibound2 
+		<< " outside valid range 0-" << npoints-1 << std::endl;
+      throw(PROCESSING_ERROR);
+    }
+    else if (ibound2 < ibound1) {
+      std::cout << "*** ERROR: requested indices out of order: " 
+		<< ibound1 << "-" << ibound2 << std::endl;
+      throw(PROCESSING_ERROR);
+    }
 
     //total_comp_cost += ibound2-ibound1+1;
     total_comp_cost += bound2-bound1;
@@ -405,6 +415,7 @@ main(int argc, const char* argv[])
       int ibegin = band_index(0);
       int iend   = band_index(end);
       //      intVector rank_band = irank(band_index);
+      //std::cout << "ibegin = " << ibegin << "  iend = " << iend << std::endl;
       CkdEquipartition Eq(averaging_method, flux_weight, layer_weight,
 			  pressure_hl, surf_emissivity,
 			  surf_planck, flux_dn_surf, flux_up_toa, planck_hl,
@@ -433,22 +444,13 @@ main(int argc, const char* argv[])
       for (int ig = 0; ig < ng; ++ig) {
 	int ind1 = Eq.lower_index(bounds[ig])+ibegin;
 	int ind2 = Eq.upper_index(bounds[ig+1])+ibegin;
-	if (ig == 0) {
-	  std::cout << "!!! 0 " << ind1 << " " << ibegin << " " << bounds[ig] << std::endl;
-	}
-	if (ig == ng-1) {
-	  std::cout << "??? " << ig << " " << ind2 << " " << iend << " " << bounds[ig+1] << std::endl;
-	}
 
 	rank1_per_g_point.push_back(ind1);
 	rank2_per_g_point.push_back(ind2);
 	error_K_d_1.push_back(error[ig]);
 	band_num.push_back(jband);
-	//	std::cout << "Indices: " << ind1 << " " << ind2 << std::endl;
-	//	std::cout << "sorting_variable: " << sorting_variable.info_string() << "n";
-	//	std::cout << "surf_planck: " << surf_planck.info_string() << "n";
 	median_sorting_var.push_back(calc_median_sorting_variable(sorting_variable, surf_planck, ind1, ind2));
-	//	std::cout << "!!! " << ind1 << " " << ind2 << " " << ig << std::endl;
+
 	//g_point(rank_band(range(ind1,ind2))) = ig;
 	g_point(irank(range(ind1,ind2))) = ig;
       }

@@ -204,7 +204,7 @@ Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
   ep_real newbounds[3] = {bounds[0], bounds[1], bounds[2]};
   ep_real newerror[2]  = {error[0], error[1]};
 
-  int iterations_remaining = 10;
+  int iterations_remaining = partition_max_iterations;
 
   if (error[0] > error[1]) {
     // Found an upper (right) limit on the middle bound; now find a
@@ -222,6 +222,7 @@ Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
 	ediff_left = newerror[1]-newerror[0];
 	break;
       }
+      ediff_right = newerror[1]-newerror[0];
       --iterations_remaining;
     }
   }
@@ -241,6 +242,7 @@ Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
 	ediff_right = newerror[1]-newerror[0];
 	break;
       }
+      ediff_left = newerror[1]-newerror[0];
       --iterations_remaining;
     }
   }
@@ -342,7 +344,7 @@ Equipartition::equipartition_n(int ni, ep_real* bounds_out, ep_real* error)
 
   EpStatus istatus = EP_SUCCESS;
 
-  int n_shuffle_remaining = 5;
+  int n_shuffle_remaining = partition_max_iterations/2;
 
   // Check initial bounds are monotonic and increasing
   for (int ib = 0; ib < ni; ++ib) {
@@ -481,17 +483,35 @@ Equipartition::equipartition_n(int ni, ep_real* bounds_out, ep_real* error)
       istatus = EP_FAILED_TO_CONVERGE;
       int nnoprogress = 0;
       if (ni > 2 && n_shuffle_remaining > 0) {
-	std::cout << "    Shuffle" << std::endl;
-	for (int ii = 0; ii < ni-1; ++ii) {
-	  EpStatus iistatus = equipartition_2(&bounds[ii], &error[ii]);
-	  if (iistatus == EP_NO_PROGRESS) {
-	    ++nnoprogress;
+	std::cout << "    Shuffle (" << n_shuffle_remaining << " shuffles remaining)" << std::endl;
+	if (n_shuffle_remaining % 2) {
+	  // Shuffle low -> high -> low
+	  for (int ii = 0; ii < ni-1; ++ii) {
+	    EpStatus iistatus = equipartition_2(&bounds[ii], &error[ii]);
+	    if (iistatus == EP_NO_PROGRESS) {
+	      ++nnoprogress;
+	    }
+	  }
+	  for (int ii = ni-3; ii >= 0; --ii) {
+	    EpStatus iistatus = equipartition_2(&bounds[ii], &error[ii]);
+	    if (iistatus == EP_NO_PROGRESS) {
+	      ++nnoprogress;
+	    }
 	  }
 	}
-	for (int ii = ni-3; ii >= 0; --ii) {
-	  EpStatus iistatus = equipartition_2(&bounds[ii], &error[ii]);
-	  if (iistatus == EP_NO_PROGRESS) {
-	    ++nnoprogress;
+	else {
+	  // Shuffle high -> low -> high
+	  for (int ii = ni-2; ii >= 0; --ii) {
+	    EpStatus iistatus = equipartition_2(&bounds[ii], &error[ii]);
+	    if (iistatus == EP_NO_PROGRESS) {
+	      ++nnoprogress;
+	    }
+	  }
+	  for (int ii = 1; ii < ni-1; ++ii) {
+	    EpStatus iistatus = equipartition_2(&bounds[ii], &error[ii]);
+	    if (iistatus == EP_NO_PROGRESS) {
+	      ++nnoprogress;
+	    }
 	  }
 	}
 	--n_shuffle_remaining;
