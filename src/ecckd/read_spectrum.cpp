@@ -44,17 +44,17 @@ read_spectrum(std::string& file_name,          ///< File name containing spectra
     d_wavenumber_cm_1(end) = 0.5*d_wavenumber_cm_1(end-1);
   }
 
-  file.read(molecule, DATA_FILE_GLOBAL_SCOPE, "molecule");
-  if (file.exist("reference_surface_vmr")) {
-    file.read(reference_surface_vmr, "reference_surface_vmr");
+  file.read(molecule, DATA_FILE_GLOBAL_SCOPE, "constituent_id");
+  if (file.exist("reference_surface_mole_fraction")) {
+    file.read(reference_surface_vmr, "reference_surface_mole_fraction");
   }
   else {
     reference_surface_vmr = -1.0;
   }
   // Read volume mixing ratio on full levels, or negative value if not
   // present (e.g. for hybrid spectra)
-  if (file.exist("vmr_fl")) {
-    file.read(vmr_fl, "vmr_fl", iprof);
+  if (file.exist("mole_fraction_fl") && file.size("mole_fraction_fl").size() == 2) {
+    file.read(vmr_fl, "mole_fraction_fl", iprof);
   }
   else {
     vmr_fl.resize(pressure_hl.size()-1);

@@ -19,6 +19,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
   clear();
   LOG << "Reading " << file_name << "\n";
   DataFile file(file_name);
+  file.throw_exceptions(true);
   file.read(temperature_planck_, "temperature_planck");
   file.read(temperature_, "temperature");
   file.read(planck_function_, "planck_function");
@@ -34,7 +35,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
   ng_ = planck_function_.dimension(1);
 
   std::string molecules_str;
-  file.read(molecules_str, DATA_FILE_GLOBAL_SCOPE, "molecules");
+  file.read(molecules_str, DATA_FILE_GLOBAL_SCOPE, "constituent_id");
   
   int n_gases;
   file.read(n_gases, "n_gases");
@@ -69,16 +70,17 @@ CkdModel<IsActive>::read(const std::string& file_name,
     SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
 
     LOG << "  Reading absorption properties of " << this_gas.Molecule << "\n";
-    if (file.exist(molecule + "_vmr")) {
+    if (file.exist(molecule + "_mole_fraction")
+	&& file.size(molecule + "_mole_fraction").size() == 1) {
       this_gas.conc_dependence = LUT;
-      file.read(this_gas.vmr, molecule + "_vmr");
+      file.read(this_gas.vmr, molecule + "_mole_fraction");
       int nconc = this_gas.vmr.size();
       if (is_active_(this_gas.molecule, gas_list)) {
 	// Link to state vector
 	this_gas.is_active = true;
 	this_gas.molar_abs_conc.clear();
 	this_gas.molar_abs_conc >>= x(range(ix,ix+nconc*nt_*np_*ng_-1)).reshape(dimensions(nconc,nt_,np_,ng_));
-	LOG << "    preparing to retrieve array of size " << this_gas.molar_abs_conc.dimensions() << "\n";
+	LOG << "    preparing to optimize array of size " << this_gas.molar_abs_conc.dimensions() << "\n";
 	this_gas.ix = ix;
 	ix += nconc*nt_*np_*ng_;
       }
@@ -100,7 +102,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
       if (is_active_(this_gas.molecule, gas_list)) {
 	this_gas.is_active = true;
 	this_gas.molar_abs >>= x(range(ix,ix+nt_*np_*ng_-1)).reshape(dimensions(nt_,np_,ng_));
-	LOG << "    preparing to retrieve array of size " << this_gas.molar_abs.dimensions() << "\n";
+	LOG << "    preparing to optimize array of size " << this_gas.molar_abs.dimensions() << "\n";
 	this_gas.ix = ix;
 	ix += nt_*np_*ng_;
       }
@@ -166,6 +168,14 @@ CkdModel<IsActive>::write(const std::string& file_name,
     const std::string& Molecule = this_gas.Molecule;
     const std::string& molecule = this_gas.molecule;
 
+    file.define_variable(molecule + "_conc_dependence_code", SHORT);
+    file.write_long_name(Molecule + " concentration dependence code",
+			 molecule + "_conc_dependence code");
+    file.write("0: No dependence of absorption on concentration (background gases)\n"
+	       "1: Absorption varies linearly with concentration\n"
+	       "2: Look-up table for concentration-dependence of absorption",
+	       molecule + "_conc_dependence code", "definition");
+
     switch(this_gas.conc_dependence) {
     case NONE:
       {
@@ -183,14 +193,14 @@ CkdModel<IsActive>::write(const std::string& file_name,
       break;
     case LUT:
       {
-	file.define_dimension(molecule + "_vmr", this_gas.vmr.size());
+	file.define_dimension(molecule + "_mole_fraction", this_gas.vmr.size());
 
-	file.define_variable(molecule + "_vmr", FLOAT, molecule + "_vmr");
-	file.write_long_name("Volume mixing ratio of " + Molecule + " for look-up table", molecule + "_vmr");
-	file.write_units("1", molecule + "_vmr");
+	file.define_variable(molecule + "_mole_fraction", FLOAT, molecule + "_mole_fraction");
+	file.write_long_name("Volume mixing ratio of " + Molecule + " for look-up table", molecule + "_mole_fraction");
+	file.write_units("1", molecule + "_mole_fraction");
 
 	file.define_variable(molecule + "_" + K_NAME,
-			     FLOAT, molecule + "_vmr", "temperature", "pressure", "g_point");
+			     FLOAT, molecule + "_mole_fraction", "temperature", "pressure", "g_point");
 	file.write_long_name("Molar absorption coefficient of " + Molecule,
 			     molecule + "_" + K_NAME);
 	file.write_units("m2 mol-1", molecule + "_" + K_NAME);
@@ -205,7 +215,7 @@ CkdModel<IsActive>::write(const std::string& file_name,
   std::string title = "Gas optics definition";
   file.write(title, "title");
 
-  file.write(molecule_list, "molecules");
+  file.write(molecule_list, "constituent_id");
   file.append_history(argc, argv);
 
   // Write data
@@ -224,17 +234,19 @@ CkdModel<IsActive>::write(const std::string& file_name,
     switch(this_gas.conc_dependence) {
     case NONE:
       {
-	
+	file.write(0, molecule + "_conc_dependence_code");
       }
       break;
     case LINEAR:
       {
+	file.write(1, molecule + "_conc_dependence_code");
 	file.write((this_gas.molar_abs).inactive_link(), molecule + "_" + K_NAME);
       }
       break;
     case LUT:
       {
-	file.write(this_gas.vmr, molecule + "_vmr");
+	file.write(2, molecule + "_conc_dependence_code");
+	file.write(this_gas.vmr, molecule + "_mole_fraction");
 	for (int iconc = 0; iconc < this_gas.vmr.size(); ++iconc) {
 	  file.write((this_gas.molar_abs_conc(iconc,__,__,__)).inactive_link(),
 		     molecule + "_" + K_NAME, iconc);

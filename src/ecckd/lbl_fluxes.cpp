@@ -16,7 +16,7 @@ LblFluxes::read(const std::string& file_name)
   file.read(spectral_flux_dn_, "spectral_flux_dn_lw");
 
   std::string molecules_str, molecule;
-  file.read(molecules_str, DATA_FILE_GLOBAL_SCOPE, "molecules");
+  file.read(molecules_str, DATA_FILE_GLOBAL_SCOPE, "constituent_id");
   std::stringstream molecules_s(molecules_str);
   while (std::getline(molecules_s, molecule, ' ')) {
     molecules_.push_back(molecule);

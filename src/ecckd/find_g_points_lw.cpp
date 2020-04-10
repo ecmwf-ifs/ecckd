@@ -719,7 +719,7 @@ main(int argc, const char* argv[])
 
   file.define_variable("n_gases", INT);
   file.write_long_name("Number of gases treated", "n_gases");
-  file.write_comment("The gases are listed in the global attribute \"molecules\".", "n_gases");
+  file.write_comment("The gases are listed in the global attribute \"constituent_id\".", "n_gases");
   
   file.define_variable("wavenumber1_band", FLOAT, "band");
   file.write_long_name("Lower wavenumber bound of band", "wavenumber1_band");
@@ -792,7 +792,9 @@ main(int argc, const char* argv[])
   //  title += Molecule;
   file.write(title, "title");
 
-  file.write(molecule_list, "molecules");
+  //  file.write(molecule_list, "molecules"); // Depricated
+  file.write(molecule_list, "constituent_id");
+
   file.append_history(argc, argv);
 
   std::string config_str;
