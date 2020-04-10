@@ -30,7 +30,7 @@ static int ncstatus;
 #define CONDITIONAL_ERROR(message) \
   if (throw_exceptions_) {	   \
     ERROR << message;		   \
-    THROW(UNEXPECTED_EXCEPTION);			   \
+    THROW(UNEXPECTED_EXCEPTION);   \
   }				   \
   else {			   \
     WARNING << message;		   \
@@ -155,7 +155,8 @@ read(Real& x, const std::string& varname, int j, int i) const
   int ndims;
   NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
   if (ndims > 2) {
-    CONDITIONAL_ERROR("Cannot read single element from netcdf file with more than 2 dimensions");
+    CONDITIONAL_ERROR("Cannot read single element from netcdf file with more than 2 dimensions: "
+		      + varname);
   }
   if (j == -1) j = 0;
   if (i == -1) i = 0;
@@ -174,7 +175,8 @@ read(Real& x, const std::string& scope,
      const std::string& varname, int j, int i) const
 {
   if (j >= 0 || i >= 0) {
-    CONDITIONAL_ERROR("Attempt to read specific real element of a netcdf attribute");
+    CONDITIONAL_ERROR("Attempt to read specific real element of a netcdf attribute: "
+		      + scope + "." + varname);
     return false;
   }
   int varid;
@@ -187,7 +189,8 @@ read(Real& x, const std::string& scope,
   size_t n;
   NC_CHECK(nc_inq_attlen(ncid_, varid, varname.c_str(), &n), varname);
   if (n > 1) {
-    CONDITIONAL_ERROR("Attempt to read one real element from multi-element netcdf attribute");
+    CONDITIONAL_ERROR("Attempt to read one real element from multi-element netcdf attribute: "
+		      + scope + "." + varname);
   }
 #ifdef REAL_IS_FLOAT
   NC_CHECK(nc_get_att_float(ncid_, varid, varname.c_str(), &x), varname);
@@ -207,7 +210,8 @@ read(int& x, const std::string& varname, int j, int i) const
   int ndims;
   NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
   if (ndims > 2) {
-    CONDITIONAL_ERROR("Cannot read single element from netcdf file with more than 2 dimensions");
+    CONDITIONAL_ERROR("Cannot read single element from netcdf file with more than 2 dimensions: "
+		      + varname);
   }
   if (j == -1) j = 0;
   if (i == -1) i = 0;
@@ -222,7 +226,8 @@ read(int& x, const std::string& scope,
      const std::string& varname, int j, int i) const
 {
   if (j >= 0 || i >= 0) {
-    CONDITIONAL_ERROR("Attempt to read specific integer of a netcdf attribute");
+    CONDITIONAL_ERROR("Attempt to read specific integer of a netcdf attribute: "
+		      + scope + "." + varname);
     return false;
   }
   int varid;
@@ -235,7 +240,8 @@ read(int& x, const std::string& scope,
   size_t n;
   NC_CHECK(nc_inq_attlen(ncid_, varid, varname.c_str(), &n), varname);
   if (n > 1) {
-    CONDITIONAL_ERROR("Attempt to read one integer from multi-element netcdf attribute");
+    CONDITIONAL_ERROR("Attempt to read one integer from multi-element netcdf attribute: "
+		      + scope + "." + varname);
   }
   NC_CHECK(nc_get_att_int(ncid_, varid, varname.c_str(), &x), varname);
   return true;
@@ -252,7 +258,8 @@ read(bool& x, const std::string& varname, int j, int i) const
   int ndims;
   NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
   if (ndims > 2) {
-    CONDITIONAL_ERROR("Cannot read single element from netcdf file with more than 2 dimensions");
+    CONDITIONAL_ERROR("Cannot read single element from netcdf file with more than 2 dimensions: "
+		      + varname);
   }
   if (j == -1) j = 0;
   if (i == -1) i = 0;
@@ -269,7 +276,8 @@ read(bool& x, const std::string& scope,
      const std::string& varname, int j, int i) const
 {
   if (j >= 0 || i >= 0) {
-    CONDITIONAL_ERROR("Attempt to read specific integer of a netcdf attribute");
+    CONDITIONAL_ERROR("Attempt to read specific integer of a netcdf attribute: "
+		      + scope + "." + varname);
     return false;
   }
   int varid;
@@ -282,7 +290,8 @@ read(bool& x, const std::string& scope,
   size_t n;
   NC_CHECK(nc_inq_attlen(ncid_, varid, varname.c_str(), &n), varname);
   if (n > 1) {
-    CONDITIONAL_ERROR("Attempt to read one integer from multi-element netcdf attribute");
+    CONDITIONAL_ERROR("Attempt to read one integer from multi-element netcdf attribute: "
+		      + scope + "." + varname);
   }
   int x_ = 0;
   NC_CHECK(nc_get_att_int(ncid_, varid, varname.c_str(), &x_), varname);
@@ -298,14 +307,16 @@ DataFileEngineNetcdf::
 read(std::string& s, const std::string& varname, int j) const
 {
   if (j >= 0) {
-    CONDITIONAL_ERROR("Attempt to read substring of netcdf variable");
+    CONDITIONAL_ERROR("Attempt to read substring of netcdf variable: "
+		      + varname);
   }
   int varid;
   NC_CHECK(nc_inq_varid(ncid_, varname.c_str(), &varid), varname);
   int ndims;
   NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
   if (ndims > 1) {
-    CONDITIONAL_ERROR("Cannot read from netcdf string with more than 1 dimension");
+    CONDITIONAL_ERROR("Cannot read from netcdf string with more than 1 dimension: "
+		      + varname);
   }
   int dimid;
   NC_CHECK(nc_inq_vardimid(ncid_, varid, &dimid), varname);
@@ -325,7 +336,8 @@ read(std::string& s, const std::string& scope,
      const std::string& varname, int j) const
 {
   if (j >= 0) {
-    CONDITIONAL_ERROR("Attempt to read substring of netcdf attribute");
+    CONDITIONAL_ERROR("Attempt to read substring of netcdf attribute: "
+		      + scope + "." + varname);
   }
   int varid;
   if (scope == DATA_FILE_GLOBAL_SCOPE) {
@@ -356,7 +368,8 @@ read_slice(Vector& v, const std::string& varname, int i) const
   int ndims;
   NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
   if (ndims > 2) {
-    CONDITIONAL_ERROR("Cannot extract slice from netcdf variable with more than 2 dimensions");
+    CONDITIONAL_ERROR("Cannot extract slice from netcdf variable with more than 2 dimensions: "
+		      + varname);
   }
   
   int dimid[2];
@@ -397,13 +410,16 @@ read(Vector& v, const std::string& varname, int j, int i) const
   int ndims;
   NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
   if (ndims > 3) {
-    CONDITIONAL_ERROR("Cannot read from netcdf variable with more than 3 dimensions");
+    CONDITIONAL_ERROR("Cannot read from netcdf variable with more than 3 dimensions: "
+		      + varname);
   }
   else if (i < 0 && ndims == 3) {
-    CONDITIONAL_ERROR("No second index specified for vector extracted from 3-D netcdf array");
+    CONDITIONAL_ERROR("No second index specified for vector extracted from 3-D netcdf array: "
+		      + varname);
   }
   else if (j < 0 && ndims > 1) {
-    CONDITIONAL_ERROR("No index specified for vector extracted from 2-D or 3-D netcdf array");
+    CONDITIONAL_ERROR("No index specified for vector extracted from 2-D or 3-D netcdf array: "
+		      + varname);
   }
   
   int dimid[3];
@@ -470,13 +486,16 @@ read(IntVector& v, const std::string& varname, int j, int i) const
   int ndims;
   NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
   if (ndims > 3) {
-    CONDITIONAL_ERROR("Cannot read from netcdf variable with more than 3 dimensions");
+    CONDITIONAL_ERROR("Cannot read from netcdf variable with more than 3 dimensions: "
+		      + varname);
   }
   else if (i < 0 && ndims == 3) {
-    CONDITIONAL_ERROR("No second index specified for vector extracted from 3-D netcdf array");
+    CONDITIONAL_ERROR("No second index specified for vector extracted from 3-D netcdf array: "
+		      + varname);
   }
   else if (j < 0 && ndims > 1) {
-    CONDITIONAL_ERROR("No index specified for vector extracted from 2-D or 3-D netcdf array");
+    CONDITIONAL_ERROR("No index specified for vector extracted from 2-D or 3-D netcdf array: "
+		      + varname);
   }
   
   int dimid[3];
@@ -538,13 +557,16 @@ read(Matrix& M, const std::string& varname, int j, int i) const
   int ndims;
   NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
   if (ndims > 4) {
-    CONDITIONAL_ERROR("Cannot read from netcdf array with more than 4 dimensions");
+    CONDITIONAL_ERROR("Cannot read from netcdf array with more than 4 dimensions: "
+		      + varname);
   }
   else if (i < 0 && ndims == 4) {
-    CONDITIONAL_ERROR("No second index specified for matrix extracted from 4-D netcdf array");
+    CONDITIONAL_ERROR("No second index specified for matrix extracted from 4-D netcdf array: "
+		      + varname);
   }
   else if (j < 0 && ndims > 2) {
-    CONDITIONAL_ERROR("No index specified for matrix extracted from 3-D or 4-D netcdf array");
+    CONDITIONAL_ERROR("No index specified for matrix extracted from 3-D or 4-D netcdf array: "
+		      + varname);
   }
   
   int dimid[4];
@@ -605,7 +627,8 @@ DataFileEngineNetcdf::
 read(Matrix& M, const std::string& scope,
      const std::string& varname) const
 {
-  CONDITIONAL_ERROR("Cannot extract a matrix from a NetCDF attribute");
+  CONDITIONAL_ERROR("Cannot extract a matrix from a NetCDF attribute: "
+		    + scope + "." + varname);
   return false;
 }
 
@@ -620,13 +643,16 @@ read(Array3& M, const std::string& varname, int j, int i) const
   int ndims;
   NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
   if (ndims > 5) {
-    CONDITIONAL_ERROR("Cannot read from netcdf array with more than 5 dimensions");
+    CONDITIONAL_ERROR("Cannot read from netcdf array with more than 5 dimensions: "
+		      + varname);
   }
   else if (i < 0 && ndims == 5) {
-    CONDITIONAL_ERROR("No second index specified for 3-D array extracted from 5-D netcdf array");
+    CONDITIONAL_ERROR("No second index specified for 3-D array extracted from 5-D netcdf array: "
+		      + varname);
   }
   else if (j < 0 && ndims > 3) {
-    CONDITIONAL_ERROR("No index specified for 3-D array extracted from 4-D or 5-D netcdf array");
+    CONDITIONAL_ERROR("No index specified for 3-D array extracted from 4-D or 5-D netcdf array: "
+		      + varname);
   }
   
   int* dimids = new int[ndims];
@@ -779,7 +805,8 @@ DataFileEngineNetcdf::read_missing_value(Real& missing_val, const std::string& v
       size_t n = 0;
       if (nc_inq_attlen(ncid_, varid, missing_value, &n) == NC_NOERR) {
 	if (n > 1) {
-	  CONDITIONAL_ERROR("Attempt to read missing_value as one real element from multi-element netcdf attribute");
+	  CONDITIONAL_ERROR("Attempt to read missing_value as one real element from multi-element netcdf attribute: "
+			    + varname);
 	}
 #ifdef REAL_IS_FLOAT
 	NC_CHECK(nc_get_att_float(ncid_, varid, missing_value, &missing_val), varname);

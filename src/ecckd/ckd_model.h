@@ -12,7 +12,7 @@ using namespace adept;
 
 // 0=none, 1=linear, 2=look-up table
 typedef enum {
-  NONE,
+  NONE = 0,
   LINEAR,
   LUT
 } ConcDependence;
@@ -53,6 +53,10 @@ struct SingleGasData {
 
   // Is this gas to be optimized?
   bool is_active = false;
+
+  // Information about single gases contributing to a composite gas
+  Matrix composite_vmr;
+  std::string composite_molecules;
 
 };
 
