@@ -27,7 +27,7 @@ MMM_LW_SPECTRA_DIR=${MMM_DIR}/lw_spectra
 
 # Idealized ataset
 IDEALIZED_CODE=idealized
-IDEALIZED_DIR=${CKDMIP_DATA_DIR}/${IDEAL_CODE}
+IDEALIZED_DIR=${CKDMIP_DATA_DIR}/${IDEALIZED_CODE}
 IDEALIZED_CONC_DIR=${IDEALIZED_DIR}/conc
 IDEALIZED_LW_SPECTRA_DIR=${IDEALIZED_DIR}/lw_spectra
 
@@ -36,15 +36,18 @@ TRAINING_CODE=evaluation1
 TRAINING_DIR=${CKDMIP_DATA_DIR}/${TRAINING_CODE}
 TRAINING_CONC_DIR=${TRAINING_DIR}/conc
 TRAINING_LW_SPECTRA_DIR=${TRAINING_DIR}/lw_spectra
+TRAINING_LW_FLUXES_DIR=${TRAINING_DIR}/lw_spectra
 
 # Work directory
-#WORK_DIR=${SCRATCH}/fsck
-WORK_DIR=/hugetmp/parr/fsck
+WORK_DIR=/hugetmp/parr/ecckd
 WORK_LW_SPECTRA_DIR=${WORK_DIR}/lw_spectra
 WORK_LW_ORDER_DIR=${WORK_DIR}/lw_order
 WORK_LW_GPOINTS_DIR=${WORK_DIR}/lw_gpoints
-WELL_MIXED_LW_SPECTRA=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_merge-well-mixed_present.h5
-WELL_MIXED_LW_SPECTRA_MINIMUM=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_merge-well-mixed_minimum.h5
+WORK_LW_RAW_CKD_DIR=${WORK_DIR}/lw_raw-ckd
+WORK_LW_CKD_DIR=${WORK_DIR}/lw_ckd
+
+WELL_MIXED_LW_SPECTRA=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_present.h5
+WELL_MIXED_LW_SPECTRA_MINIMUM=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_minimum.h5
 
 function my_banner {
     echo

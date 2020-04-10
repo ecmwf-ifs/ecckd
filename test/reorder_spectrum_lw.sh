@@ -16,14 +16,12 @@ WN2_WIDE="500 820 1180 1800 3260"
 
 # Loop through the median/present concentrations of each gas and
 # reorder
-#for GAS_SCENARIO in merge-well-mixed h2o_median o3_median
-#for GAS_SCENARIO in h2o_median o3_median
-for GAS_SCENARIO in merge-well-mixed
+for GAS_SCENARIO in composite h2o_median o3_median
 do
     GAS=$(echo ${GAS_SCENARIO} | awk -F_ '{print $1}')
     GAS1=$(echo ${GAS} | awk -F- '{print $1}')
 
-    if [ "$GAS1" = merge ]
+    if [ "$GAS1" = composite ]
     then
 	INPUT=${WELL_MIXED_LW_SPECTRA}
     else
