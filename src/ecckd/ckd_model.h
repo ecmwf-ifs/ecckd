@@ -66,9 +66,32 @@ class CkdModel {
 
 public:
 
+  /// Construct a CKD model from a file
   CkdModel(const std::string& file_name,
 	   const std::vector<std::string>& gas_list = std::vector<std::string>()) {
     read(file_name, gas_list);
+  }
+
+  CkdModel(const std::vector<SingleGasData<false> >& single_gas_data,
+	   const Vector& temperature_planck,
+	   const Matrix& planck_function,
+	   const Vector& pressure, 
+	   const Matrix& temperature,
+	   const Vector& wavenumber1,
+	   const Vector& wavenumber2,
+	   const Matrix& gpoint_fraction) 
+    : single_gas_data_(single_gas_data),
+      temperature_planck_(eval(temperature_planck)),
+      planck_function_(eval(planck_function)),
+      log_pressure_(log(pressure)),
+      temperature_(eval(temperature)),
+      wavenumber1_(eval(wavenumber1)),
+      wavenumber2_(eval(wavenumber2)),
+      gpoint_fraction_(eval(gpoint_fraction)) {
+    ng_ = planck_function.size(1);
+    nt_ = temperature.size(0);
+    np_ = pressure.size();
+    nwav_ = wavenumber1.size();
   }
 
   /// Read a CKD model from a file
@@ -161,6 +184,9 @@ private:
     return is_active;
   }
 
+  /// Molar absorption coefficients and other variables for each gas
+  std::vector<SingleGasData<IsActive> > single_gas_data_;
+
   /// Temperature coordinate variable for Planck function look-up
   /// table (K)
   Vector temperature_planck_;
@@ -177,11 +203,14 @@ private:
   /// with pressure
   Matrix temperature_;
 
-  /// Molar absorption coefficients and other variables for each gas
-  std::vector<SingleGasData<IsActive> > single_gas_data_;
+  /// Bounds of spectral intervals, cm-1, dimensioned (nwav)
+  Vector wavenumber1_, wavenumber2_;
+  /// Fraction of spectrum contributing to each g-point, dimensioned
+  /// (ng,nwav)
+  Matrix gpoint_fraction_;
 
   /// Number of g points, pressures, temperatures
-  int ng_, nt_, np_;
+  int ng_, nt_, np_, nwav_;
 
 };
 

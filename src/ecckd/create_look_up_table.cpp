@@ -297,11 +297,12 @@ main(int argc, const char* argv[])
   nwav = wavenumber1.size();
 
   Matrix gpoint_fraction(ng, nwav);
+#pragma omp parallel for schedule (dynamic)
   for (int ig = 0; ig < ng; ++ig) {
-    Real wav_per_gpoint = sum(d_wavenumber_cm_1(find(g_point == ig)));
+    Real wav_per_gpoint = sum(d_wavenumber_cm_1.soft_link()(find(g_point == ig)));
     for (int iwav = 0; iwav < nwav; ++iwav) {
       gpoint_fraction(ig, iwav)
-	= sum(d_wavenumber_cm_1(find(g_point == ig
+	= sum(d_wavenumber_cm_1.soft_link()(find(g_point == ig
 				     && wavenumber_cm_1 >  wavenumber1(iwav)
 				     && wavenumber_cm_1 <= wavenumber2(iwav))))
 	/ wav_per_gpoint;
@@ -309,6 +310,16 @@ main(int argc, const char* argv[])
   }
 
   LOG << "Writing " << output << "\n";
+
+  std::string config_str;
+  config.read(config_str);  
+
+  CkdModel<false> ckd_model(single_gas_data, temperature_lut, planck_lut,
+			    pressure_fl, temperature_fl,
+			    wavenumber1, wavenumber2, gpoint_fraction);
+  ckd_model.write(output, argc, argv, config_str);
+
+  /*
 
   OutputDataFile file(output);
 
@@ -461,5 +472,5 @@ main(int argc, const char* argv[])
   file.write(planck_lut, "planck_function");
 
   file.close();
-
+  */
 }

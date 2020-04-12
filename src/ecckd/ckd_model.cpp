@@ -136,6 +136,7 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.define_dimension("pressure", np_);
   file.define_dimension("g_point", ng_);
   file.define_dimension("temperature_planck", temperature_planck_.size());
+  file.define_dimension("wavenumber", nwav_);
 
   std::string molecule_list;
   for (int igas = 0; igas < ngas(); ++igas) {
@@ -149,7 +150,7 @@ CkdModel<IsActive>::write(const std::string& file_name,
 
   file.define_variable("n_gases", INT);
   file.write_long_name("Number of gases treated", "n_gases");
-  file.write_comment("The gases are listed in the global attribute \"molecules\".", "n_gases");
+  file.write_comment("The gases are listed in the global attribute \"constituent_id\".", "n_gases");
 
   file.define_variable("temperature", FLOAT, "temperature", "pressure");
   file.write_long_name("Temperature", "temperature");
@@ -163,23 +164,57 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write_long_name("Temperature for Planck function look-up table", "temperature_planck");
   file.write_units("K", "temperature_planck");
 
+  file.define_variable("planck_function", FLOAT, "temperature_planck", "g_point");
+  file.write_long_name("Planck function look-up table", "planck_function");
+  file.write_units("W m-2", "planck_function");
+
+  file.define_variable("wavenumber1", FLOAT, "wavenumber");
+  file.write_long_name("Lower bound of spectral interval", "wavenumber1");
+  file.write_units("cm-1", "wavenumber1");
+  file.define_variable("wavenumber2", FLOAT, "wavenumber");
+  file.write_long_name("Upper bound of spectral interval", "wavenumber2");
+  file.write_units("cm-1", "wavenumber2");
+  file.define_variable("gpoint_fraction", FLOAT, "g_point", "wavenumber");
+  file.write_long_name("Fraction of spectrum contributing to each g-point",
+		       "gpoint_fraction");
+
+  std::string title = "Gas optics definition";
+  file.write(title, "title");
+  file.write("ecCKD gas optics tool", "source");
+
+  file.write(molecule_list, "constituent_id");
+
   for (int igas = 0; igas < ngas(); ++igas) {
     const SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
     const std::string& Molecule = this_gas.Molecule;
     const std::string& molecule = this_gas.molecule;
+    std::string varname = molecule + "_" + K_NAME;
 
     file.define_variable(molecule + "_conc_dependence_code", SHORT);
     file.write_long_name(Molecule + " concentration dependence code",
-			 molecule + "_conc_dependence code");
+			 molecule + "_conc_dependence_code");
     file.write("0: No dependence of absorption on concentration (background gases)\n"
 	       "1: Absorption varies linearly with concentration\n"
 	       "2: Look-up table for concentration-dependence of absorption",
-	       molecule + "_conc_dependence code", "definition");
+	       molecule + "_conc_dependence_code", "definition");
 
     switch(this_gas.conc_dependence) {
     case NONE:
       {
-	
+	file.define_variable(varname,
+			     FLOAT, "temperature", "pressure", "g_point");
+	file.write_long_name("Molar absorption coefficient of background gases", varname);
+	file.write_units("m2 mol-1", varname);
+	file.write_comment("This is the absorption cross section of background gases per mole of dry air.",
+			   varname);
+	file.define_dimension(molecule + "_gas", this_gas.composite_vmr.size(0));
+	file.define_variable(molecule + "_mole_fraction", FLOAT, molecule + "_gas", "pressure");
+	file.write_long_name("Mole fractions of the gases that make up " + Molecule, 
+			     molecule + "_mole_fraction");
+	file.write_units("1", molecule + "_mole_fraction");
+	file.write_comment("The gases that make up " + Molecule + " are listed in the global attribute \""
+		   + molecule + "_constituent_id\".", molecule + "_mole_fraction");
+	file.write(this_gas.composite_molecules, molecule + "_constituent_id");	
       }
       break;
     case LINEAR:
@@ -196,7 +231,7 @@ CkdModel<IsActive>::write(const std::string& file_name,
 	file.define_dimension(molecule + "_mole_fraction", this_gas.vmr.size());
 
 	file.define_variable(molecule + "_mole_fraction", FLOAT, molecule + "_mole_fraction");
-	file.write_long_name("Volume mixing ratio of " + Molecule + " for look-up table", molecule + "_mole_fraction");
+	file.write_long_name(Molecule + " mole fraction for look-up table", molecule + "_mole_fraction");
 	file.write_units("1", molecule + "_mole_fraction");
 
 	file.define_variable(molecule + "_" + K_NAME,
@@ -208,15 +243,9 @@ CkdModel<IsActive>::write(const std::string& file_name,
     }
   }
 
-  file.define_variable("planck_function", FLOAT, "temperature_planck", "g_point");
-  file.write_long_name("Planck function look-up table", "planck_function");
-  file.write_units("W m-2", "planck_function");
-
-  std::string title = "Gas optics definition";
-  file.write(title, "title");
-
-  file.write(molecule_list, "constituent_id");
   file.append_history(argc, argv);
+
+  file.write(config_str, "config");
 
   // Write data
 
@@ -226,6 +255,9 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write(eval(exp(log_pressure_)), "pressure");
   file.write(temperature_, "temperature");
   file.write(temperature_planck_, "temperature_planck");
+  file.write(wavenumber1_, "wavenumber1");
+  file.write(wavenumber2_, "wavenumber2");
+  file.write(gpoint_fraction_, "gpoint_fraction");
 
   for (int igas = 0; igas < ngas(); ++igas) {
     SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
@@ -235,6 +267,8 @@ CkdModel<IsActive>::write(const std::string& file_name,
     case NONE:
       {
 	file.write(0, molecule + "_conc_dependence_code");
+	file.write(this_gas.composite_vmr, molecule + "_mole_fraction");
+	file.write((this_gas.molar_abs).inactive_link(), molecule + "_" + K_NAME);
       }
       break;
     case LINEAR:
@@ -514,6 +548,13 @@ CkdModel<IsActive>::calc_planck_function(const Vector& temperature)
 }
 
 // Instantiate both active and passive versions of CkdModel
+
+template CkdModel<false>::CkdModel(const std::vector<SingleGasData<false> >&,
+				   const Vector&, const Matrix&, const Vector&, const Matrix&,
+				   const Vector&, const Vector&, const Matrix&);
+//template CkdModel<true>::CkdModel(const std::vector<SingleGasData<false> >&,
+//				  const Vector&, const Matrix&, const Vector&, const Matrix&,
+//				  const Vector&, const Vector&, const Matrix&);
 template void CkdModel<false>::read(const std::string&,const std::vector<std::string>&);
 template void CkdModel<true>::read(const std::string&,const std::vector<std::string>&);
 template void CkdModel<false>::write(const std::string&, int argc, const char* argv[], const std::string&);

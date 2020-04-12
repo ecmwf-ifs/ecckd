@@ -1,3 +1,7 @@
+// This file defines the SingleGasData type used by
+// find_g_points_lw.cpp; unfortunately, ckd_model.h defines a
+// different type of the same name.
+
 #ifndef SINGLE_GAS_DATA_H
 #define SINGLE_GAS_DATA_H 1
 
