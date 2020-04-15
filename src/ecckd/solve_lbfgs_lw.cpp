@@ -30,10 +30,17 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
     optical_depth = 0.0;
     //    for (int igas = 0; igas < data.ngas(); ++igas) {
     for (int igas = 0; igas < ckd_model.active_molecules.size(); ++igas) {
-      optical_depth += ckd_model.calc_optical_depth(ckd_model.active_molecules[igas],
-						    data.pressure_hl_,
-						    data.temperature_hl_,
-						    data.vmr_fl_(__,igas,__));
+      if (data.gas_mapping(igas) >= 0) {
+	optical_depth += ckd_model.calc_optical_depth(ckd_model.active_molecules[igas],
+						      data.pressure_hl_,
+						      data.temperature_hl_,
+						      data.vmr_fl_(__,data.gas_mapping(igas),__));
+      }
+      else {
+	optical_depth += ckd_model.calc_optical_depth(ckd_model.active_molecules[igas],
+						      data.pressure_hl_,
+						      data.temperature_hl_);
+      }
     }
     
     for (int iprof = 0; iprof < nprof; ++iprof) {
@@ -77,7 +84,6 @@ calc_cost_function_and_gradient_lbfgs(void *vdata,
       x(ix) = 0.0;
     }
   }
-  //LOG << "x=" << x << "\n";
 
   Vector gradient(data.ckd_model->nx());
   lbfgsfloatval_t J = calc_cost_function_and_gradient(*(data.ckd_model),

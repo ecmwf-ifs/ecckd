@@ -161,15 +161,6 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
   aReal cost_fn = 0.0;
   // Spectral contribution to cost function
 
-  /*
-  LOG << "hr = " << hr << "\n";
-  LOG << "flux_dn_surf = " << flux_dn_surf << "\n";
-  LOG << "flux_up_toa  = " << flux_up_toa << "\n";
-  LOG << "heating_rate_fwd = " << heating_rate_fwd << "\n";
-  LOG << "flux_dn_fwd = " << flux_dn_fwd << "\n";
-  LOG << "flux_up_fwd = " << flux_up_fwd << "\n";
-  */
-
   // Weighting for interior fluxes 
   Vector interface_weight = flux_profile_weight * 0.5*(layer_weight(range(0,end-1))+layer_weight(range(1,end)));
 
@@ -192,6 +183,8 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
 							     *sum(heating_rate_fwd-hr,1)))
     + broadband_weight*flux_weight*(sum(flux_dn_fwd(end,__)-flux_dn(end,__))*sum(flux_dn_fwd(end,__)-flux_dn(end,__))
 				    +sum(flux_up_fwd(0,__)-flux_up(0,__))*sum(flux_up_fwd(0,__)-flux_up(0,__)));
+  //LOG << sum(flux_dn_fwd(end,__)) << " " << sum(flux_dn_fwd_orig(end,__)) << " " << sum(flux_dn(end,__)) << "\n";
+
   if (flux_profile_weight > 0.0) {
     aVector flux_dn_error = sum(flux_dn_fwd(range(1,end-1),__)-flux_dn(range(1,end-1),__),1);
     aVector flux_up_error = sum(flux_up_fwd(range(1,end-1),__)-flux_up(range(1,end-1),__),1);

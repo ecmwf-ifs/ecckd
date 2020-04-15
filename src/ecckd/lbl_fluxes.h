@@ -35,6 +35,10 @@ struct LblFluxes {
 
   void read(const std::string& file_name, const adept::intVector& band_mapping = adept::intVector());
 
+  // Fill the gas_mapping vector to map from the CKD gas indices to
+  // the LBL concentrations
+  void make_gas_mapping(const std::vector<std::string>& molecules);
+
   // Do we have fluxes in either g-points or bands?
   bool have_spectral_fluxes = false;
 
@@ -46,6 +50,12 @@ struct LblFluxes {
 
   // Band index for each g point
   adept::intVector iband_per_g;
+
+  // Mapping between gas index of CKD model and gas index of
+  // mole_fraction_fl in LBL file (stored as vmr_fl_ in this struct),
+  // with -1 indicating a missing gas (e.g. "composite" which
+  // corresponds to a gas mixture)
+  adept::intVector gas_mapping;
 
 };
 

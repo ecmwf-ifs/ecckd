@@ -37,7 +37,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
   np_   = log_pressure_.size();
   nt_   = temperature_.dimension(0);
   ng_   = planck_function_.dimension(1);
-  nwav_ = gpoint_fraction_.dimension(0);
+  nwav_ = gpoint_fraction_.dimension(1);
 
   std::string molecules_str;
   file.read(molecules_str, DATA_FILE_GLOBAL_SCOPE, "constituent_id");
@@ -436,6 +436,16 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
   typedef Array<2,Real,IsActive> amatrix;
   typedef Array<3,Real,IsActive> aarray3D;
 
+  /*
+  LOG << molecules[igas] << " " << pressure_hl(0,20) << " " << temperature_fl(0,20);
+  if (!vmr_fl.empty()) {
+    LOG << " " << vmr_fl(0,20) << "\n";
+  }
+  else {
+    LOG << "\n";
+  }
+  */
+
   // Assume pressure of LUT is evenly spaced in log space
   Real log_p_0 = log_pressure_(0);
   Real d_log_p = log_pressure_(1)-log_pressure_(0); // Spacing
@@ -444,6 +454,7 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
   Real d_t = temperature_(1,0)-temperature_(0,0);
 
   SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
+
   int ncol = pressure_hl.dimension(0);
   int np   = pressure_hl.dimension(1)-1;
   aarray3D od(ncol,np,ng_);
@@ -468,7 +479,10 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 
       // Weight
       Real simple_weight = global_weight * (pressure_hl(icol,ip+1)-pressure_hl(icol,ip));
-      Real weight = simple_weight * vmr_fl(icol,ip);
+      Real weight = -1.0;
+      if (!vmr_fl.empty()) {
+	weight = simple_weight * vmr_fl(icol,ip);
+      }
 
       if (this_gas.conc_dependence == LUT) {
 	// Find interpolation points in concentration
@@ -479,6 +493,10 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 	int ic0 = static_cast<int>(cindex0);
 	Real cweight1 = cindex0 - ic0;
 	Real cweight0 = 1.0 - cweight1;
+	if (weight < 0.0) {
+	  ERROR << "Concentration of " << molecules[igas] << " not provided";
+	  THROW(1);
+	}
 	// Tri-linear interpolation
 	if (!logarithmic_interpolation) {
 	  od(icol,ip,__) = weight
@@ -508,6 +526,10 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 	}
       }
       else if (this_gas.conc_dependence == LINEAR) {
+	if (weight < 0.0) {
+	  ERROR << "Concentration of " << molecules[igas] << " not provided";
+	  THROW(1);
+	}
 	if (!logarithmic_interpolation) {
 	  // Bi-linear interpolation
 	  od(icol,ip,__) = weight
@@ -544,7 +566,7 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
     }
   }
 
-  //LOG << "abs " << molecules[igas] << " = " << this_gas.molar_abs(__,__,end) << "\n";
+  //  LOG << "abs " << molecules[igas] << " = " << od(0,20,__) << "\n";
 
   return od;
 }

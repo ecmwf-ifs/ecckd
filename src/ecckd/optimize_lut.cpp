@@ -107,6 +107,8 @@ main(int argc, const char* argv[])
 
     LblFluxes fluxes(training_file, band_mapping);
 
+    fluxes.make_gas_mapping(ckd_model.molecules);
+
     if (band_mapping.empty()) {
       if (fluxes.nspec() != ckd_model.ng()) {
 	ERROR << "band_mapping not provided, so number of g-points must match between LBL and CKD models";

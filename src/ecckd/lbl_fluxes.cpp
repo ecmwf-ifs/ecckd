@@ -100,3 +100,18 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping)
   surf_emissivity_ = 1.0;
 
 }
+
+void
+LblFluxes::make_gas_mapping(const std::vector<std::string>& molecules)
+{
+  int ngas = molecules.size();
+  gas_mapping.resize(ngas);
+  gas_mapping = -1;
+  for (int igas = 0; igas < ngas; ++igas) {
+    for (int igas2 = 0; igas2 < molecules_.size(); ++igas2) {
+      if (molecules_[igas2] == molecules[igas]) {
+	gas_mapping[igas] = igas2;
+      }
+    }
+  }
+}

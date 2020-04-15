@@ -68,6 +68,7 @@ main(int argc, const char* argv[])
 
   CkdModel<false> ckd_model(ckd_file);
 
+  LOG << "Reading " << input_file << "\n";
   DataFile input(input_file);
 
   Matrix temperature_hl, pressure_hl;
@@ -167,10 +168,10 @@ main(int argc, const char* argv[])
     }
 
     Matrix vmr;
-    std::string var_name = molecule + "_vmr";
+    std::string var_name = molecule + "_mole_fraction_fl";
     if (!input.exist(var_name)) {
-      WARNING << "  " << var_name << " not found";
-      ENDWARNING;
+      LOG << "  Computing optical depth of " << molecule << " assuming no concentration dependence\n";
+      od_gas = ckd_model.calc_optical_depth(igas, pressure_hl, temperature_fl);
     }
     else {
       LOG << "  Computing optical depth of " << molecule;
@@ -199,10 +200,10 @@ main(int argc, const char* argv[])
       LOG << "\n";
 
       od_gas = ckd_model.calc_optical_depth(igas, pressure_hl, temperature_fl, vmr);
-      od += od_gas;
-      if (write_od) {
-	file.write(od_gas, molecule + "_optical_depth");
-      }
+    }
+    od += od_gas;
+    if (write_od) {
+      file.write(od_gas, molecule + "_optical_depth");
     }
   }
 
