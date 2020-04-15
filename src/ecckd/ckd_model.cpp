@@ -30,9 +30,14 @@ CkdModel<IsActive>::read(const std::string& file_name,
     log_pressure_ = log(pressure);
   }
 
-  np_ = log_pressure_.size();
-  nt_ = temperature_.dimension(0);
-  ng_ = planck_function_.dimension(1);
+  file.read(wavenumber1_, "wavenumber1");
+  file.read(wavenumber2_, "wavenumber2");
+  file.read(gpoint_fraction_, "gpoint_fraction");
+
+  np_   = log_pressure_.size();
+  nt_   = temperature_.dimension(0);
+  ng_   = planck_function_.dimension(1);
+  nwav_ = gpoint_fraction_.dimension(0);
 
   std::string molecules_str;
   file.read(molecules_str, DATA_FILE_GLOBAL_SCOPE, "constituent_id");
@@ -73,6 +78,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
     if (file.exist(molecule + "_mole_fraction")
 	&& file.size(molecule + "_mole_fraction").size() == 1) {
       this_gas.conc_dependence = LUT;
+      LOG << "    Concentration dependence: look-up table\n";
       file.read(this_gas.vmr, molecule + "_mole_fraction");
       int nconc = this_gas.vmr.size();
       if (is_active_(this_gas.molecule, gas_list)) {
@@ -80,7 +86,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
 	this_gas.is_active = true;
 	this_gas.molar_abs_conc.clear();
 	this_gas.molar_abs_conc >>= x(range(ix,ix+nconc*nt_*np_*ng_-1)).reshape(dimensions(nconc,nt_,np_,ng_));
-	LOG << "    preparing to optimize array of size " << this_gas.molar_abs_conc.dimensions() << "\n";
+	LOG << "    Preparing to optimize array of size " << this_gas.molar_abs_conc.dimensions() << "\n";
 	this_gas.ix = ix;
 	ix += nconc*nt_*np_*ng_;
       }
@@ -94,7 +100,20 @@ CkdModel<IsActive>::read(const std::string& file_name,
       }
     }
     else {
-      this_gas.conc_dependence = LINEAR;
+      int conc_dep;
+      file.read(conc_dep, molecule + "_conc_dependence_code");
+      if (conc_dep == 0) {
+	this_gas.conc_dependence = NONE;
+	LOG << "    Concentration dependence: none\n";
+      }
+      else if (conc_dep == 1) {
+	this_gas.conc_dependence = LINEAR;
+	LOG << "    Concentration dependence: linear\n";
+      }
+      else {
+	ERROR << molecule + "_conc_dependence_code is inconsistent with other variables in file";
+	THROW(1);
+      }
       Array3 tmp;
       file.read(tmp, molecule + "_molar_absorption_coeff");
 
@@ -102,7 +121,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
       if (is_active_(this_gas.molecule, gas_list)) {
 	this_gas.is_active = true;
 	this_gas.molar_abs >>= x(range(ix,ix+nt_*np_*ng_-1)).reshape(dimensions(nt_,np_,ng_));
-	LOG << "    preparing to optimize array of size " << this_gas.molar_abs.dimensions() << "\n";
+	LOG << "    Preparing to optimize array of size " << this_gas.molar_abs.dimensions() << "\n";
 	this_gas.ix = ix;
 	ix += nt_*np_*ng_;
       }
@@ -116,6 +135,13 @@ CkdModel<IsActive>::read(const std::string& file_name,
 
     }
     ++igas;
+  }
+
+  if (gas_list.empty()) {
+    active_molecules = gas_list;
+  }
+  else {
+    active_molecules = molecules;
   }
 
   if (nx != ix) {
@@ -304,7 +330,8 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
 {
   for (int igas = 0; igas < ngas(); ++igas) {
     SingleGasData<true>& this_gas = single_gas_data_[igas];
-    if (this_gas.conc_dependence == LINEAR) {
+    if (this_gas.conc_dependence == LINEAR
+	|| this_gas.conc_dependence == NONE) {
       int nx = nt_ * np_;
       LOG << "  Creating " << nx << "x" << nx << " error covariance matrix for " << this_gas.Molecule << "\n";
 
@@ -440,7 +467,8 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
       Real tweight0 = 1.0 - tweight1;
 
       // Weight
-      Real weight = global_weight * vmr_fl(icol,ip) * (pressure_hl(icol,ip+1)-pressure_hl(icol,ip));
+      Real simple_weight = global_weight * (pressure_hl(icol,ip+1)-pressure_hl(icol,ip));
+      Real weight = simple_weight * vmr_fl(icol,ip);
 
       if (this_gas.conc_dependence == LUT) {
 	// Find interpolation points in concentration
@@ -479,7 +507,7 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 				  +pweight1* log(this_gas.molar_abs_conc(ic0+1,it0+1,ip0+1,__)))));
 	}
       }
-      else {
+      else if (this_gas.conc_dependence == LINEAR) {
 	if (!logarithmic_interpolation) {
 	  // Bi-linear interpolation
 	  od(icol,ip,__) = weight
@@ -490,6 +518,23 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 	}
 	else {
 	  od(icol,ip,__) = weight
+	    * exp(tweight0  * (pweight0 * log(this_gas.molar_abs(it0,ip0,__))
+			       +pweight1* log(this_gas.molar_abs(it0,ip0+1,__)))
+		  +tweight1 * (pweight0 * log(this_gas.molar_abs(it0+1,ip0,__))
+			       +pweight1* log(this_gas.molar_abs(it0+1,ip0+1,__))));
+	}
+      }
+      else { // NONE
+	if (!logarithmic_interpolation) {
+	  // Bi-linear interpolation
+	  od(icol,ip,__) = simple_weight
+	    * (tweight0  * (pweight0 * this_gas.molar_abs(it0,ip0,__)
+			    +pweight1* this_gas.molar_abs(it0,ip0+1,__))
+	       +tweight1 * (pweight0 * this_gas.molar_abs(it0+1,ip0,__)
+			    +pweight1* this_gas.molar_abs(it0+1,ip0+1,__)));
+	}
+	else {
+	  od(icol,ip,__) = simple_weight
 	    * exp(tweight0  * (pweight0 * log(this_gas.molar_abs(it0,ip0,__))
 			       +pweight1* log(this_gas.molar_abs(it0,ip0+1,__)))
 		  +tweight1 * (pweight0 * log(this_gas.molar_abs(it0+1,ip0,__))

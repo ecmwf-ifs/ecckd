@@ -147,7 +147,28 @@ public:
     x_prior.clear();
   }
 
+  /// Return list of the bands corresponding to each g-point
+  intVector iband_per_g(const Vector& wavenumber1, const Vector& wavenumber2) const {
+    intVector iband(ng_);
+    iband = -1;
+    for (int ib = 0; ib < wavenumber1.size(); ++ib) {
+      Vector weight = sum(gpoint_fraction_(__,find(wavenumber1_ >= wavenumber1(ib)
+						   && wavenumber2_ <= wavenumber2(ib))),1);
+      if (any(weight > 0.05 && (weight < 0.95 || weight > 1.05))) {
+	ERROR << "G-points do not lie entirely within requested bands";
+	THROW(1);
+      }
+      iband(find(weight > 0.5)) = ib;
+    }
+    if (any(iband < 0)) {
+      ERROR << "Some g-points not inside a band";
+      THROW(1);
+    }
+    return iband;
+  }
+
   std::vector<std::string> molecules;
+  std::vector<std::string> active_molecules;
 
   int ng() { return ng_; }
 

@@ -28,8 +28,9 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
     int nlev  = data.pressure_hl_.dimension(1)-1;
     aArray3D optical_depth(nprof,nlev,ckd_model.ng());
     optical_depth = 0.0;
-    for (int igas = 0; igas < data.ngas(); ++igas) {
-      optical_depth += ckd_model.calc_optical_depth(data.molecules_[igas],
+    //    for (int igas = 0; igas < data.ngas(); ++igas) {
+    for (int igas = 0; igas < ckd_model.active_molecules.size(); ++igas) {
+      optical_depth += ckd_model.calc_optical_depth(ckd_model.active_molecules[igas],
 						    data.pressure_hl_,
 						    data.temperature_hl_,
 						    data.vmr_fl_(__,igas,__));
@@ -47,7 +48,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 					data.spectral_flux_up_(iprof,__,__),
 					data.spectral_heating_rate_(iprof,__,__),
 					flux_weight, flux_profile_weight, broadband_weight,
-					layer_weight);
+					layer_weight, data.iband_per_g);
     } 
   }
   cost.set_gradient(1.0);

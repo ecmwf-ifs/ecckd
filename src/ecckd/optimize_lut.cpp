@@ -75,6 +75,10 @@ main(int argc, const char* argv[])
   Real pressure_corr = 0.5;
   Real conc_corr = 0.5;
 
+  // We may wish to merge some of the narrow bands in the LBL flux
+  // files
+  intVector band_mapping;
+
   config.read(flux_weight, "flux_weight");
   config.read(flux_profile_weight, "flux_profile_weight");
   config.read(broadband_weight, "broadband_weight");
@@ -82,6 +86,10 @@ main(int argc, const char* argv[])
   config.read(temperature_corr, "temperature_corr");
   config.read(pressure_corr, "pressure_corr");
   config.read(conc_corr, "conc_corr");
+
+  if (config.exist("band_mapping")) {
+    config.read(band_mapping, "band_mapping");
+  }
 
   Stack stack;
 
@@ -97,10 +105,22 @@ main(int argc, const char* argv[])
   int itrain = 0;
   while (config.read(training_file, "training_input", itrain)) {
 
-    LblFluxes fluxes(training_file);
+    LblFluxes fluxes(training_file, band_mapping);
+
+    if (band_mapping.empty()) {
+      if (fluxes.nspec() != ckd_model.ng()) {
+	ERROR << "band_mapping not provided, so number of g-points must match between LBL and CKD models";
+	THROW(PARAMETER_ERROR);
+      }
+    }
 
     fluxes.planck_hl_   = ckd_model.calc_planck_function(fluxes.temperature_hl_);
     fluxes.surf_planck_ = ckd_model.calc_planck_function(fluxes.temperature_hl_(__,end));
+
+    if (fluxes.have_band_fluxes) {
+      fluxes.iband_per_g = ckd_model.iband_per_g(fluxes.band_wavenumber1_,
+						 fluxes.band_wavenumber2_);
+    }
 
     training_data.push_back(fluxes);
 

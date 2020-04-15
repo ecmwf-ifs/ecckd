@@ -99,7 +99,7 @@ calc_cost_function_lw(const adept::Vector& pressure_hl,       ///< Pressure (Pa)
 adept::aReal
 calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure (Pa)
 			  const adept::Matrix& planck_hl,         ///< Planck function (W m-2)
-			  const adept::Vector& surf_emissivity,   ///< Surface emissivity
+			  const adept::Vector& surf_emiss_orig,   ///< Surface emissivity
 			  const adept::Vector& surf_planck,       ///< Surface spectral Planck function (W m-2)
 			  const adept::aMatrix& optical_depth,    ///< Optical depth of gases
 			  const adept::Matrix& flux_dn,           ///< True downwelling flux (W m-2)
@@ -108,8 +108,8 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
 			  adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
 			  adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
 			  adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
-			  const adept::Vector& layer_weight       ///< Weight applied to heating rates in each layer
-			  )
+			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
+			  const adept::intVector& band_mapping)
 {
   using namespace adept;
 
@@ -119,15 +119,43 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
   int nlay = pressure_hl.size()-1;
   int ng   = optical_depth.dimension(1);
 
-  aMatrix flux_dn_fwd(nlay+1,ng);
-  aMatrix flux_up_fwd(nlay+1,ng);
+  aMatrix flux_dn_fwd_orig(nlay+1,ng);
+  aMatrix flux_up_fwd_orig(nlay+1,ng);
+  Vector surf_emissivity;
+
+  if (band_mapping.empty()) {
+    surf_emissivity = surf_emiss_orig;
+  }
+  else {
+    surf_emissivity = surf_emiss_orig(band_mapping);
+  }
+
   radiative_transfer_lw(planck_hl,
 			optical_depth,
 			surf_emissivity,
 			surf_planck,
-			flux_dn_fwd,
-			flux_up_fwd);
-  aMatrix heating_rate_fwd(nlay,ng);
+			flux_dn_fwd_orig,
+			flux_up_fwd_orig);
+
+  aMatrix flux_dn_fwd, flux_up_fwd;
+
+  int nband = ng;
+  if (band_mapping.empty()) {
+    flux_dn_fwd >>= flux_dn_fwd_orig;
+    flux_up_fwd >>= flux_up_fwd_orig;
+  }
+  else {
+    nband = maxval(band_mapping)+1;
+    flux_dn_fwd.resize(nlay+1,nband);
+    flux_up_fwd.resize(nlay+1,nband);
+    for (int iband = 0; iband < nband; ++iband) {
+      intVector index = find(band_mapping == iband);
+      flux_dn_fwd(__,iband) = sum(flux_dn_fwd_orig(__,index),1);
+      flux_up_fwd(__,iband) = sum(flux_up_fwd_orig(__,index),1);
+    }
+  }
+
+  aMatrix heating_rate_fwd(nlay,nband);
   heating_rate(pressure_hl, flux_dn_fwd, flux_up_fwd, heating_rate_fwd);
 
   aReal cost_fn = 0.0;
@@ -145,20 +173,21 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
   // Weighting for interior fluxes 
   Vector interface_weight = flux_profile_weight * 0.5*(layer_weight(range(0,end-1))+layer_weight(range(1,end)));
 
-  for (int ig = 0; ig < ng; ++ig) {
-    cost_fn += hr_weight*hr_weight*sum(layer_weight*((heating_rate_fwd(__,ig))-hr(__,ig))
-				                    *(heating_rate_fwd(__,ig)-hr(__,ig)))
-      + flux_weight*((flux_dn_fwd(end,ig)-flux_dn(end,ig))*(flux_dn_fwd(end,ig)-flux_dn(end,ig))
-		     +(flux_up_fwd(0,ig)-flux_up(0,ig))*(flux_up_fwd(0,ig)-flux_up(0,ig)));
+  for (int iband = 0; iband < nband; ++iband) {
+    cost_fn += hr_weight*hr_weight*sum(layer_weight*((heating_rate_fwd(__,iband))-hr(__,iband))
+				       *(heating_rate_fwd(__,iband)-hr(__,iband)))
+      + flux_weight*((flux_dn_fwd(end,iband)-flux_dn(end,iband))*(flux_dn_fwd(end,iband)-flux_dn(end,iband))
+		     +(flux_up_fwd(0,iband)-flux_up(0,iband))*(flux_up_fwd(0,iband)-flux_up(0,iband)));
     if (flux_profile_weight > 0.0) {
-      cost_fn += sum(interface_weight*((flux_dn_fwd(range(1,end-1),ig)-flux_dn(range(1,end-1),ig))
-				       *(flux_dn_fwd(range(1,end-1),ig)-flux_dn(range(1,end-1),ig))
-				       +(flux_up_fwd(range(1,end-1),ig)-flux_up(range(1,end-1),ig))
-				       *(flux_up_fwd(range(1,end-1),ig)-flux_up(range(1,end-1),ig))));
+      cost_fn += sum(interface_weight*((flux_dn_fwd(range(1,end-1),iband)-flux_dn(range(1,end-1),iband))
+				       *(flux_dn_fwd(range(1,end-1),iband)-flux_dn(range(1,end-1),iband))
+				       +(flux_up_fwd(range(1,end-1),iband)-flux_up(range(1,end-1),iband))
+				       *(flux_up_fwd(range(1,end-1),iband)-flux_up(range(1,end-1),iband))));
     }
   }
+
   // Broadband contribution to cost function
-  cost_fn = (cost_fn*(1.0-broadband_weight))/ng
+  cost_fn = (cost_fn*(1.0-broadband_weight))/nband
     + broadband_weight*hr_weight*hr_weight*sum(layer_weight*(sum(heating_rate_fwd-hr,1)
 							     *sum(heating_rate_fwd-hr,1)))
     + broadband_weight*flux_weight*(sum(flux_dn_fwd(end,__)-flux_dn(end,__))*sum(flux_dn_fwd(end,__)-flux_dn(end,__))
