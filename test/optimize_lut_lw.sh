@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -ex
+set -e
 
-#unset OMP_NUM_THREADS
+unset OMP_NUM_THREADS
 
 . set_paths.sh
 
@@ -28,6 +28,17 @@ fi
 
 for BANDSTRUCT in $BAND_STRUCTURE
 do
+    if [ "$BANDSTRUCT" = wide ]
+    then
+	# Map from narrow to wide bands
+	BANDMAPPING="band_mapping=0 0 1 1 1 2 2 2 3 3 3 4 4"
+    elif [ "$BANDSTRUCT" = fsck ]
+    then
+	BANDMAPPING="band_mapping=0 0 0 0 0 0 0 0 0 0 0 0 0"
+    else
+	BANDMAPPING=
+    fi
+
     for TOL in $TOLERANCE
     do
 	MODEL_CODE=${APPLICATION}_${BANDSTRUCT}_tol${TOL}
@@ -40,7 +51,7 @@ do
 	    append_path=${TRAINING_LW_FLUXES_DIR} \
 	    input=${INPUT} \
 	    output=${OUTPUT} \
-	    $OPTIONS \
+	    $OPTIONS "$BANDMAPPING" \
 	    "training_input=$TRAINING" \
 	    gases="$GASLIST" \
 	    | tee ${WORK_LW_CKD_DIR}/lw_ckd_${MODEL_CODE}.log

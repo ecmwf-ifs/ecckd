@@ -36,7 +36,7 @@ TRAINING_CODE=evaluation1
 TRAINING_DIR=${CKDMIP_DATA_DIR}/${TRAINING_CODE}
 TRAINING_CONC_DIR=${TRAINING_DIR}/conc
 TRAINING_LW_SPECTRA_DIR=${TRAINING_DIR}/lw_spectra
-TRAINING_LW_FLUXES_DIR=${TRAINING_DIR}/lw_spectra
+TRAINING_LW_FLUXES_DIR=${TRAINING_DIR}/lw_fluxes
 
 # Work directory
 WORK_DIR=/hugetmp/parr/ecckd
@@ -45,6 +45,7 @@ WORK_LW_ORDER_DIR=${WORK_DIR}/lw_order
 WORK_LW_GPOINTS_DIR=${WORK_DIR}/lw_gpoints
 WORK_LW_RAW_CKD_DIR=${WORK_DIR}/lw_raw-ckd
 WORK_LW_CKD_DIR=${WORK_DIR}/lw_ckd
+WORK_LW_CKD_OD_DIR=${WORK_DIR}/lw_optical-depth
 
 WELL_MIXED_LW_SPECTRA=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_present.h5
 WELL_MIXED_LW_SPECTRA_MINIMUM=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_minimum.h5
