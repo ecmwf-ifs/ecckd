@@ -1,5 +1,12 @@
+# -*- shell-script -*-
 # This script is included by the others in this directory, and sets
 # the locations of data and executables on your system
+
+# Fail on error
+set -e
+
+# Use all threads available
+unset OMP_NUM_THREADS
 
 # CKDMIP installation directory and CKDMIP executables
 CKDMIP_DIR=/home/pa/parr/src/ckdmip-0.9
@@ -49,6 +56,16 @@ WORK_LW_CKD_OD_DIR=${WORK_DIR}/lw_optical-depth
 
 WELL_MIXED_LW_SPECTRA=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_present.h5
 WELL_MIXED_LW_SPECTRA_MINIMUM=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_minimum.h5
+
+# Band definitions from CKDMIP
+WN1_LW_NARROW="0 350 500 630 700 820 980 1080 1180 1390 1480 1800 2080"
+WN2_LW_NARROW="350 500 630 700 820 980 1080 1180 1390 1480 1800 2080 3260"
+WN1_LW_WIDE="0 500 820 1180 1800"
+WN2_LW_WIDE="500 820 1180 1800 3260"
+WN1_SW_NARROW="250 2600 3250 4000 4650 5150 6150 8050 12850 16000 22650 29000 38000"
+WN2_SW_NARROW="2600 3250 4000 4650 5150 6150 8050 12850 16000 22650 29000 38000 50000"
+WN1_SW_WIDE="250 4000 8050 16000 29000"
+WN2_SW_WIDE="4000 8050 16000 29000 50000"
 
 function my_banner {
     echo

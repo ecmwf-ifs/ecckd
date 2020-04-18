@@ -1,18 +1,9 @@
 #!/bin/bash
+# Reorder the spectra of H2O, O3 and the composite of well-mixed gases
 
-set -e
-
-unset OMP_NUM_THREADS
-
-. set_paths.sh
+. config.h
 
 mkdir -p ${WORK_LW_ORDER_DIR}
-
-WN1_NARROW="0 350 500 630 700 820 980 1080 1180 1390 1480 1800 2080"
-WN2_NARROW="350 500 630 700 820 980 1080 1180 1390 1480 1800 2080 3260"
-WN1_WIDE="0 500 820 1180 1800"
-WN2_WIDE="500 820 1180 1800 3260"
-
 
 # Loop through the median/present concentrations of each gas and
 # reorder
@@ -39,11 +30,11 @@ do
 	    if [ "$BAND_STRUCTURE" = narrow ]
 	    then
 		${REORDER_SPECTRUM_LW} iprofile=0 input=$INPUT output=$OUTPUT \
-		    "wavenumber1=$WN1_NARROW" "wavenumber2=$WN2_NARROW"
+		    "wavenumber1=$WN1_LW_NARROW" "wavenumber2=$WN2_LW_NARROW"
 	    elif [ "$BAND_STRUCTURE" = wide ]
 	    then
 		${REORDER_SPECTRUM_LW} iprofile=0 input=$INPUT output=$OUTPUT \
-		    "wavenumber1=$WN1_WIDE" "wavenumber2=$WN2_WIDE"
+		    "wavenumber1=$WN1_LW_WIDE" "wavenumber2=$WN2_LW_WIDE"
 	    else
 		# Assuming FSCK
 		${REORDER_SPECTRUM_LW} iprofile=0 input=$INPUT output=$OUTPUT

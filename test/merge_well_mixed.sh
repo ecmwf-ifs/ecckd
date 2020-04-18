@@ -1,12 +1,11 @@
 #!/bin/bash
-# Create hybrid gas containing all gases except H2O and O3
+# Create composite gas containing all gases except H2O and O3
 
-set -e
-
-. set_paths.sh
+. config.h
 
 mkdir -p ${WORK_LW_SPECTRA_DIR}
 
+# Create merge for NWP application
 if [ ! -f ${WELL_MIXED_LW_SPECTRA} ]
 then
     ${BANNER} Merging spectra of well-mixed gases for present-day conditions
@@ -24,6 +23,7 @@ else
     ${BANNER_SKIP} Skipping merge of well-mixed gases for present-day conditions as file present: ${WELL_MIXED_LW_SPECTRA}
 fi
 
+# Create merge for climate applications
 if [ ! -f ${WELL_MIXED_LW_SPECTRA_MINIMUM} ]
 then
     ${BANNER} Merging spectra of well-mixed gases for climate minimum conditions
