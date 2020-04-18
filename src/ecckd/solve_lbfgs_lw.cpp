@@ -151,7 +151,7 @@ solve_lbfgs_lw(CkdModel<true>& ckd_model,
   lbfgs_parameter_t param;
   lbfgs_parameter_init(&param);
   param.epsilon = 0.02;
-  param.max_iterations = 1000;
+  param.max_iterations = 3000;
   param.max_step = 2.0;
   param.initial_step_size = 0.5;
 

@@ -10,6 +10,6 @@ average_optical_depth_to_g_point(int ng,                             ///< Number
 				 const adept::Vector& g_point,       ///< G point for each wavenumber
 				 const adept::Matrix& optical_depth, ///< Optical depth (pressure,wavenumber)
 				 const adept::Matrix& planck_fl,     ///< Planck function, W m-2 (pressure,wavenumber)
+				 const std::string& averaging_method,
 				 adept::Matrix molar_abs);           ///< Molar absorption coefficient, m2 mol-1 (pressure,g-point)
-
 #endif

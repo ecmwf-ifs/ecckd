@@ -233,6 +233,9 @@ private:
   /// Number of g points, pressures, temperatures
   int ng_, nt_, np_, nwav_;
 
+  /// Contents of history attribute when reading file
+  std::string history_;
+
 };
 
 

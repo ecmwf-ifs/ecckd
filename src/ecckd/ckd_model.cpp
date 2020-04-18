@@ -41,6 +41,8 @@ CkdModel<IsActive>::read(const std::string& file_name,
 
   std::string molecules_str;
   file.read(molecules_str, DATA_FILE_GLOBAL_SCOPE, "constituent_id");
+
+  file.read(history_, DATA_FILE_GLOBAL_SCOPE, "history");
   
   int n_gases;
   file.read(n_gases, "n_gases");
@@ -269,6 +271,10 @@ CkdModel<IsActive>::write(const std::string& file_name,
     }
   }
 
+  // Copy history attribute from earlier file, if present
+  if (!history_.empty()) {
+    file.write(history_, "history");
+  }
   file.append_history(argc, argv);
 
   file.write(config_str, "config");

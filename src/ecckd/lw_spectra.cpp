@@ -233,7 +233,7 @@ main(int argc, const char* argv[])
       planck_function(temperature_fl, wavenumber_cm_1, d_wavenumber_cm_1,
 		      planck_fl);
       average_optical_depth_to_g_point(ng, 0.0, pressure_fl, pressure_hl,
-				       g_point, optical_depth, planck_fl,
+				       g_point, optical_depth, planck_fl, "transmission",
 				       spectral_od);
       for (int ig = 0; ig < ng; ++ig) {
 	intVector index = find(g_point == ig);

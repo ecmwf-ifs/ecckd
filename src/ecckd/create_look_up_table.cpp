@@ -78,6 +78,9 @@ main(int argc, const char* argv[])
   int temperature_stride = 1;
   config.read(temperature_stride, "temperature_stride");
 
+  std::string averaging_method = "transmission";
+  config.read(averaging_method, "averaging_method");
+
   // Loop over gases
   while (config.read(gas_str, "gases", ngas)) {
     std::string Gas = gas_str;
@@ -149,7 +152,7 @@ main(int argc, const char* argv[])
 	  LOG << "  Averaging optical depths for each g point\n";
 
 	  average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
-					   g_point, optical_depth, planck_fl,
+					   g_point, optical_depth, planck_fl, averaging_method,
 					   this_gas.molar_abs(icol,__,__));
 
 	  ++icol;
@@ -198,7 +201,7 @@ main(int argc, const char* argv[])
 	  LOG << "  Averaging optical depths for each g point\n";
 
 	  average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
-					   g_point, optical_depth, planck_fl,
+					   g_point, optical_depth, planck_fl, averaging_method,
 					   this_gas.molar_abs(icol,__,__));
 
 	  ++icol;
@@ -255,7 +258,7 @@ main(int argc, const char* argv[])
 	    LOG << "  Averaging optical depths for each g point\n";
 
 	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
-					     g_point, optical_depth, planck_fl,
+					     g_point, optical_depth, planck_fl, averaging_method,
 					     this_gas.molar_abs_conc(iconc,icol,__,__));
 
 	    ++icol;
