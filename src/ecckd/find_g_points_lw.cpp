@@ -44,11 +44,16 @@ Vector fit_optical_depth(const std::string& averaging_method,
       / sum(planck_hl(range(1,end),range(i1,i2)),1);
   }
   else if (averaging_method == "transmission") {
-    optical_depth_fit = min(0.999999999,sum(metric(__,range(i1,i2)) * planck_hl(range(1,end),range(i1,i2)), 1)
+    optical_depth_fit = min(0.9999999999999999,sum(metric(__,range(i1,i2)) * planck_hl(range(1,end),range(i1,i2)), 1)
 			    / sum(planck_hl(range(1,end),range(i1,i2)),1));
-    optical_depth_fit = -log(1.0-optical_depth_fit)/LW_DIFFUSIVITY;
+    optical_depth_fit = abs(-log(1.0-optical_depth_fit)/LW_DIFFUSIVITY);
   }
-  else if (averaging_method == "square_root") {
+  else if (averaging_method == "transmission-2") {
+    optical_depth_fit = min(0.9999999999999999,sum(metric(__,range(i1,i2)) * planck_hl(range(1,end),range(i1,i2)), 1)
+			    / sum(planck_hl(range(1,end),range(i1,i2)),1));
+    optical_depth_fit = abs(-log(1.0-optical_depth_fit)/(LW_DIFFUSIVITY*2.0));
+  }
+  else if (averaging_method == "square-root") {
     optical_depth_fit = sum(metric(__,range(i1,i2)) * planck_hl(range(1,end),range(i1,i2)), 1)
       / sum(planck_hl(range(1,end),range(i1,i2)),1);
     optical_depth_fit *= optical_depth_fit;
@@ -416,13 +421,22 @@ main(int argc, const char* argv[])
     Matrix metric;
     if (averaging_method == "linear" || averaging_method == "logarithmic") {
       metric >>= optical_depth;
-      LOG << "linear averaging of optical depth\n";
+      if (averaging_method == "linear") {
+	LOG << "linear averaging of optical depth\n";
+      }
+      else {
+	LOG << "logarithmic averaging of optical depth\n";
+      }
     }
     else if (averaging_method == "transmission") {
       LOG << "transmission averaging of optical depth\n";
       metric = 1.0-exp(-optical_depth*LW_DIFFUSIVITY);
     }
-    else if (averaging_method == "square_root") {
+    else if (averaging_method == "transmission-2") {
+      LOG << "2x transmission averaging of optical depth\n";
+      metric = 1.0-exp(-optical_depth*LW_DIFFUSIVITY*2.0);
+    }
+    else if (averaging_method == "square-root") {
       LOG << "square-root averaging of optical depth\n";
       metric = sqrt(optical_depth);
     }
