@@ -3,7 +3,7 @@
 
 . config.h
 
-mkdir -p ${WORK_LW_ORDER_DIR}
+mkdir -p ${WORK_SW_ORDER_DIR}
 
 # Loop through the median/present concentrations of each gas and
 # reorder
@@ -14,15 +14,15 @@ do
 
     if [ "$GAS1" = composite ]
     then
-	INPUT=${WELL_MIXED_LW_SPECTRA}
+	INPUT=${WELL_MIXED_SW_SPECTRA}
     else
-	INPUT=${MMM_LW_SPECTRA_DIR}/ckdmip_mmm_lw_spectra_${GAS_SCENARIO}.h5
+	INPUT=${MMM_SW_SPECTRA_DIR}/ckdmip_mmm_sw_spectra_${GAS_SCENARIO}.h5
     fi
 
     for BAND_STRUCTURE in fsck wide narrow
     do
 
-	OUTPUT=${WORK_LW_ORDER_DIR}/lw_order_${BAND_STRUCTURE}_${GAS}.h5
+	OUTPUT=${WORK_SW_ORDER_DIR}/sw_order_${BAND_STRUCTURE}_${GAS}.h5
 
 	if [ ! -f ${OUTPUT} ]
 	then
@@ -30,14 +30,17 @@ do
 	    if [ "$BAND_STRUCTURE" = narrow ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
-		    "wavenumber1=$WN1_LW_NARROW" "wavenumber2=$WN2_LW_NARROW"
+		    ssi=$MMM_SW_SSI \
+		    "wavenumber1=$WN1_SW_NARROW" "wavenumber2=$WN2_SW_NARROW"
 	    elif [ "$BAND_STRUCTURE" = wide ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
-		    "wavenumber1=$WN1_LW_WIDE" "wavenumber2=$WN2_LW_WIDE"
+		    ssi=$MMM_SW_SSI \
+		    "wavenumber1=$WN1_SW_WIDE" "wavenumber2=$WN2_SW_WIDE"
 	    else
 		# Assuming FSCK
-		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT
+		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
+		    ssi=$MMM_SW_SSI
 	    fi
 	else
 	    ${BANNER_SKIP} Skipping reordering of ${GAS} as file present: ${OUTPUT}

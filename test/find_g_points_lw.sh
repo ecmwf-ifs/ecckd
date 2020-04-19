@@ -27,7 +27,7 @@ then
 # hybrid gas.
 
 iprofile 0
-averaging_method "transmission-2"
+averaging_method "transmission"
 tolerance_tolerance 0.01 
 flux_weight 0.0
 
@@ -69,7 +69,7 @@ then
 # well-mixed gases ar combined into a single hybrid gas.
 
 iprofile 0
-averaging_method "transmission-2"
+averaging_method "transmission"
 tolerance_tolerance 0.01
 flux_weight 0.0
 

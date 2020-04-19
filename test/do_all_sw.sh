@@ -1,39 +1,36 @@
 #!/bin/bash
-# Master script for creating longwave CKD models
+# Master script for creating shortwave CKD models
 
 . config.h
 
 # 0. Settings
 #APPLICATION=limited-area-nwp
-#APPLICATION=global-nwp
-APPLICATION=climate
+APPLICATION=global-nwp
+#APPLICATION=climate
 
 BAND_STRUCTURE="fsck wide narrow"
 TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
 
-# Make variables available to scripts find_g_points_lw.sh onwards
+# Make variables available to scripts find_g_points_sw.sh onwards
 export TOLERANCE
 export APPLICATION
 export BAND_STRUCTURE
 
-#export MODEL_CODE_SUFFIX=-t2
-#export EXTRA_ARGS="averaging_method=transmission-2"
-
 # 1. Merge well-mixed gases
-./merge_well_mixed_lw.sh
+./merge_well_mixed_sw.sh
 
 # 2. Reorder spectra
-./reorder_spectrum_lw.sh
+./reorder_spectrum_sw.sh
 
 # 3. Find g-points
-./find_g_points_lw.sh
+#./find_g_points_sw.sh
 
 # 4. Create raw CKD look-up table
-./create_lut_lw.sh
+#./create_lut_sw.sh
 
 # 5. Optimize CKD look-up table
-#./optimize_lut_lw.sh
+#./optimize_lut_sw.sh
 
 # 6. Run two-stream radiative transfer or just compute optical depths
 # for CKDMIP scenarios
-#./run_lw_ckd.sh
+#./run_sw_ckd.sh

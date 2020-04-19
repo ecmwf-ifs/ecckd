@@ -16,7 +16,7 @@ CKDMIP_SW=${CKDMIP_DIR}/bin/ckdmip_sw
 
 # Directory for ecCKD executables
 BINDIR=../src/ecckd
-REORDER_SPECTRUM_LW=${BINDIR}/reorder_spectrum_lw
+REORDER_SPECTRUM="${BINDIR}/reorder_spectrum"
 FIND_G_POINTS_LW=${BINDIR}/find_g_points_lw
 CREATE_LOOK_UP_TABLE=${BINDIR}/create_look_up_table
 OPTIMIZE_LUT=${BINDIR}/optimize_lut
@@ -31,12 +31,16 @@ MMM_CODE=mmm
 MMM_DIR=${CKDMIP_DATA_DIR}/${MMM_CODE}
 MMM_CONC_DIR=${MMM_DIR}/conc
 MMM_LW_SPECTRA_DIR=${MMM_DIR}/lw_spectra
+MMM_SW_SPECTRA_DIR=${MMM_DIR}/sw_spectra
+MMM_SW_SPECTRA_EXTRA_DIR=${MMM_DIR}/sw_spectra_extras
+MMM_SW_SSI=${MMM_SW_SPECTRA_EXTRA_DIR}/ckdmip_ssi.h5
 
 # Idealized ataset
 IDEALIZED_CODE=idealized
 IDEALIZED_DIR=${CKDMIP_DATA_DIR}/${IDEALIZED_CODE}
 IDEALIZED_CONC_DIR=${IDEALIZED_DIR}/conc
 IDEALIZED_LW_SPECTRA_DIR=${IDEALIZED_DIR}/lw_spectra
+IDEALIZED_SW_SPECTRA_DIR=${IDEALIZED_DIR}/sw_spectra
 
 # Training and evaluation dataset
 TRAINING_CODE=evaluation1
@@ -44,6 +48,8 @@ TRAINING_DIR=${CKDMIP_DATA_DIR}/${TRAINING_CODE}
 TRAINING_CONC_DIR=${TRAINING_DIR}/conc
 TRAINING_LW_SPECTRA_DIR=${TRAINING_DIR}/lw_spectra
 TRAINING_LW_FLUXES_DIR=${TRAINING_DIR}/lw_fluxes
+TRAINING_SW_SPECTRA_DIR=${TRAINING_DIR}/sw_spectra
+TRAINING_SW_FLUXES_DIR=${TRAINING_DIR}/sw_fluxes
 
 # Work directory
 WORK_DIR=/hugetmp/parr/ecckd
@@ -53,9 +59,17 @@ WORK_LW_GPOINTS_DIR=${WORK_DIR}/lw_gpoints
 WORK_LW_RAW_CKD_DIR=${WORK_DIR}/lw_raw-ckd
 WORK_LW_CKD_DIR=${WORK_DIR}/lw_ckd
 WORK_LW_CKD_OD_DIR=${WORK_DIR}/lw_optical-depth
+WORK_SW_SPECTRA_DIR=${WORK_DIR}/sw_spectra
+WORK_SW_ORDER_DIR=${WORK_DIR}/sw_order
+WORK_SW_GPOINTS_DIR=${WORK_DIR}/sw_gpoints
+WORK_SW_RAW_CKD_DIR=${WORK_DIR}/sw_raw-ckd
+WORK_SW_CKD_DIR=${WORK_DIR}/sw_ckd
+WORK_SW_CKD_OD_DIR=${WORK_DIR}/sw_optical-depth
 
 WELL_MIXED_LW_SPECTRA=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_present.h5
 WELL_MIXED_LW_SPECTRA_MINIMUM=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_minimum.h5
+WELL_MIXED_SW_SPECTRA=${WORK_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_composite_present.h5
+WELL_MIXED_SW_SPECTRA_MINIMUM=${WORK_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_composite_minimum.h5
 
 # Band definitions from CKDMIP
 WN1_LW_NARROW="0 350 500 630 700 820 980 1080 1180 1390 1480 1800 2080"

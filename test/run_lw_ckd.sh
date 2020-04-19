@@ -7,6 +7,7 @@
 . check_configuration.h
 
 VERSIONS="raw-ckd ckd"
+#VERSIONS="ckd"
 #OUTPUT_SUFFIX=-t2
 
 if [ "$APP" = nwp ]
