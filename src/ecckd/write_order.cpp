@@ -77,7 +77,7 @@ write_order(std::string& file_name,                    ///< Name of NetCDF file 
   file.define_variable("sorting_variable", FLOAT, "wavenumber");
   file.deflate_variable("sorting_variable");
   file.write_long_name("Variable used to sort spectrum", "sorting_variable");
-  file.write_comment("This variable is equal to log(surface pressure) minus log(pressure of peak cooling),\n"
+  file.write_comment("This variable is equal to log(surface pressure) minus log(pressure of peak heating/cooling),\n"
 		     "but for column optical depths less than a threshold, set to column optical depth minus the threshold.",
 		     "sorting_variable");
 

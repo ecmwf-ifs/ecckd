@@ -4,6 +4,7 @@
 
 #include "DataFile.h"
 #include "radiative_transfer_lw.h"
+#include "radiative_transfer_sw.h"
 #include "read_spectrum.h"
 #include "planck_function.h"
 #include "heating_rate.h"
@@ -23,7 +24,7 @@ main(int argc, const char* argv[])
   using namespace adept;
 
   // Names of input and output files
-  std::string input, output;
+  std::string input, output, ssi_file_name;
 
   // Threshold optical depth
   Real threshold_optical_depth = 0.5;
@@ -47,6 +48,15 @@ main(int argc, const char* argv[])
   if (!config.read(output, "output")) {
     ERROR << "\"output\" file not specified";
     THROW(PARAMETER_ERROR);
+  }
+
+  bool do_sw = false;
+  if (config.read(ssi_file_name, "ssi")) {
+    do_sw = true;
+    LOG << "Assuming shortwave spectral region (ssi provided)\n";
+  }
+  else {
+    LOG << "Assuming longwave spectral region (ssi not provided\n";
   }
 
   std::string molecule;
@@ -83,38 +93,59 @@ main(int argc, const char* argv[])
   LOG << nlay << " layers\n";
   LOG << nwav << " spectral points\n";
 
-  // COMPUTE IDEALIZED PLANCK FUNCTION
-  
-  LOG << "Computing Planck function\n";
-  
-  // Idealized linearly increasing temperature profile with
-  // log(pressure)
-  Vector log_p_interp = {log(1.0), log(100000.0)};
-  Vector temp_interp  = {273.15-100.0, 273.15+15.0};
-
-  Vector temperature_hl = interp(log_p_interp, temp_interp, log(pressure_hl));
-  Matrix planck_hl(nlay+1,nwav);
-
-  planck_function(temperature_hl, wavenumber_cm_1, d_wavenumber_cm_1,
-		  planck_hl);
-
-  Vector surf_planck(nwav);
-  planck_function(temperature_hl(end), wavenumber_cm_1, d_wavenumber_cm_1, 
-		  surf_planck);
-
-  // RADIATIVE TRANSFER
-
-  LOG << "Performing longwave radiative transfer\n";
-
-  Vector surf_emissivity(nwav);
-  surf_emissivity = 1.0;
   Matrix flux_dn(nlay+1,nwav), flux_up(nlay+1,nwav);
 
-  radiative_transfer_lw(planck_hl, optical_depth, surf_emissivity, surf_planck,
-			flux_dn, flux_up);
+  if (!do_sw) {
+
+    // COMPUTE IDEALIZED PLANCK FUNCTION
+  
+    LOG << "Computing Planck function\n";
+  
+    // Idealized linearly increasing temperature profile with
+    // log(pressure)
+    Vector log_p_interp = {log(1.0), log(100000.0)};
+    Vector temp_interp  = {273.15-100.0, 273.15+15.0};
+  
+    Vector temperature_hl = interp(log_p_interp, temp_interp, log(pressure_hl));
+    Matrix planck_hl(nlay+1,nwav);
+
+    planck_function(temperature_hl, wavenumber_cm_1, d_wavenumber_cm_1,
+		    planck_hl);
+
+    Vector surf_planck(nwav);
+    planck_function(temperature_hl(end), wavenumber_cm_1, d_wavenumber_cm_1, 
+		    surf_planck);
+
+    // RADIATIVE TRANSFER
+
+    LOG << "Performing longwave radiative transfer\n";
+    
+    Vector surf_emissivity(nwav);
+    surf_emissivity = 1.0;
+    
+    radiative_transfer_lw(planck_hl, optical_depth, surf_emissivity, surf_planck,
+			  flux_dn, flux_up);
+    planck_hl.clear();
+
+  }
+  else {
+
+    Real cos_sza = 0.5;
+
+    Vector ssi;
+
+    LOG << "Reading " << ssi_file_name << "\n";
+    DataFile ssi_file(ssi_file_name);
+    ssi_file.read(ssi, "solar_spectral_irradiance");
+
+    radiative_transfer_direct_sw(cos_sza, ssi,
+				 optical_depth, flux_dn);
+    flux_up = 0.0;
+
+  }
+
   Vector column_optical_depth = sum(optical_depth, 0);
-  optical_depth.clear();
-  planck_hl.clear();
+  //  optical_depth.clear();
   
   // CALCULATE HEATING RATE
 
@@ -123,13 +154,16 @@ main(int argc, const char* argv[])
   Matrix hr(nlay,nwav);
   heating_rate(pressure_hl, flux_dn, flux_up, hr);
 
-  // We are only interested in cooling
-  LOG << "Locating peak cooling\n";
-  hr.where(hr > 0.0) = 0.0;
+  if (!do_sw) {
+    // We are only interested in cooling
+    LOG << "Locating peak cooling\n";
+    hr.where(hr > 0.0) = 0.0;
+  }
 
   Vector pseudo_height = log(pressure_hl(end)) - 0.5*( log(pressure_hl(range(0,end-1)))
 						      +log(pressure_hl(range(1,end))));
   Vector d_height = log(pressure_hl(range(1,end))) - log(pressure_hl(range(0,end-1)));
+  // This is actually the peak heating in the shortwave
   Vector peak_cooling_height = sum(hr * spread<1>(d_height*pseudo_height,nwav), 0)
     / sum(hr * spread<1>(d_height,nwav), 0);
 
@@ -165,7 +199,12 @@ main(int argc, const char* argv[])
     LOG << "Splitting the spectrum into " << nband << " bands\n";
   }
 
-  LOG << "Sorting by peak cooling\n";
+  if (!do_sw) {
+    LOG << "Sorting by peak cooling\n";
+  }
+  else {
+    LOG << "Sorting by peak heating\n";
+  }
 
   std::vector<int> g_index(nwav);
   for (int jwav = 0; jwav < nwav; ++jwav) {
