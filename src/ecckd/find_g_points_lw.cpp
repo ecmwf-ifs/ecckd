@@ -248,15 +248,6 @@ main(int argc, const char* argv[])
 
   std::vector<SingleGasData> single_gas_data;
 
-  /*
-  single_gas_data.resize(2);
-  single_gas_data[0].n_g_points = { 4 };
-  single_gas_data[0].sorting_variable = { -0.5, 0.159206, 0.6254397, 4.23328 };
-  single_gas_data[1].n_g_points = { 2 };
-  single_gas_data[1].sorting_variable = { -0.5, -0.4504209 };
-  int ng_tmp = overlap_n_g_points(single_gas_data);
-  */
-
   int nwav = 0; // Number of wavenumbers
   // Wavenumber, cm-1
   Vector wavenumber_cm_1;
@@ -490,160 +481,13 @@ main(int argc, const char* argv[])
 	//g_point(rank_band(range(ind1,ind2))) = ig;
 	g_point(irank(range(ind1,ind2))) = ig;
       }
-      /*
-
-      // Range of wavenumbers defining the band
-      int lower_rank_band = minval(rank_band);
-      int upper_rank_band = maxval(rank_band);
-
-      int ig = 0;
-      bool finished_band = false;
-      // Upper rank of current g point
-      int upper_rank = upper_rank_band;
-      while (!finished_band) {
-
-
-
-
-
-	// Range of possible values for the lower rank: the minimum
-	// possible is the lower end of the band, for which the
-	// corresponding cost function has not yet been calculated so is
-	// set to a negative value
-	int min_lower_rank = lower_rank_band;
-	Real min_rank_cost = -1.0;
-	
-	// Maximum possible lower rank is equal to the upper rank,
-	// meaning that there is only one wavenumber in the g point so
-	// the cost function must be zero.
-	int max_lower_rank = upper_rank;
-	Real max_rank_cost = 0.0;
-	
-	bool finished_g_point = false;
-	int test_rank = 0.99*max_lower_rank + 0.01*min_lower_rank;
-	int niter = 0;
-	while (!finished_g_point) {
-	  ////intVector index = find(rank >= test_rank && rank <= upper_rank);
-	  Vector optical_depth_fit = fit_optical_depth(averaging_method, index, planck_hl, metric);
-	  
-	  Real rmse = calc_cost_function_lw(pressure_hl, planck_hl, surf_emissivity, surf_planck,
-					    bg_optical_depth, optical_depth_fit,
-					    flux_dn_surf, flux_up_toa, hr,
-					    flux_weight, layer_weight, index);
-	  LOG << "    " << upper_rank-test_rank+1 << " points: " << rmse << " K d-1";
-	  LOG << " (bounds " << upper_rank-min_lower_rank+1 << "..." << upper_rank-max_lower_rank+1 << ")\n";
-	  
-	  ++niter;
-	  if (niter > max_iterations
-	      || (rmse >= heating_rate_lower_tolerance && rmse <= heating_rate_upper_tolerance)) {
-	    if (niter > max_iterations) {
-	      LOG << "    Max iterations reached\n";
-	    }
-	    else {
-	      LOG << "    Found requested tolerance\n";
-	    }
-	    rank1_per_g_point.push_back(test_rank);
-	    rank2_per_g_point.push_back(upper_rank);
-	    error_K_d_1.push_back(rmse);
-	    median_sorting_var.push_back(calc_median_sorting_variable(sorting_variable, surf_planck, rank, index));
-	    g_point(index) = ig;
-	    finished_g_point = true;
-	    upper_rank = test_rank-1;
-	    if (test_rank <= lower_rank_band) {
-	      finished_band = true;
-	    }
-	  }
-	  else {
-	    
-	    bool rmse_too_low = false;
-	    if (rmse < heating_rate_tolerance) {
-	      rmse_too_low = true;
-	      max_lower_rank = test_rank;
-	      max_rank_cost = rmse;
-	    }
-	    else {
-	      min_lower_rank = test_rank;
-	      min_rank_cost = rmse;
-	    }
-	    
-	    // Find new test rank
-	    int last_test_rank = test_rank;
-	    if (min_rank_cost > 0.0) {
-	      // Bracketed: interpolate
-	      test_rank = ((heating_rate_tolerance-max_rank_cost) * min_lower_rank
-			   +(min_rank_cost-heating_rate_tolerance)* max_lower_rank)
-		/ (min_rank_cost - max_rank_cost);
-	      if (max_rank_cost == 0.0) {
-		// Not yet found a true upper bound, so relationship
-		// unlikely to be linear
-		test_rank = 0.5 * (test_rank + max_lower_rank);
-		LOG << "      ...seek better upper bound\n";
-	      }
-	      else if (rmse_too_low && min_rank_cost > 2.0*heating_rate_tolerance) {
-		// Lower bound too far away to be a likely useful
-		// interpolation point
-		test_rank = 0.75*test_rank + 0.25*min_lower_rank;
-		LOG << "      ...lower bound too far\n";
-	      }
-	      
-	    }
-	    else {
-	      // Not bracketed: extrapolate, but not too far (0.5 was 1.1)
-	      test_rank = std::max(min_lower_rank, max_lower_rank
-				   -static_cast<int>(0.5*heating_rate_tolerance*(upper_rank-max_lower_rank)/max_rank_cost));
-	    }
-	    
-	    if (test_rank == last_test_rank) {
-	      LOG << "    Convergence\n";
-	      rank1_per_g_point.push_back(test_rank);
-	      rank2_per_g_point.push_back(upper_rank);
-	      error_K_d_1.push_back(rmse);
-	      median_sorting_var.push_back(calc_median_sorting_variable(sorting_variable, surf_planck, rank, index));
-	      g_point(index) = ig;
-	      finished_g_point = true;
-	      upper_rank = test_rank-1;
-	      if (test_rank <= lower_rank_band) {
-		finished_band = true;
-	      }
-	    }
-	    
-	  }
-	}
-	LOG << "  G-point " << ig << ": " << double(upper_rank-lower_rank_band)/double(upper_rank_band-lower_rank_band) << "\n";
-	++ig;
-      }
-      // Store number of g points in this band
-      n_g_points_per_band.push_back(ig);
-    } // Loop over bands
     
-
-    */
-
     }
     metric.clear();
 
     // Create intVector pointing to std::vector
     intVector n_g_points(&n_g_points_per_band[0], dimensions(nband));
     int ng = rank1_per_g_point.size();
-
-    /*
-
-    intVector rank1(ng), rank2(ng), band_number(ng);
-    Vector error(ng), median_sorting_variable(ng);
-    int ig = 0;
-    int ig_band_end = -1;
-    for (int jband = 0; jband < nband; ++jband) {
-      ig_band_end += n_g_points(jband);
-      for (int jg = 0; jg < n_g_points(jband); ++jg) {
-	rank1(ig) = rank1_per_g_point[ig_band_end-jg];
-	rank2(ig) = rank2_per_g_point[ig_band_end-jg];
-	error(ig) = error_K_d_1[ig_band_end-jg];
-	median_sorting_variable(ig) = median_sorting_var[ig_band_end-jg];
-	band_number(ig) = jband;
-	++ig;
-      }
-    }
-    */
 
     intVector rank1(&rank1_per_g_point[0], dimensions(ng));
     intVector rank2(&rank2_per_g_point[0], dimensions(ng));
@@ -655,41 +499,6 @@ main(int argc, const char* argv[])
 				      rank1, rank2, error, median_sorting_variable,
 				      irank);
     raw_single_gas_data.print();
-
-    /*
-    if (repartition_factor > 0.0) {
-      SingleGasData new_single_gas_data;
-      LOG << "n_g_points = " << n_g_points << "\n";
-      intVector new_n_g_points = round(n_g_points*repartition_factor);
-      LOG << "new_n_g_points = " << new_n_g_points << "\n";
-
-      for (int irep = 0; irep < repartition_repeat; ++irep) {
-	LOG << "Repartition " << irep+1 << " of " << repartition_repeat << "\n";
-	repartition_g_points(raw_single_gas_data, rms_hr, rank, new_single_gas_data, new_n_g_points);
-	for (int iglocal = 0; iglocal < new_single_gas_data.ng(); ++iglocal) {
-	  intVector index = find(rank >= new_single_gas_data.rank1(iglocal)
-				 && rank <= new_single_gas_data.rank2(iglocal));
-	  Vector optical_depth_fit = fit_optical_depth(averaging_method, index, planck_hl, metric);
-	  new_single_gas_data.error(iglocal) = calc_cost_function_lw(pressure_hl, planck_hl, 
-								     surf_emissivity, surf_planck,
-								     bg_optical_depth, optical_depth_fit,
-								     flux_dn_surf, flux_up_toa, hr,
-								     flux_weight, layer_weight, index);
-	  new_single_gas_data.sorting_variable(iglocal)
-	    = calc_median_sorting_variable(sorting_variable, surf_planck, rank, index);
-	}
-	if (irep < repartition_repeat-1) {
-	  raw_single_gas_data = new_single_gas_data;
-	}
-	new_single_gas_data.print();
-      }
-      single_gas_data.push_back(new_single_gas_data);
-    }
-    else {
-      // Save information without modification
-      single_gas_data.push_back(raw_single_gas_data);
-    }
-    */
 
     single_gas_data.push_back(raw_single_gas_data);
     ++ngas;
