@@ -14,10 +14,10 @@ using namespace adept;
 template<bool IsActive>
 void
 CkdModel<IsActive>::read(const std::string& file_name, 
-			 const std::vector<std::string>& gas_list)
+			 const std::vector<std::string>& active_gas_list)
 {
   clear();
-  LOG << "Reading " << file_name << "\n";
+  LOG << "Reading CKD definition file " << file_name << "\n";
   DataFile file(file_name);
   file.throw_exceptions(true);
   file.read(temperature_planck_, "temperature_planck");
@@ -57,7 +57,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
     std::stringstream molecules_s(molecules_str);
     while (std::getline(molecules_s, molecule, ' ')) {
       intVector ndims = file.size(molecule + "_molar_absorption_coeff");
-      if (is_active_(std::string(molecule), gas_list)) {
+      if (is_active_(std::string(molecule), active_gas_list)) {
 	nx += product(ndims);
       }
     }
@@ -83,12 +83,12 @@ CkdModel<IsActive>::read(const std::string& file_name,
       LOG << "    Concentration dependence: look-up table\n";
       file.read(this_gas.vmr, molecule + "_mole_fraction");
       int nconc = this_gas.vmr.size();
-      if (is_active_(this_gas.molecule, gas_list)) {
+      if (is_active_(this_gas.molecule, active_gas_list)) {
 	// Link to state vector
 	this_gas.is_active = true;
 	this_gas.molar_abs_conc.clear();
 	this_gas.molar_abs_conc >>= x(range(ix,ix+nconc*nt_*np_*ng_-1)).reshape(dimensions(nconc,nt_,np_,ng_));
-	LOG << "    Preparing to optimize array of size " << this_gas.molar_abs_conc.dimensions() << "\n";
+	LOG << "    ACTIVE: preparing to optimize array of size " << this_gas.molar_abs_conc.dimensions() << "\n";
 	this_gas.ix = ix;
 	ix += nconc*nt_*np_*ng_;
       }
@@ -107,6 +107,9 @@ CkdModel<IsActive>::read(const std::string& file_name,
       if (conc_dep == 0) {
 	this_gas.conc_dependence = NONE;
 	LOG << "    Concentration dependence: none\n";
+	file.read(this_gas.composite_vmr, molecule + "_mole_fraction");
+	file.read(this_gas.composite_molecules, DATA_FILE_GLOBAL_SCOPE,
+		  molecule + "_constituent_id");
       }
       else if (conc_dep == 1) {
 	this_gas.conc_dependence = LINEAR;
@@ -120,10 +123,10 @@ CkdModel<IsActive>::read(const std::string& file_name,
       file.read(tmp, molecule + "_molar_absorption_coeff");
 
       this_gas.molar_abs.clear();
-      if (is_active_(this_gas.molecule, gas_list)) {
+      if (is_active_(this_gas.molecule, active_gas_list)) {
 	this_gas.is_active = true;
 	this_gas.molar_abs >>= x(range(ix,ix+nt_*np_*ng_-1)).reshape(dimensions(nt_,np_,ng_));
-	LOG << "    Preparing to optimize array of size " << this_gas.molar_abs.dimensions() << "\n";
+	LOG << "    ACTIVE: preparing to optimize array of size " << this_gas.molar_abs.dimensions() << "\n";
 	this_gas.ix = ix;
 	ix += nt_*np_*ng_;
       }
@@ -139,12 +142,20 @@ CkdModel<IsActive>::read(const std::string& file_name,
     ++igas;
   }
 
-  if (gas_list.empty()) {
-    active_molecules = gas_list;
+  if (!active_gas_list.empty()) {
+    active_molecules = active_gas_list;
   }
   else {
     active_molecules = molecules;
   }
+
+  /*
+  LOG << "Retrieving gases:";
+  for (int igas = 0; igas < active_molecules.size(); ++igas) {
+    LOG << " " << active_molecules[igas];
+  }
+  LOG << "\n";
+  */
 
   if (nx != ix) {
     ERROR << "Mismatch between number of state variables and number of coefficients to optimize";
@@ -336,6 +347,9 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
 {
   for (int igas = 0; igas < ngas(); ++igas) {
     SingleGasData<true>& this_gas = single_gas_data_[igas];
+    if (!this_gas.is_active) {
+      continue;
+    }
     if (this_gas.conc_dependence == LINEAR
 	|| this_gas.conc_dependence == NONE) {
       int nx = nt_ * np_;

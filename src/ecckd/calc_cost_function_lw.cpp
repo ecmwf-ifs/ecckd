@@ -45,6 +45,8 @@ calc_cost_function_lw(const adept::Vector& pressure_hl,       ///< Pressure (Pa)
 
 #ifdef WASTE_MEMORY
 
+  // I've no idea if this is still valid...
+
   Matrix flux_dn(nlay+1,nwav);
   Matrix flux_up(nlay+1,nwav);
   radiative_transfer_lw(planck_hl(__,index),
@@ -109,6 +111,8 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
 			  adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
 			  adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
 			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
+			  adept::Matrix* relative_ckd_flux_dn,    ///< Subtract relative-to flux dn, if not NULL
+			  adept::Matrix* relative_ckd_flux_up,    ///< Subtract relative-to flux up, if not NULL
 			  const adept::intVector& band_mapping)
 {
   using namespace adept;
@@ -136,6 +140,13 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
 			surf_planck,
 			flux_dn_fwd_orig,
 			flux_up_fwd_orig);
+
+  // Fluxes are to be computed relative to a reference scenario
+  if (relative_ckd_flux_dn) {
+    flux_dn_fwd_orig -= *relative_ckd_flux_dn;
+    flux_up_fwd_orig -= *relative_ckd_flux_up;
+  }
+
 
   aMatrix flux_dn_fwd, flux_up_fwd;
 

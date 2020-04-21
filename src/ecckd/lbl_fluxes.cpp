@@ -2,13 +2,14 @@
 #include "heating_rate.h"
 #include "planck_function.h"
 #include "DataFile.h"
+#include "radiative_transfer_lw.h"
 
 using namespace adept;
 
 void
 LblFluxes::read(const std::string& file_name, const intVector& band_mapping)
 {
-  LOG << "Reading " << file_name << "\n";
+  LOG << "Reading LBL fluxes from " << file_name << "\n";
   DataFile file(file_name);
   file.read(pressure_hl_, "pressure_hl");
   file.read(temperature_hl_, "temperature_hl");
@@ -66,6 +67,7 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping)
   while (std::getline(molecules_s, molecule, ' ')) {
     molecules_.push_back(molecule);
   }
+  LOG << "  Contains " << molecules_str << "\n";
 
   int ncol = pressure_hl_.dimension(0);
   int nlev = pressure_hl_.dimension(1)-1;
@@ -113,5 +115,34 @@ LblFluxes::make_gas_mapping(const std::vector<std::string>& molecules)
 	gas_mapping[igas] = igas2;
       }
     }
+  }
+}
+
+void
+LblFluxes::subtract(const LblFluxes& source)
+{
+  flux_up_ -= source.flux_up_;
+  flux_dn_ -= source.flux_dn_;
+  spectral_flux_up_ -= source.spectral_flux_up_;
+  spectral_flux_dn_ -= source.spectral_flux_dn_;
+  heating_rate_ -= source.heating_rate_;
+  spectral_heating_rate_ -= source.spectral_heating_rate_;
+}
+
+void
+LblFluxes::calc_ckd_fluxes(const Array3D& optical_depth,
+			   Array3D& flux_dn, Array3D& flux_up) const
+{
+  int nprof= optical_depth.size(0);
+  int nlay = optical_depth.size(1);
+  int ng   = optical_depth.size(2);
+
+  flux_dn.resize(nprof,nlay+1,ng);
+  flux_up.resize(nprof,nlay+1,ng);
+
+  for (int iprof = 0; iprof < nprof; ++iprof) {
+    radiative_transfer_lw(planck_hl_(iprof,__,__), optical_depth(iprof,__,__),
+			  surf_emissivity_(iprof,iband_per_g), surf_planck_(iprof,__),
+			  flux_dn(iprof,__,__), flux_up(iprof,__,__));
   }
 }

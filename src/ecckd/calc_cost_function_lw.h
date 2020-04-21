@@ -39,6 +39,8 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
 			  adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
 			  adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
 			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
+			  adept::Matrix* relative_ckd_flux_dn,    ///< Subtract relative-to flux dn, if not NULL
+			  adept::Matrix* relative_ckd_flux_up,    ///< Subtract relative-to flux up, if not NULL
 			  const adept::intVector& band_mapping = adept::intVector());
 
 #endif

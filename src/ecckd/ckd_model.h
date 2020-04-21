@@ -167,7 +167,11 @@ public:
     return iband;
   }
 
+  // All the molecules in the CKD model
   std::vector<std::string> molecules;
+
+  // Only the "active" molecules, i.e. those whose coefficients are to
+  // be optimized
   std::vector<std::string> active_molecules;
 
   int ng() { return ng_; }
@@ -183,6 +187,9 @@ public:
   Vector x_prior;
 
   bool logarithmic_interpolation = false;
+  //bool logarithmic_interpolation = true;
+  
+  SingleGasData<IsActive>& single_gas(int igas) { return single_gas_data_[igas]; }
 
 private:
 

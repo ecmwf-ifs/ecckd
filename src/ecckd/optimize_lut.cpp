@@ -98,6 +98,41 @@ main(int argc, const char* argv[])
 
   ckd_model.create_error_covariances(prior_error, pressure_corr, temperature_corr, conc_corr);
 
+  // Optional: compute radiative transfer of one set of profiles
+  // relative to another, useful to get the forcing of minor gases
+  // correct
+  std::string relative_to_file;
+  bool have_relative_to_fluxes = false;
+  LblFluxes relative_to_fluxes;
+
+  Array3D* relative_ckd_flux_dn = 0;
+  Array3D* relative_ckd_flux_up = 0;
+  Array3D  rel_ckd_flux_dn;
+  Array3D  rel_ckd_flux_up;
+
+  if (config.read(relative_to_file, "relative_to")) {
+    have_relative_to_fluxes = true;
+    LOG << "Errors evaluated relative to the following file:\n";
+    relative_to_fluxes.read(relative_to_file, band_mapping);
+
+    relative_to_fluxes.make_gas_mapping(ckd_model.molecules);
+    relative_to_fluxes.planck_hl_   = ckd_model.calc_planck_function(relative_to_fluxes.temperature_hl_);
+    relative_to_fluxes.surf_planck_ = ckd_model.calc_planck_function(relative_to_fluxes.temperature_hl_(__,end));
+
+    if (relative_to_fluxes.have_band_fluxes) {
+      relative_to_fluxes.iband_per_g = ckd_model.iband_per_g(relative_to_fluxes.band_wavenumber1_,
+							     relative_to_fluxes.band_wavenumber2_);
+    }
+
+    ADEPT_ACTIVE_STACK->new_recording();
+    aArray3D aod;
+    calc_total_optical_depth(ckd_model, relative_to_fluxes, aod, true);
+    Array3D od = value(aod);
+    relative_to_fluxes.calc_ckd_fluxes(od, rel_ckd_flux_dn, rel_ckd_flux_up);
+    relative_ckd_flux_dn = &rel_ckd_flux_dn;
+    relative_ckd_flux_up = &rel_ckd_flux_up;
+  }
+
   // LBL fluxes used for training
   std::string training_input, training_file;
 
@@ -107,6 +142,10 @@ main(int argc, const char* argv[])
   while (config.read(training_file, "training_input", itrain)) {
 
     LblFluxes fluxes(training_file, band_mapping);
+    if (have_relative_to_fluxes) {
+      LOG << "  Subtracting reference fluxes\n";
+      fluxes.subtract(relative_to_fluxes);
+    }
 
     fluxes.make_gas_mapping(ckd_model.molecules);
 
@@ -136,7 +175,8 @@ main(int argc, const char* argv[])
   }
 
   int status = solve_lbfgs_lw(ckd_model, training_data,
-			      flux_weight, flux_profile_weight, broadband_weight, prior_error);
+			      flux_weight, flux_profile_weight, broadband_weight, prior_error,
+			      relative_ckd_flux_dn, relative_ckd_flux_up);
 
   LOG << "Convergence status: " << lbfgs_status_string(status) << "\n";
 

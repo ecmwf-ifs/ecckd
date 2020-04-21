@@ -7,6 +7,8 @@
 
 struct LblFluxes {
 
+  LblFluxes() { }
+
   LblFluxes(const std::string& file_name, const adept::intVector& band_mapping = adept::intVector()) {
     read(file_name, band_mapping);
   }
@@ -35,9 +37,20 @@ struct LblFluxes {
 
   void read(const std::string& file_name, const adept::intVector& band_mapping = adept::intVector());
 
+  // For optimizing the coefficients of minor greenhouse gases, we
+  // need to compute forcing relative to a reference, so need the
+  // ability to subtract one set of fluxes and heating rates from
+  // another
+  void subtract(const LblFluxes& source);
+
   // Fill the gas_mapping vector to map from the CKD gas indices to
   // the LBL concentrations
   void make_gas_mapping(const std::vector<std::string>& molecules);
+
+  /// Calculate fluxes given a 3D array of optical depths for a CKD
+  /// model for the same scenario as the present object
+  void calc_ckd_fluxes(const adept::Array3D& optical_depth,
+		       adept::Array3D& flux_dn, adept::Array3D& flux_up) const;
 
   // Do we have fluxes in either g-points or bands?
   bool have_spectral_fluxes = false;

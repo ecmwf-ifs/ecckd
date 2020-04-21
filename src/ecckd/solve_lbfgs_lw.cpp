@@ -7,60 +7,119 @@ static const Real MIN_X = -1.0e20;
 
 struct MyData {
   CkdModel<true>* ckd_model;
-  std::vector<LblFluxes>* fluxes;
+  std::vector<LblFluxes>* lbl;
   Real flux_weight, flux_profile_weight, broadband_weight, prior_error;
+  Array3D* relative_ckd_flux_dn;
+  Array3D* relative_ckd_flux_up;
 };
 
+void
+calc_total_optical_depth(CkdModel<true>& ckd_model, const LblFluxes& lbl1,
+			 aArray3D& optical_depth, bool first_call)
+{
+  int nprof = lbl1.pressure_hl_.dimension(0);
+  int nlev  = lbl1.pressure_hl_.dimension(1)-1;
+  optical_depth.resize(nprof,nlev,ckd_model.ng());
+  optical_depth = 0.0;
+  for (int igas = 0; igas < ckd_model.molecules.size(); ++igas) {
+    if (lbl1.gas_mapping(igas) >= 0) {
+      if (first_call) {
+	LOG << "    Computing CKD optical depth of \"" << ckd_model.molecules[igas] << "\"\n";
+      }
+      optical_depth += ckd_model.calc_optical_depth(ckd_model.molecules[igas],
+						    lbl1.pressure_hl_,
+						    lbl1.temperature_hl_,
+						    lbl1.vmr_fl_(__,lbl1.gas_mapping(igas),__));
+    }
+    else {
+      if (ckd_model.single_gas(igas).conc_dependence == NONE) {
+	if (first_call) {
+	  LOG << "    Computing CKD optical depth of background gases in \"" << ckd_model.molecules[igas] << "\"\n";
+	}
+	optical_depth += ckd_model.calc_optical_depth(ckd_model.molecules[igas],
+						      lbl1.pressure_hl_,
+						      lbl1.temperature_hl_);
+      }
+      else {
+	if (first_call) {
+	  LOG << "    Skipping \"" << ckd_model.molecules[igas] << "\": not present in LBL file\n";
+	}
+      }
+    }
+  }
+}
 
 Real
 calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
-				std::vector<LblFluxes>& fluxes,
+				std::vector<LblFluxes>& lbl,
 				Vector gradient,
 				Real flux_weight, 
 				Real flux_profile_weight,
-				Real broadband_weight)
+				Real broadband_weight,
+				Array3D* relative_ckd_flux_dn,
+				Array3D* relative_ckd_flux_up)
 {
+  static bool first_call = true;
+
+  if (first_call) {
+    LOG << "  First calculation of cost function and gradient\n";
+  }
+
   ADEPT_ACTIVE_STACK->new_recording();
   aReal cost = 0.0;
-  for (int iflux = 0; iflux < fluxes.size(); ++iflux) {
-    LblFluxes& data = fluxes[iflux];
-    int nprof = data.pressure_hl_.dimension(0);
-    int nlev  = data.pressure_hl_.dimension(1)-1;
-    aArray3D optical_depth(nprof,nlev,ckd_model.ng());
-    optical_depth = 0.0;
-    //    for (int igas = 0; igas < data.ngas(); ++igas) {
-    for (int igas = 0; igas < ckd_model.active_molecules.size(); ++igas) {
-      if (data.gas_mapping(igas) >= 0) {
-	optical_depth += ckd_model.calc_optical_depth(ckd_model.active_molecules[igas],
-						      data.pressure_hl_,
-						      data.temperature_hl_,
-						      data.vmr_fl_(__,data.gas_mapping(igas),__));
-      }
-      else {
-	optical_depth += ckd_model.calc_optical_depth(ckd_model.active_molecules[igas],
-						      data.pressure_hl_,
-						      data.temperature_hl_);
-      }
+  // Loop over training scenes
+  for (int ilbl = 0; ilbl < lbl.size(); ++ilbl) {
+    if (first_call) {
+      LOG << "  LBL training scene " << ilbl << "\n";
     }
+    LblFluxes& lbl1 = lbl[ilbl];
+    int nprof = lbl1.pressure_hl_.dimension(0);
+    int nlev  = lbl1.pressure_hl_.dimension(1)-1;
+    aArray3D optical_depth;
+    calc_total_optical_depth(ckd_model, lbl1,
+			     optical_depth, first_call);
     
+    // If the pointers relative_ckd_flux_[dn|up] are not NULL, then
+    // they point to 3D arrays of fluxes to be subtracted from the CKD
+    // calculations.  But since each profile is analyzed in turn, we
+    // need to obtain a pointer to the relevant profile, or NULL.
+    Matrix* rel_ckd_flux_dn = 0;
+    Matrix* rel_ckd_flux_up = 0;
+    Matrix  rel_ckd_flux_dn_ref, rel_ckd_flux_up_ref;
+    if (relative_ckd_flux_dn) {
+      rel_ckd_flux_dn = &rel_ckd_flux_dn_ref;
+      rel_ckd_flux_up = &rel_ckd_flux_up_ref;
+    }
+
+    // Loop over profiles in one scene
     for (int iprof = 0; iprof < nprof; ++iprof) {
-      Vector layer_weight = sqrt(data.pressure_hl_(iprof,range(1,end)))-sqrt(data.pressure_hl_(iprof,range(0,end-1)));
+      Vector layer_weight = sqrt(lbl1.pressure_hl_(iprof,range(1,end)))-sqrt(lbl1.pressure_hl_(iprof,range(0,end-1)));
       layer_weight /= sum(layer_weight);
-      cost += calc_cost_function_ckd_lw(data.pressure_hl_(iprof,__),
-					data.planck_hl_(iprof,__,__),
-					data.surf_emissivity_(iprof,__),
-					data.surf_planck_(iprof,__),
+
+      // Make a soft link to a slice of the relative-to fluxes
+      if (relative_ckd_flux_dn) {
+	rel_ckd_flux_dn_ref >>= (*relative_ckd_flux_dn)[iprof];
+	rel_ckd_flux_up_ref >>= (*relative_ckd_flux_up)[iprof];
+      }
+
+      cost += calc_cost_function_ckd_lw(lbl1.pressure_hl_(iprof,__),
+					lbl1.planck_hl_(iprof,__,__),
+					lbl1.surf_emissivity_(iprof,__),
+					lbl1.surf_planck_(iprof,__),
 					optical_depth(iprof,__,__),
-					data.spectral_flux_dn_(iprof,__,__),
-					data.spectral_flux_up_(iprof,__,__),
-					data.spectral_heating_rate_(iprof,__,__),
+					lbl1.spectral_flux_dn_(iprof,__,__),
+					lbl1.spectral_flux_up_(iprof,__,__),
+					lbl1.spectral_heating_rate_(iprof,__,__),
 					flux_weight, flux_profile_weight, broadband_weight,
-					layer_weight, data.iband_per_g);
+					layer_weight, rel_ckd_flux_dn, rel_ckd_flux_up, 
+					lbl1.iband_per_g);
     } 
   }
   cost.set_gradient(1.0);
   ADEPT_ACTIVE_STACK->reverse();
   ckd_model.x.get_gradient(gradient);
+
+  first_call = false;
 
   return value(cost);
 }
@@ -87,11 +146,13 @@ calc_cost_function_and_gradient_lbfgs(void *vdata,
 
   Vector gradient(data.ckd_model->nx());
   lbfgsfloatval_t J = calc_cost_function_and_gradient(*(data.ckd_model),
-						      *(data.fluxes),
+						      *(data.lbl),
 						      gradient,
 						      data.flux_weight, 
 						      data.flux_profile_weight,
-						      data.broadband_weight);
+						      data.broadband_weight,
+						      data.relative_ckd_flux_dn,
+						      data.relative_ckd_flux_up);
   // Prior contribution
   Vector x_data(const_cast<Real *>(xdata), dimensions(x.size()));
   //#define OLD_PRIOR 1
@@ -114,7 +175,7 @@ calc_cost_function_and_gradient_lbfgs(void *vdata,
   }
 
   J += J_prior;
-  //  std::cout << J << " " << J_prior << std::endl; // "\n";
+  ///  std::cout << J << " " << J_prior << " infinity norm " << maxval(fabs(gradient)) << " " << maxval(fabs(gradient_prior)) << std::endl;
 
   return J;
 }
@@ -140,11 +201,13 @@ progress_lbfgs(void *data,
 
 int
 solve_lbfgs_lw(CkdModel<true>& ckd_model,
-	       std::vector<LblFluxes>& fluxes,
+	       std::vector<LblFluxes>& lbl,
 	       Real flux_weight,
 	       Real flux_profile_weight,
 	       Real broadband_weight,
-	       Real prior_error)
+	       Real prior_error,
+	       Array3D* relative_ckd_flux_dn,
+	       Array3D* relative_ckd_flux_up)
 {
   int status=0;
   lbfgsfloatval_t fx;
@@ -163,11 +226,23 @@ solve_lbfgs_lw(CkdModel<true>& ckd_model,
 
   MyData data;
   data.ckd_model = &ckd_model;
-  data.fluxes    = &fluxes;
+  data.lbl       = &lbl;
   data.flux_weight=flux_weight;
   data.flux_profile_weight=flux_profile_weight;
   data.broadband_weight=broadband_weight;
   data.prior_error = prior_error;
+  data.relative_ckd_flux_dn = relative_ckd_flux_dn;
+  data.relative_ckd_flux_up = relative_ckd_flux_up;
+
+
+  LOG << "Optimizing coefficients with LBFGS algorithm\n";
+  LOG << "  CKD model interpolation is ";
+  if (ckd_model.logarithmic_interpolation) {
+    LOG << "LOGARITHMIC\n";
+  }
+  else {
+    LOG << "LINEAR\n";
+  }
 
   status = lbfgs(ckd_model.nx(), x.data(), &fx,
 		 calc_cost_function_and_gradient_lbfgs,
