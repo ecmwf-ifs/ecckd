@@ -1,0 +1,16 @@
+SCRIPTS
+
+CODE
+
+ - optimize can save only OD for CKDMIP
+ - Shortwave find g points
+ - Shortwave create LUT (no change?)
+ - Shortwave optimize
+
+
+ECRAD
+
+ - ecckd gas optics module
+ - Liquid and ice cloud properties
+ - Aerosol properties
+ - Optimize Tripleclouds (longwave esp)
