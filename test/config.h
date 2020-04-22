@@ -59,6 +59,7 @@ WORK_LW_GPOINTS_DIR=${WORK_DIR}/lw_gpoints
 WORK_LW_RAW_CKD_DIR=${WORK_DIR}/lw_raw-ckd
 WORK_LW_CKD_DIR=${WORK_DIR}/lw_ckd
 WORK_LW_CKD_OD_DIR=${WORK_DIR}/lw_optical-depth
+WORK_LW_LBL_FLUX_DIR=${WORK_DIR}/lw_lbl_fluxes
 WORK_SW_SPECTRA_DIR=${WORK_DIR}/sw_spectra
 WORK_SW_ORDER_DIR=${WORK_DIR}/sw_order
 WORK_SW_GPOINTS_DIR=${WORK_DIR}/sw_gpoints

@@ -90,7 +90,7 @@ ckdmip_idealized_lw_spectra_h2o_constant-l.h5"
 
 \begin cfc11
   conc_dependence linear
-  input ckdmip_idealized_lw_spectra_cfc11_constant.h5
+  input ckdmip_idealized_lw_spectra_cfc11_constant-equivalent.h5
 \end cfc11
 
 \begin cfc12

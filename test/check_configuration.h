@@ -33,6 +33,12 @@ if [ "$APPLICATION" = climate ]
 then 
     APP=climate
     MIN_PRESSURE=2
+elif [ "$APPLICATION" = climate2 ]
+then
+    # Second pass of optimize...
+    APP=climate2
+    APPLICATION=climate
+    MIN_PRESSURE=2
 elif [ "$APPLICATION" = global-nwp ]
 then
     APP=nwp
