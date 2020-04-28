@@ -17,7 +17,7 @@ CKDMIP_SW=${CKDMIP_DIR}/bin/ckdmip_sw
 # Directory for ecCKD executables
 BINDIR=../src/ecckd
 REORDER_SPECTRUM="${BINDIR}/reorder_spectrum"
-FIND_G_POINTS_LW=${BINDIR}/find_g_points_lw
+FIND_G_POINTS=${BINDIR}/find_g_points
 CREATE_LOOK_UP_TABLE=${BINDIR}/create_look_up_table
 OPTIMIZE_LUT=${BINDIR}/optimize_lut
 LW_SPECTRA=${BINDIR}/lw_spectra
@@ -56,19 +56,22 @@ WORK_DIR=/hugetmp/parr/ecckd
 WORK_LW_SPECTRA_DIR=${WORK_DIR}/lw_spectra
 WORK_LW_ORDER_DIR=${WORK_DIR}/lw_order
 WORK_LW_GPOINTS_DIR=${WORK_DIR}/lw_gpoints
-WORK_LW_RAW_CKD_DIR=${WORK_DIR}/lw_raw-ckd
-WORK_LW_CKD_DIR=${WORK_DIR}/lw_ckd
+WORK_LW_RAW_CKD_DIR=${WORK_DIR}/lw_raw-ckd-definition
+WORK_LW_CKD_DIR=${WORK_DIR}/lw_ckd-definition
 WORK_LW_CKD_OD_DIR=${WORK_DIR}/lw_optical-depth
 WORK_LW_LBL_FLUX_DIR=${WORK_DIR}/lw_lbl_fluxes
+WORK_LW_FLUX_DIR=${WORK_DIR}/lw_fluxes
 WORK_SW_SPECTRA_DIR=${WORK_DIR}/sw_spectra
 WORK_SW_ORDER_DIR=${WORK_DIR}/sw_order
 WORK_SW_GPOINTS_DIR=${WORK_DIR}/sw_gpoints
-WORK_SW_RAW_CKD_DIR=${WORK_DIR}/sw_raw-ckd
-WORK_SW_CKD_DIR=${WORK_DIR}/sw_ckd
+WORK_SW_RAW_CKD_DIR=${WORK_DIR}/sw_raw-ckd-definition
+WORK_SW_CKD_DIR=${WORK_DIR}/sw_ckd-definition
 WORK_SW_CKD_OD_DIR=${WORK_DIR}/sw_optical-depth
 
 WELL_MIXED_LW_SPECTRA=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_present.h5
 WELL_MIXED_LW_SPECTRA_MINIMUM=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_minimum.h5
+WELL_MIXED_LW_SPECTRA_O2N2=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_o2n2_constant.h5
+
 WELL_MIXED_SW_SPECTRA=${WORK_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_composite_present.h5
 WELL_MIXED_SW_SPECTRA_MINIMUM=${WORK_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_composite_minimum.h5
 

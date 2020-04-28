@@ -39,3 +39,17 @@ ${MMM_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_n2_constant.h5
 else
     ${BANNER_SKIP} Skipping merge of well-mixed gases for climate minimum as file present: ${WELL_MIXED_LW_SPECTRA_MINIMUM}
 fi
+
+# Create merge of O2 and N2 for climate applications
+if [ ! -f ${WELL_MIXED_LW_SPECTRA_O2N2} ]
+then
+    ${BANNER} Merging spectra of O2 and N2 for climate minimum conditions
+
+    GAS_FILES="${MMM_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_o2_constant.h5
+${MMM_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_n2_constant.h5"
+    ${CKDMIP_LW} \
+	--merge-only ${GAS_FILES} \
+	--output ${WELL_MIXED_LW_SPECTRA_O2N2}
+else
+    ${BANNER_SKIP} Skipping merge of O2 and N2 for climate minimum as file present: ${WELL_MIXED_LW_SPECTRA_O2N2}
+fi

@@ -5,9 +5,12 @@
 
 mkdir -p ${WORK_LW_ORDER_DIR}
 
+GAS_LIST="composite h2o_median o3_median"
+GAS_LIST="co2_present ch4_present n2o_present o2n2_constant"
+
 # Loop through the median/present concentrations of each gas and
 # reorder
-for GAS_SCENARIO in composite h2o_median o3_median
+for GAS_SCENARIO in $GAS_LIST
 do
     GAS=$(echo ${GAS_SCENARIO} | awk -F_ '{print $1}')
     GAS1=$(echo ${GAS} | awk -F- '{print $1}')
@@ -15,6 +18,9 @@ do
     if [ "$GAS1" = composite ]
     then
 	INPUT=${WELL_MIXED_LW_SPECTRA}
+    elif [ "$GAS1" = o2n2 ]
+    then
+	INPUT=${WELL_MIXED_LW_SPECTRA_O2N2}
     else
 	INPUT=${MMM_LW_SPECTRA_DIR}/ckdmip_mmm_lw_spectra_${GAS_SCENARIO}.h5
     fi

@@ -7,6 +7,7 @@
 . check_configuration.h
 
 OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.05 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
+#OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.1 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
 
 if [ "$APP" = nwp ]
 then
@@ -14,10 +15,11 @@ then
     GASLIST="h2o o3 composite"
     INDIR=${WORK_LW_RAW_CKD_DIR}
     OUTDIR=${WORK_LW_CKD_DIR}
-    INCODE=raw-ckd
-    OUTCODE=ckd
-elif [ "$APP" = climate ]
+    INCODE=raw-ckd-definition
+    OUTCODE=ckd-definition
+elif [ "$APP" = climate0 ]
 then
+    # First pass
     TRAINING="ckdmip_evaluation1_lw_fluxes_5gas-180.h5
 ckdmip_evaluation1_lw_fluxes_5gas-280.h5
 ckdmip_evaluation1_lw_fluxes_5gas-415.h5
@@ -27,13 +29,15 @@ ckdmip_evaluation1_lw_fluxes_5gas-2240.h5"
     GASLIST="o2n2 h2o o3 co2"
     INDIR=${WORK_LW_RAW_CKD_DIR}
     OUTDIR=${WORK_LW_RAW_CKD_DIR}
-    INCODE=raw-ckd
-    OUTCODE=raw2-ckd
+    INCODE=raw-ckd-definition
+    OUTCODE=raw2-ckd-definition
 elif [ "$APP" = climate2 ]
 then
+    # Second pass
     TRAINING="ckdmip_evaluation1_lw_fluxes_present.h5
 ckdmip_evaluation1_lw_fluxes_ch4-350.h5
 ckdmip_evaluation1_lw_fluxes_ch4-700.h5
+ckdmip_evaluation1_lw_fluxes_ch4-1200.h5
 ckdmip_evaluation1_lw_fluxes_ch4-2600.h5
 ckdmip_evaluation1_lw_fluxes_ch4-3500.h5
 ckdmip_evaluation1_lw_fluxes_n2o-190.h5
@@ -45,16 +49,61 @@ ckdmip_evaluation1_lw_fluxes_cfc11-2000.h5"
 # Don't bother optimizing CFC12 - more accurate out of the box
 #ckdmip_evaluation1_lw_fluxes_cfc12-0.h5
 #ckdmip_evaluation1_lw_fluxes_cfc12-550.h5
-    EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_evaluation1_lw_fluxes_5gas-415.h5"
+#    EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_evaluation1_lw_fluxes_5gas-415.h5"
+    EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_evaluation1_lw_fluxes_rel-415.h5"
     GASLIST="ch4 n2o cfc11"
+#    GASLIST="ch4"
     INDIR=${WORK_LW_RAW_CKD_DIR}
     OUTDIR=${WORK_LW_CKD_DIR}
-    INCODE=raw2-ckd
-    OUTCODE=ckd
+    INCODE=raw2-ckd-definition
+    OUTCODE=ckd-definition
+    OPTIONS="$OPTIONS convergence_criterion=0.005"
+elif [ "$APP" = climate3 ]
+then
+    # All-in-one
+    GASLIST="o2n2 h2o o3 co2 ch4 n2o cfc11"
+    INDIR=${WORK_LW_RAW_CKD_DIR}
+    OUTDIR=${WORK_LW_CKD_DIR}
+    INCODE=raw-ckd-definition
+    OUTCODE=ckd-definition
+    TRAINING="ckdmip_evaluation1_lw_fluxes_present.h5
+ckdmip_evaluation1_lw_fluxes_co2-180.h5
+ckdmip_evaluation1_lw_fluxes_co2-280.h5
+ckdmip_evaluation1_lw_fluxes_co2-560.h5
+ckdmip_evaluation1_lw_fluxes_co2-1120.h5
+ckdmip_evaluation1_lw_fluxes_co2-2240.h5
+ckdmip_evaluation1_lw_fluxes_ch4-350.h5
+ckdmip_evaluation1_lw_fluxes_ch4-700.h5
+ckdmip_evaluation1_lw_fluxes_ch4-1200.h5
+ckdmip_evaluation1_lw_fluxes_ch4-2600.h5
+ckdmip_evaluation1_lw_fluxes_ch4-3500.h5
+ckdmip_evaluation1_lw_fluxes_n2o-190.h5
+ckdmip_evaluation1_lw_fluxes_n2o-270.h5
+ckdmip_evaluation1_lw_fluxes_n2o-405.h5
+ckdmip_evaluation1_lw_fluxes_n2o-540.h5
+ckdmip_evaluation1_lw_fluxes_cfc11-0.h5
+ckdmip_evaluation1_lw_fluxes_cfc11-2000.h5"
+elif [ "$APP" = climate ]
+then
+    # First pass
+    TRAINING="ckdmip_evaluation1_lw_fluxes_rel-180.h5
+ckdmip_evaluation1_lw_fluxes_rel-280.h5
+ckdmip_evaluation1_lw_fluxes_rel-415.h5
+ckdmip_evaluation1_lw_fluxes_rel-560.h5
+ckdmip_evaluation1_lw_fluxes_rel-1120.h5
+ckdmip_evaluation1_lw_fluxes_rel-2240.h5"
+    GASLIST="composite h2o o3 co2"
+#    MODEL_CODE_SUFFIX=-rel
+    INDIR=${WORK_LW_RAW_CKD_DIR}
+    OUTDIR=${WORK_LW_RAW_CKD_DIR}
+    INCODE=raw-ckd-definition
+    OUTCODE=raw2-ckd-definition
 else 
     echo "Error"
     exit 1
 fi
+
+mkdir -p "${OUTDIR}"
 
 # Loop over each band structure and tolerance
 for BANDSTRUCT in $BAND_STRUCTURE

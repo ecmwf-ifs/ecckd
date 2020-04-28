@@ -5,7 +5,7 @@
 # to LBL calculations with the other gases set to zero.
 
 # At ECMWF to have access to NCO tools
-#module load nco
+module load nco
 
 . config.h
 
@@ -55,7 +55,9 @@ fi
 
 mkdir -p $OUTDIR
 
-SCENARIOS="5gas-180 5gas-280 5gas-415 5gas-560 5gas-1120 5gas-2240"
+#SCENARIOS="5gas-180 5gas-280 5gas-415 5gas-560 5gas-1120 5gas-2240"
+SCENARIOS="rel-180 rel-280 rel-415 rel-560 rel-1120 rel-2240"
+SCENARIOS="rel-280 rel-415 rel-560 rel-1120 rel-2240"
 
 for SCENARIO in $SCENARIOS
 do
@@ -73,6 +75,7 @@ do
     N2_ARG=
 
     ONLY5GASES=no
+    RELATIVE=no
 
     NF=$(echo $SCENARIO | awk -F- '{print NF}')
     # Set concentrations of trace gases according to SCENARIO
@@ -142,12 +145,20 @@ do
 	CO2_VMR=${SCENARIO:4:100}e-6
     elif [ "${SCENARIO:0:5}" = 5gas- ]
     then
+	# Only O2, N2, H2O, O3 and CO2
 	CO2_VMR=${SCENARIO:5:100}e-6
 	CH4_VMR="0.0"
 	N2O_VMR="0.0"
 	CFC11_VMR="0.0"
 	CFC12_VMR="0.0"
 	ONLY5GASES=yes
+    elif [ "${SCENARIO:0:4}" = rel- ]
+    then
+	# CO2 allowed to vary; N2O and CH4 use constant mole fractions
+	# as they are to be parameterized using the "relative-linear"
+	# scheme
+	CO2_VMR=${SCENARIO:4:100}e-6
+	RELATIVE=yes
     elif [ "${SCENARIO:0:4}" = ch4- ]
     then
 	CH4_VMR=${SCENARIO:4:100}e-9
@@ -198,22 +209,34 @@ do
 		--scenario "$SCENARIO" \
 		$H2O_FILE \
 		$O3_FILE \
-		$N2_ARG $N2_FILE \
-		$O2_ARG $O2_FILE \
-		--conc $CO2_VMR $CO2_FILE \
+		$N2_ARG  $N2_FILE \
+		$O2_ARG  $O2_FILE \
+		--conc   $CO2_VMR $CO2_FILE \
+		--output $OUTFILE
+	elif [ "$RELATIVE" = yes ]
+	then
+	    $PROGRAM --config $CONFIG \
+		--scenario "$SCENARIO" \
+		$H2O_FILE \
+		$O3_FILE \
+		$N2_ARG  $N2_FILE \
+		$O2_ARG  $O2_FILE \
+		--const  $CH4_VMR   $CH4_FILE \
+		--const  $N2O_VMR   $N2O_FILE \
+		--conc   $CO2_VMR   $CO2_FILE \
 		--output $OUTFILE
 	else
 	    $PROGRAM --config $CONFIG \
 		--scenario "$SCENARIO" \
 		$H2O_FILE \
 		$O3_FILE \
-		$N2_ARG $N2_FILE \
-		$O2_ARG $O2_FILE \
-		--conc $CO2_VMR $CO2_FILE \
-		--conc $CH4_VMR $CH4_FILE \
-		--conc $N2O_VMR $N2O_FILE \
-		--conc $CFC11_VMR $CFC11_FILE \
-		--conc $CFC12_VMR $CFC12_FILE \
+		$N2_ARG  $N2_FILE \
+		$O2_ARG  $O2_FILE \
+		--conc   $CO2_VMR   $CO2_FILE \
+		--conc   $CH4_VMR   $CH4_FILE \
+		--conc   $N2O_VMR   $N2O_FILE \
+		--conc   $CFC11_VMR $CFC11_FILE \
+		--conc   $CFC12_VMR $CFC12_FILE \
 		--output $OUTFILE
 	fi
     done
