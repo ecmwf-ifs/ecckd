@@ -105,6 +105,9 @@ main(int argc, const char* argv[])
     else if (conc_dependence_str == "lut") {
       this_gas.conc_dependence = LUT;
     }
+    else if (conc_dependence_str == "relative-linear") {
+      this_gas.conc_dependence = RELATIVE_LINEAR;
+    }
     else {
       ERROR << "conc_dependence \"" << conc_dependence_str << "\" not understood";
       THROW(PARAMETER_ERROR);
@@ -160,6 +163,7 @@ main(int argc, const char* argv[])
       }
       break;
     case LINEAR:
+    case RELATIVE_LINEAR:
       {
 	std::string molecule;
 	Real reference_surface_vmr;
@@ -173,6 +177,13 @@ main(int argc, const char* argv[])
 	}
 
 	Vector pressure_hl, temperature_hl, vmr_fl;
+
+	if (this_gas.conc_dependence == RELATIVE_LINEAR) {
+	  if (!config.read(this_gas.reference_vmr, gas_str, "reference_conc")) {
+	    ERROR << gas_str << ".reference_conc must be provided if conc_dependence is relative-linear";
+	    THROW(PARAMETER_ERROR);
+	  }
+	}
 
 	while (icol < ncol) {
 	  LOG << "  Reading temperature profile " << icol*temperature_stride << " from " << file_name << "\n";

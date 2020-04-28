@@ -206,6 +206,7 @@ solve_lbfgs_lw(CkdModel<true>& ckd_model,
 	       Real flux_profile_weight,
 	       Real broadband_weight,
 	       Real prior_error,
+	       Real convergence_criterion,
 	       Array3D* relative_ckd_flux_dn,
 	       Array3D* relative_ckd_flux_up)
 {
@@ -213,7 +214,7 @@ solve_lbfgs_lw(CkdModel<true>& ckd_model,
   lbfgsfloatval_t fx;
   lbfgs_parameter_t param;
   lbfgs_parameter_init(&param);
-  param.epsilon = 0.02;
+  param.epsilon = convergence_criterion;
   param.max_iterations = 3000;
   param.max_step = 2.0;
   param.initial_step_size = 0.5;

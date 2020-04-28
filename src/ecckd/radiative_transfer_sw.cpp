@@ -23,7 +23,7 @@ radiative_transfer_direct_sw(adept::Real cos_sza,             ///< Cosine of the
   Real minus_sec_sza = -1.0 / cos_sza;
 
   // Work down from top of atmosphere
-  flux_dn(0,__) = ssi;
+  flux_dn(0,__) = cos_sza*ssi;
   for (int ilay = 0; ilay < nlay; ++ilay) {
     flux_dn(ilay+1,__) = flux_dn(ilay,__) * exp(minus_sec_sza*optical_depth(ilay,__));
   }
@@ -67,8 +67,8 @@ radiative_transfer_direct_sw_bb(adept::Real cos_sza,         ///< Cosine of the 
   adept::Array<1,Real,IsActive> flux(nwav);
 
   // Work down from top of atmosphere: here "flux" is the spectral downward flux
-  flux_dn(0) = sum(ssi);
-  flux = ssi;
+  flux_dn(0) = cos_sza*sum(ssi);
+  flux = cos_sza*ssi;
   for (int ilay = 0; ilay < nlay; ++ilay) {
     flux = flux * exp(minus_sec_sza*(spectral_od(ilay,__) + grey_od(ilay)));
     flux_dn(ilay+1) = sum(flux);

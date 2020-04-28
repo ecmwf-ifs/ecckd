@@ -14,7 +14,8 @@ using namespace adept;
 typedef enum {
   NONE = 0,
   LINEAR,
-  LUT
+  LUT,
+  RELATIVE_LINEAR,
 } ConcDependence;
 
 template <bool IsActive>
@@ -40,6 +41,11 @@ struct SingleGasData {
   // concentration.  It is dimensioned
   // (conc,temperature,pressure,g_point).
   Array<4,adept::Real,IsActive> molar_abs_conc;
+
+  // If conc_dependence=3 then the following reference concentration
+  // is subtracted from the actual concentration before the result is
+  // multiplied by the mass aborption coefficient
+  Real reference_vmr;
 
   // Volume mixing ratio coordinate variable
   Vector vmr;

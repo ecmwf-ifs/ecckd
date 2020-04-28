@@ -2,9 +2,6 @@
 #define CALC_COST_FUNCTION_LW_H 1
 
 #include <adept_arrays.h>
-#include "radiative_transfer_lw.h"
-#include "heating_rate.h"
-
 
 /// Compute the cost function, in the form of the root-mean-squared
 /// error in heating rate, associated with averaging the optical depth

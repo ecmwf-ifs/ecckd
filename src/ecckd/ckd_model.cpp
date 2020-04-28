@@ -115,6 +115,11 @@ CkdModel<IsActive>::read(const std::string& file_name,
 	this_gas.conc_dependence = LINEAR;
 	LOG << "    Concentration dependence: linear\n";
       }
+      else if (conc_dep == 3) {
+	this_gas.conc_dependence = RELATIVE_LINEAR;
+	file.read(this_gas.reference_vmr, molecule + "_reference_mole_fraction");
+	LOG << "    Concentration dependence: relative-linear\n";
+      }
       else {
 	ERROR << molecule + "_conc_dependence_code is inconsistent with other variables in file";
 	THROW(1);
@@ -234,7 +239,8 @@ CkdModel<IsActive>::write(const std::string& file_name,
 			 molecule + "_conc_dependence_code");
     file.write("0: No dependence of absorption on concentration (background gases)\n"
 	       "1: Absorption varies linearly with concentration\n"
-	       "2: Look-up table for concentration-dependence of absorption",
+	       "2: Look-up table for concentration-dependence of absorption\n"
+	       "3: Linear dependence on concentration minus a reference value",
 	       molecule + "_conc_dependence_code", "definition");
 
     switch(this_gas.conc_dependence) {
@@ -256,7 +262,18 @@ CkdModel<IsActive>::write(const std::string& file_name,
 	file.write(this_gas.composite_molecules, molecule + "_constituent_id");	
       }
       break;
-    case LINEAR:
+     case RELATIVE_LINEAR:
+      {
+	file.define_variable(molecule + "_reference_mole_fraction", FLOAT);
+	file.write_long_name("Reference mole fraction of " + Molecule,
+			     molecule + "_reference_mole_fraction");
+	file.write_units("1", molecule + "_reference_mole_fraction");
+	file.write_comment("Subtract this from input mole fractions before multiplying by "
+			   + molecule + "_" + K_NAME,
+			   molecule + "_reference_mole_fraction");
+      }
+      // Deliberately fall through to the next item
+   case LINEAR:
       {
 	file.define_variable(molecule + "_" + K_NAME,
 			     FLOAT, "temperature", "pressure", "g_point");
@@ -279,6 +296,7 @@ CkdModel<IsActive>::write(const std::string& file_name,
 			     molecule + "_" + K_NAME);
 	file.write_units("m2 mol-1", molecule + "_" + K_NAME);
       }
+      break;
     }
   }
 
@@ -311,6 +329,13 @@ CkdModel<IsActive>::write(const std::string& file_name,
       {
 	file.write(0, molecule + "_conc_dependence_code");
 	file.write(this_gas.composite_vmr, molecule + "_mole_fraction");
+	file.write((this_gas.molar_abs).inactive_link(), molecule + "_" + K_NAME);
+      }
+      break;
+    case RELATIVE_LINEAR:
+      {
+	file.write(3, molecule + "_conc_dependence_code");
+	file.write(this_gas.reference_vmr, molecule + "_reference_mole_fraction");
 	file.write((this_gas.molar_abs).inactive_link(), molecule + "_" + K_NAME);
       }
       break;
@@ -351,7 +376,8 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
       continue;
     }
     if (this_gas.conc_dependence == LINEAR
-	|| this_gas.conc_dependence == NONE) {
+	|| this_gas.conc_dependence == NONE
+	|| this_gas.conc_dependence == RELATIVE_LINEAR) {
       int nx = nt_ * np_;
       LOG << "  Creating " << nx << "x" << nx << " error covariance matrix for " << this_gas.Molecule << "\n";
 
@@ -499,9 +525,16 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 
       // Weight
       Real simple_weight = global_weight * (pressure_hl(icol,ip+1)-pressure_hl(icol,ip));
-      Real weight = -1.0;
+      Real weight = 0.0;
+      bool no_vmr_provided = true;
       if (!vmr_fl.empty()) {
-	weight = simple_weight * vmr_fl(icol,ip);
+	if (this_gas.conc_dependence == RELATIVE_LINEAR) {
+	  weight = simple_weight * (vmr_fl(icol,ip) - this_gas.reference_vmr);
+	}
+	else {
+	  weight = simple_weight * vmr_fl(icol,ip);
+	}
+	no_vmr_provided = false;
       }
 
       if (this_gas.conc_dependence == LUT) {
@@ -513,7 +546,7 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 	int ic0 = static_cast<int>(cindex0);
 	Real cweight1 = cindex0 - ic0;
 	Real cweight0 = 1.0 - cweight1;
-	if (weight < 0.0) {
+	if (no_vmr_provided) {
 	  ERROR << "Concentration of " << molecules[igas] << " not provided";
 	  THROW(1);
 	}
@@ -545,8 +578,9 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 				  +pweight1* log(this_gas.molar_abs_conc(ic0+1,it0+1,ip0+1,__)))));
 	}
       }
-      else if (this_gas.conc_dependence == LINEAR) {
-	if (weight < 0.0) {
+      else if (this_gas.conc_dependence == LINEAR
+	       || this_gas.conc_dependence == RELATIVE_LINEAR) {
+	if (no_vmr_provided) {
 	  ERROR << "Concentration of " << molecules[igas] << " not provided";
 	  THROW(1);
 	}

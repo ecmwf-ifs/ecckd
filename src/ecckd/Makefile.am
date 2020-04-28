@@ -11,6 +11,8 @@ libecckd_a_SOURCES = \
 	radiative_transfer_sw.cpp \
 	calc_cost_function_lw.h \
 	calc_cost_function_lw.cpp \
+	calc_cost_function_sw.h \
+	calc_cost_function_sw.cpp \
 	read_spectrum.h \
 	read_spectrum.cpp \
 	read_merged_spectrum.h \
@@ -30,13 +32,13 @@ libecckd_a_SOURCES = \
 	equipartition.h \
 	equipartition.cpp
 
-bin_PROGRAMS = reorder_spectrum find_g_points_lw merge_spectra \
+bin_PROGRAMS = reorder_spectrum find_g_points merge_spectra \
 	create_look_up_table lw_ckd lw_spectra optimize_lut \
 	test_equipartition
 
 reorder_spectrum_SOURCES = reorder_spectrum.cpp
 
-find_g_points_lw_SOURCES = find_g_points_lw.cpp
+find_g_points_SOURCES = find_g_points.cpp
 
 merge_spectra_SOURCES = merge_spectra.cpp
 

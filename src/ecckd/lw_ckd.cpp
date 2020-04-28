@@ -66,6 +66,9 @@ main(int argc, const char* argv[])
   config.read(cfc11_scaling, "cfc11_scaling");
   config.read(cfc12_scaling, "cfc12_scaling");
 
+  bool write_od_only = false;
+  config.read(write_od_only, "write_od_only");
+
   CkdModel<false> ckd_model(ckd_file);
 
   LOG << "Reading " << input_file << "\n";
@@ -116,37 +119,48 @@ main(int argc, const char* argv[])
     file.define_variable("optical_depth", FLOAT, "column", "level", "g_point");
     file.write_long_name("Optical depth", "optical_depth");
 
-    for (int igas = 0; igas < ckd_model.molecules.size(); ++igas) {
-      std::string& molecule = ckd_model.molecules[igas];
-      file.define_variable(molecule + "_optical_depth", FLOAT, "column", "level", "g_point");
-      file.write_long_name(molecule + " optical depth", molecule + "_optical_depth");
+    if (!write_od_only) {
+      for (int igas = 0; igas < ckd_model.molecules.size(); ++igas) {
+	std::string& molecule = ckd_model.molecules[igas];
+	file.define_variable(molecule + "_optical_depth", FLOAT, "column", "level", "g_point");
+	file.write_long_name(molecule + " optical depth", molecule + "_optical_depth");
+      }
     }
 
     file.define_variable("planck_hl", FLOAT, "column", "half_level", "g_point");
     file.write_long_name("Planck function", "planck_hl");
     file.write_units("W m-2", "planck_hl");
 
-    file.define_variable("planck_surf", FLOAT, "column", "g_point");
-    file.write_long_name("Planck function at surface", "planck_surf");
-    file.write_units("W m-2", "planck_surf");
+    if (!write_od_only) {
+      file.define_variable("planck_surf", FLOAT, "column", "g_point");
+      file.write_long_name("Planck function at surface", "planck_surf");
+      file.write_units("W m-2", "planck_surf");
 
-    file.define_variable("spectral_flux_up_lw", FLOAT, "column", "half_level", "g_point");
-    file.write_long_name("Spectral upwelling longwave flux", "spectral_flux_up_lw");
-    file.write_units("W m-2", "spectral_flux_up_lw");
+      file.define_variable("spectral_flux_up_lw", FLOAT, "column", "half_level", "g_point");
+      file.write_long_name("Spectral upwelling longwave flux", "spectral_flux_up_lw");
+      file.write_units("W m-2", "spectral_flux_up_lw");
 
-    file.define_variable("spectral_flux_dn_lw", FLOAT, "column", "half_level", "g_point");
-    file.write_long_name("Spectral downwelling longwave flux", "spectral_flux_dn_lw");
-    file.write_units("W m-2", "spectral_flux_dn_lw");
+      file.define_variable("spectral_flux_dn_lw", FLOAT, "column", "half_level", "g_point");
+      file.write_long_name("Spectral downwelling longwave flux", "spectral_flux_dn_lw");
+      file.write_units("W m-2", "spectral_flux_dn_lw");
+    }
   }
 
-  file.define_variable("flux_up_lw", FLOAT, "column", "half_level");
-  file.write_long_name("Upwelling longwave flux", "flux_up_lw");
-  file.write_units("W m-2", "flux_up_lw");
+  if (!write_od_only) {
+    file.define_variable("flux_up_lw", FLOAT, "column", "half_level");
+    file.write_long_name("Upwelling longwave flux", "flux_up_lw");
+    file.write_units("W m-2", "flux_up_lw");
 
-  file.define_variable("flux_dn_lw", FLOAT, "column", "half_level");
-  file.write_long_name("Downwelling longwave flux", "flux_dn_lw");
-  file.write_units("W m-2", "flux_dn_lw");
- 
+    file.define_variable("flux_dn_lw", FLOAT, "column", "half_level");
+    file.write_long_name("Downwelling longwave flux", "flux_dn_lw");
+    file.write_units("W m-2", "flux_dn_lw");
+  }
+
+
+  file.write("Spectral optical depth from ecCKD gas optics scheme", "title");
+  file.append_history(argc, argv);
+  file.write("ecCKD gas optics tool", "source");
+
   // Write data
   file.end_define_mode();
 
@@ -202,33 +216,37 @@ main(int argc, const char* argv[])
       od_gas = ckd_model.calc_optical_depth(igas, pressure_hl, temperature_fl, vmr);
     }
     od += od_gas;
-    if (write_od) {
+    if (write_od && !write_od_only) {
       file.write(od_gas, molecule + "_optical_depth");
     }
   }
 
-  Array3D flux_up(ncol,np+1,ng), flux_dn(ncol,np+1,ng);
-
-  Vector surf_emissivity(ng);
-  surf_emissivity = 1.0;
-
-  
-  for (int icol = 0; icol < ncol; ++icol) {
-    radiative_transfer_lw(planck_hl(icol,__,__), od(icol,__,__), surf_emissivity,
-			  planck_surf(icol,__), flux_dn(icol,__,__), flux_up(icol,__,__));
-  }
- 
   if (write_od) {
     file.write(od, "optical_depth");
     file.write(planck_hl, "planck_hl");
-    file.write(planck_surf, "planck_surf");
+    if (!write_od_only) {
+      file.write(planck_surf, "planck_surf");
+    }
   }
 
-  file.write(flux_up, "spectral_flux_up_lw");
-  file.write(flux_dn, "spectral_flux_dn_lw");
+  if (!write_od_only) {
+    Array3D flux_up(ncol,np+1,ng), flux_dn(ncol,np+1,ng);
 
-  file.write(sum(flux_up,2), "flux_up_lw");
-  file.write(sum(flux_dn,2), "flux_dn_lw");
+    Vector surf_emissivity(ng);
+    surf_emissivity = 1.0;
+
+  
+    for (int icol = 0; icol < ncol; ++icol) {
+      radiative_transfer_lw(planck_hl(icol,__,__), od(icol,__,__), surf_emissivity,
+			    planck_surf(icol,__), flux_dn(icol,__,__), flux_up(icol,__,__));
+    }
+ 
+    file.write(flux_up, "spectral_flux_up_lw");
+    file.write(flux_dn, "spectral_flux_dn_lw");
+    
+    file.write(sum(flux_up,2), "flux_up_lw");
+    file.write(sum(flux_dn,2), "flux_dn_lw");
+  }
 
   file.close();
 

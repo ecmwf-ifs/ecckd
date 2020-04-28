@@ -75,6 +75,7 @@ main(int argc, const char* argv[])
   Real temperature_corr = 0.5;
   Real pressure_corr = 0.5;
   Real conc_corr = 0.5;
+  Real convergence_criterion = 0.02;
 
   // We may wish to merge some of the narrow bands in the LBL flux
   // files
@@ -87,6 +88,7 @@ main(int argc, const char* argv[])
   config.read(temperature_corr, "temperature_corr");
   config.read(pressure_corr, "pressure_corr");
   config.read(conc_corr, "conc_corr");
+  config.read(convergence_criterion, "convergence_criterion");
 
   if (config.exist("band_mapping")) {
     config.read(band_mapping, "band_mapping");
@@ -176,6 +178,7 @@ main(int argc, const char* argv[])
 
   int status = solve_lbfgs_lw(ckd_model, training_data,
 			      flux_weight, flux_profile_weight, broadband_weight, prior_error,
+			      convergence_criterion,
 			      relative_ckd_flux_dn, relative_ckd_flux_up);
 
   LOG << "Convergence status: " << lbfgs_status_string(status) << "\n";

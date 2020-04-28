@@ -164,4 +164,13 @@ read_merged_spectrum(DataFile& config,                ///< Config file
   if (ngas) {
     *ngas = ibg;
   }
+
+  {
+    Vector col_od = sum(optical_depth,1);
+    Real mean_od = mean(col_od);
+    Real mean_od2 = mean(col_od*col_od);
+    Real std_od = sqrt(mean_od2 - mean_od*mean_od);
+    LOG << "    Column optical depth: " << mean_od << " +/- " << std_od << "\n";
+  }
+
 }
