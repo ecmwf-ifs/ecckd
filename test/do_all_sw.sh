@@ -10,6 +10,7 @@ APPLICATION=global-nwp
 
 BAND_STRUCTURE="fsck wide narrow"
 TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
+
 BAND_STRUCTURE=fsck
 TOLERANCE="4"
 
@@ -35,4 +36,4 @@ export BAND_STRUCTURE
 
 # 6. Run two-stream radiative transfer or just compute optical depths
 # for CKDMIP scenarios
-#./run_sw_ckd.sh
+./run_sw_ckd.sh

@@ -8,6 +8,9 @@ set -e
 # Use all threads available
 unset OMP_NUM_THREADS
 
+# Include file defining ecCKD version
+. version.h
+
 # CKDMIP installation directory and CKDMIP executables
 CKDMIP_DIR=/home/pa/parr/src/ckdmip-0.9
 CKDMIP_TOOL=${CKDMIP_DIR}/bin/ckdmip_tool
@@ -42,7 +45,7 @@ IDEALIZED_CONC_DIR=${IDEALIZED_DIR}/conc
 IDEALIZED_LW_SPECTRA_DIR=${IDEALIZED_DIR}/lw_spectra
 IDEALIZED_SW_SPECTRA_DIR=${IDEALIZED_DIR}/sw_spectra
 
-# Training and evaluation dataset
+# Training and evaluation dataset (usually evaluation1)
 TRAINING_CODE=evaluation1
 TRAINING_DIR=${CKDMIP_DATA_DIR}/${TRAINING_CODE}
 TRAINING_CONC_DIR=${TRAINING_DIR}/conc
@@ -50,6 +53,15 @@ TRAINING_LW_SPECTRA_DIR=${TRAINING_DIR}/lw_spectra
 TRAINING_LW_FLUXES_DIR=${TRAINING_DIR}/lw_fluxes
 TRAINING_SW_SPECTRA_DIR=${TRAINING_DIR}/sw_spectra
 TRAINING_SW_FLUXES_DIR=${TRAINING_DIR}/sw_fluxes
+
+# Evaluation dataset (could be evaluation1 or evaluation2)
+EVALUATION_CODE=evaluation1
+EVALUATION_DIR=${CKDMIP_DATA_DIR}/${EVALUATION_CODE}
+EVALUATION_CONC_DIR=${EVALUATION_DIR}/conc
+EVALUATION_LW_SPECTRA_DIR=${EVALUATION_DIR}/lw_spectra
+EVALUATION_LW_FLUXES_DIR=${EVALUATION_DIR}/lw_fluxes
+EVALUATION_SW_SPECTRA_DIR=${EVALUATION_DIR}/sw_spectra
+EVALUATION_SW_FLUXES_DIR=${EVALUATION_DIR}/sw_fluxes
 
 # Work directory
 WORK_DIR=/hugetmp/parr/ecckd
@@ -84,6 +96,9 @@ WN1_SW_NARROW="250 2600 3250 4000 4650 5150 6150 8050 12850 16000 22650 29000 38
 WN2_SW_NARROW="2600 3250 4000 4650 5150 6150 8050 12850 16000 22650 29000 38000 50000"
 WN1_SW_WIDE="250 4000 8050 16000 29000"
 WN2_SW_WIDE="4000 8050 16000 29000 50000"
+
+# Prefix final files by the following
+ECCKD_PREFIX=ecckd-$ECCKD_VERSION
 
 function my_banner {
     echo

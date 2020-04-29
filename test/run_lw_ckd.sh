@@ -95,19 +95,21 @@ do
 
 	    for SCENARIO in $SCENARIOS
 	    do
-		MODEL_CODE=${APPLICATION}_${BANDSTRUCT}_tol${TOL}${MODEL_CODE_SUFFIX}
-		CKD_MODEL=${WORK_DIR}/lw_${VERDIR}/lw_${VERSTR}_${MODEL_CODE}.nc
-		INPUT=${TRAINING_CONC_DIR}/ckdmip_${TRAINING_CODE}_concentrations_${SCENARIO}.nc
-		#OUTPUT=${WORK_LW_CKD_OD_DIR}/lw_${VERSTR}_${MODEL_CODE}_optical-depth_${SCENARIO}.nc
-		OUTPUT=${WORK_LW_CKD_OD_DIR}/ecckd_evaluation1_lw_${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}${VERSUFFIX}_optical-depth_${SCENARIO}.nc
+		MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
+		CKD_MODEL=${WORK_DIR}/lw_${VERDIR}/${ECCKD_PREFIX}_lw_${VERSTR}_${MODEL_CODE}.nc
+		INPUT=${EVALUATION_CONC_DIR}/ckdmip_${EVALUATION_CODE}_concentrations_${SCENARIO}.nc
+		EVALUATION_PREFIX=${ECCKD_PREFIX}_${EVALUATION_PREFIX}_lw_${MODEL_CODE}${VERSUFFIX}
+		OD_FILE=${WORK_LW_CKD_OD_DIR}/${EVALUATION_PREFIX}_optical-depth_${SCENARIO}.nc
+		FLUX_FILE=$WORK_LW_FLUX_DIR/${EVALUATION_PREFIX}_${FLUXESSTR}_${SCENARIO}.nc
 
 		# Compute spectral optical depths from CKD model
-		$LW_CKD ckd_model=$CKD_MODEL input=${INPUT} output=${OUTPUT} write_od_only=1
+		$LW_CKD ckd_model=$CKD_MODEL input=${INPUT} output=${OD_FILE} write_od_only=1
+
 		# Compute fluxes from optical depths
 		$CKDMIP_LW --config config_lw_ckd_rt_evaluation.nam \
 		    --scenario $SCENARIO \
-		    --ckd $OUTPUT \
-		    --output $WORK_LW_FLUX_DIR/ecckd_evaluation1_lw_${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}${VERSUFFIX}_${FLUXESSTR}_${SCENARIO}.nc
+		    --ckd $OD_FILE \
+		    --output $FLUX_FILE
 	    done
 	done
     done

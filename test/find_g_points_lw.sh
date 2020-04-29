@@ -33,10 +33,12 @@ then
 # to be simulated. All well-mixed gases are combined into a single
 # hybrid gas.
 
+append_path "${MMM_LW_SPECTRA_DIR}:${WORK_LW_SPECTRA_DIR}:${WORK_LW_ORDER_DIR}"
 iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.01 
 flux_weight 0.0
+min_pressure ${MIN_PRESSURE}
 
 gases composite h2o o3
 
@@ -75,10 +77,12 @@ then
 # concentrations of all other gases also to the minimum over the range
 # to be simulated. 
 
+append_path "${MMM_LW_SPECTRA_DIR}:${WORK_LW_SPECTRA_DIR}:${WORK_LW_ORDER_DIR}"
 iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.01 
 flux_weight 0.0
+min_pressure ${MIN_PRESSURE}
 
 gases ch4 n2o co2 h2o o3
 
@@ -146,10 +150,12 @@ then
 # concentrations of all other gases also to the minimum over the range
 # to be simulated. 
 
+append_path "${MMM_LW_SPECTRA_DIR}:${WORK_LW_SPECTRA_DIR}:${WORK_LW_ORDER_DIR}"
 iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.01 
 flux_weight 0.0
+min_pressure ${MIN_PRESSURE}
 
 gases h2o o3 ch4 n2o co2
 
@@ -228,10 +234,12 @@ then
 # concentrations of all well-mixed gases also to present-day levels. All
 # well-mixed gases ar combined into a single hybrid gas.
 
+append_path "${MMM_LW_SPECTRA_DIR}:${WORK_LW_SPECTRA_DIR}:${WORK_LW_ORDER_DIR}"
 iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.01
 flux_weight 0.0
+min_pressure ${MIN_PRESSURE}
 
 gases composite h2o o3
 
@@ -268,14 +276,12 @@ fi
     for TOL in $TOLERANCE
     do
 
-	MODEL_CODE=${APPLICATION}_${BANDSTRUCT}_tol${TOL}${MODEL_CODE_SUFFIX}
+	MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
 
 	${BANNER} Finding g-points: $MODEL_CODE
 
 	${FIND_G_POINTS} \
-	    append_path="${MMM_LW_SPECTRA_DIR}:${WORK_LW_SPECTRA_DIR}:${WORK_LW_ORDER_DIR}" \
 	    heating_rate_tolerance=${TOL} \
-	    min_pressure=${MIN_PRESSURE} \
 	    output=${WORK_LW_GPOINTS_DIR}/lw_gpoints_${MODEL_CODE}.h5 \
 	    $EXTRA_ARGS config_find_g_points_lw_${APP}.cfg \
 	    | tee ${WORK_LW_GPOINTS_DIR}/lw_gpoints_${MODEL_CODE}.log
