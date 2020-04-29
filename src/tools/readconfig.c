@@ -35,7 +35,28 @@
 #define INCLUDE_COMMAND "\\include"
 // Uncomment in order for values in output of rc_sprint to be wrapped
 // in either quotation marks or curly brackets
-//#define WRAP_IN_SPRINT
+//#define SPRINT_CLASSIC 1
+#ifdef SPRINT_CLASSIC
+  // Classic behaviour writes each entry on a new line with no whitespace suppression
+  #define SPRINT_EQUALS ' '
+  //#define SPRINT_COMPRESS_WHITESPACE 1
+  #define SPRINT_SEPARATOR "\n"
+  #define SPRINT_STRING_BEGIN '"'
+  #define SPRINT_STRING_END '"'
+  #define SPRINT_NUMBER_BEGIN '{'
+  #define SPRINT_NUMBER_END '}'
+  //#define SPRINT_WRAP 1
+#else
+  // Alternatively put everything on a new line
+  #define SPRINT_EQUALS '='
+  #define SPRINT_COMPRESS_WHITESPACE
+  #define SPRINT_SEPARATOR "; "
+  #define SPRINT_STRING_BEGIN '{'
+  #define SPRINT_STRING_END '}'
+  #define SPRINT_NUMBER_BEGIN '{'
+  #define SPRINT_NUMBER_END '}'
+//#define SPRINT_WRAP 1
+#endif
 
 #define REPLACE_VALUE(dest, new) \
   if (dest) { free(dest); }	 \
@@ -88,6 +109,37 @@ __rc_remove_trailing_whitespace(char* value)
       ch--;
     }
   }
+}
+
+static
+void
+__rc_copy_compress_whitespace(char* dest, const char* src)
+{
+  const char* s = src;
+  char* d = dest;
+  int space_required = 0;
+  int in_word = 0;
+  while(*s != '\0') {
+    if (*s > ' ') {
+      /* Non-whitespace found */
+      if (!in_word && space_required) {
+	*d = ' ';
+	++d;
+	space_required = 0;
+	in_word = 1;
+      }
+      *d = *s;
+      ++d;
+      in_word = 1;
+    }
+    else if (in_word) {
+      /* Whitespace found after word */
+      space_required = 1;
+      in_word = 0;
+    }
+    ++s;
+  }
+  *d = '\0';
 }
 
 /* Find param in data, returning an element of the rc_data list, or
@@ -1089,10 +1141,16 @@ rc_sprint(rc_data *data)
 
   while (data->param) {
     int param_length = strlen(data->param);
-    out = realloc(out, length+param_length+2);
+    out = realloc(out, length+param_length+strlen(SPRINT_SEPARATOR)+3);
     if (!out) {
       return NULL;
     }
+    /* Add a separator between param-value pairs */
+    if (length > 0) {
+      strcpy(out+length, SPRINT_SEPARATOR);
+      length += strlen(SPRINT_SEPARATOR);
+    }
+    /* Write the parameter name */
     strcpy(out+length, data->param);
     length += (param_length+1);
 
@@ -1107,30 +1165,31 @@ rc_sprint(rc_data *data)
       if (!out) {
 	return NULL;
       }
+      // Write matrix dimensions if appropriate
       if (matsize_length > 0) {
 	sprintf(out+length-1, "[%d][%d]", data->m, data->n);
 	length += strlen(out+length-1);
-     }
-
-      out[length-1] = ' ';
+      }
+       
+      out[length-1] = SPRINT_EQUALS;
       while (*val && *val <= ' ') {
 	val++;
       }
 
-#ifdef WRAP_IN_SPRINT
+#ifdef SPRINT_WRAP
       if (*val == '.' || (*val >= '0' && *val <= '9')) {
-	/* Wrap numbers in curly brackets */
-	out[length] = '{';
+	/* Wrap numbers */
+	out[length] = SPRINT_NUMBER_BEGIN;
 	strcpy(out+length+1, data->value);
 	length += (value_length+3);
-	out[length-2] = '}';
+	out[length-2] = SPRINT_NUMBER_END;
       }
       else {
-	/* Wrap strings in double quotes */
-	out[length] = '"';
+	/* Wrap strings */
+	out[length] = SPRINT_STRING_BEGIN;
 	strcpy(out+length+1, data->value);
 	length += (value_length+3);
-	out[length-2] = '"';
+	out[length-2] = SPRINT_STRING_END;
       }
 #else
       /* Check whether value needs to be wrapped in quotes or
@@ -1140,6 +1199,7 @@ rc_sprint(rc_data *data)
 	int found_double_quote = 0;
 	int found_closing_curly = 0;
 	int found_newline = 0;
+	int found_separator = 0;
 	char *c = data->value;
 	while (*c != '\0') {
 	  if (*c == '}') {
@@ -1154,27 +1214,49 @@ rc_sprint(rc_data *data)
 	  else if (*c == '\n') {
 	    found_newline = 1;
 	  }
+	  else if (*c <= ' ') {
+	    found_separator = 1;
+	  }
 	  c++;
 	}
+#ifdef SPRINT_COMPRESS_WHITESPACE
+	if (found_newline || found_separator) {
+#else
 	if (found_newline) {
+#endif
 	  /* Some kind of wrapper required */
 	  if (!found_double_quote) {
-	    out[length] = '"';
+	    out[length] = SPRINT_STRING_BEGIN;
+#ifdef SPRINT_COMPRESS_WHITESPACE
+	    __rc_copy_compress_whitespace(out+length+1, data->value);
+	    length += strlen(out+length+1)+3;
+#else
 	    strcpy(out+length+1, data->value);
 	    length += (value_length+3);
-	    out[length-2] = '"';
+#endif
+	    out[length-2] = SPRINT_STRING_END;
 	  }
 	  else if (!found_closing_curly) {
-	    out[length] = '{';
+	    out[length] = SPRINT_NUMBER_BEGIN;
+#ifdef SPRINT_COMPRESS_WHITESPACE
+	    __rc_copy_compress_whitespace(out+length+1, data->value);
+	    length += strlen(out+length+1)+3;
+#else
 	    strcpy(out+length+1, data->value);
 	    length += (value_length+3);
-	    out[length-2] = '}';
+#endif
+	    out[length-2] = SPRINT_NUMBER_END;
 	  }
 	  else {
-	    out[length] = '\'';
+	    out[length] = SPRINT_NUMBER_BEGIN;
+#ifdef SPRINT_COMPRESS_WHITESPACE
+	    __rc_copy_compress_whitespace(out+length+1, data->value);
+	    length += strlen(out+length+1)+3;
+#else
 	    strcpy(out+length+1, data->value);
 	    length += (value_length+3);
-	    out[length-2] = '\'';
+#endif
+	    out[length-2] = SPRINT_NUMBER_END;
 	  }
 	}
 	else {
@@ -1186,13 +1268,14 @@ rc_sprint(rc_data *data)
 #endif
     }
 
-    out[length-1] = '\n';
+    /*    out[length-1] = '\n'; */
+    --length;
     out[length] = '\0';
-
+    
     if (!(data = data->next)) {
       break;
-    }   
-  }
+    }
+  } /* Loop over param-value pairs */
   return out;
 }
 

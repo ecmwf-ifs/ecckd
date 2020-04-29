@@ -85,7 +85,12 @@ public:
 	   const Matrix& temperature,
 	   const Vector& wavenumber1,
 	   const Vector& wavenumber2,
-	   const Matrix& gpoint_fraction) 
+	   const Matrix& gpoint_fraction,
+	   const Vector& wavenumber1_band,
+	   const Vector& wavenumber2_band,
+	   const intVector& band_number,
+	   const std::string& history = std::string(),
+	   const std::string& config = std::string()) 
     : single_gas_data_(single_gas_data),
       temperature_planck_(eval(temperature_planck)),
       planck_function_(eval(planck_function)),
@@ -93,7 +98,12 @@ public:
       temperature_(eval(temperature)),
       wavenumber1_(eval(wavenumber1)),
       wavenumber2_(eval(wavenumber2)),
-      gpoint_fraction_(eval(gpoint_fraction)) {
+      gpoint_fraction_(eval(gpoint_fraction)),
+      wavenumber1_band_(eval(wavenumber1_band)),
+      wavenumber2_band_(eval(wavenumber2_band)),
+      band_number_(eval(band_number)),
+      history_(history),
+      config_(config) {
     ng_ = planck_function.size(1);
     nt_ = temperature.size(0);
     np_ = pressure.size();
@@ -247,11 +257,16 @@ private:
   /// (ng,nwav)
   Matrix gpoint_fraction_;
 
+  /// Wavenumber bounds of each band
+  Vector wavenumber1_band_, wavenumber2_band_;
+  /// Band to which each wavenumber belongs
+  intVector band_number_;
+
   /// Number of g points, pressures, temperatures
   int ng_, nt_, np_, nwav_;
 
   /// Contents of history attribute when reading file
-  std::string history_;
+  std::string history_, summary_, config_;
 
 };
 

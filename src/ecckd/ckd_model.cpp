@@ -8,6 +8,7 @@
 #include "OutputDataFile.h"
 #include "constants.h"
 #include "adept_scalar.h"
+#include "write_standard_attributes.h"
 
 using namespace adept;
 
@@ -33,6 +34,8 @@ CkdModel<IsActive>::read(const std::string& file_name,
   file.read(wavenumber1_, "wavenumber1");
   file.read(wavenumber2_, "wavenumber2");
   file.read(gpoint_fraction_, "gpoint_fraction");
+  file.read(wavenumber1_band_, "wavenumber1_band");
+  file.read(wavenumber2_band_, "wavenumber2_band");
 
   np_   = log_pressure_.size();
   nt_   = temperature_.dimension(0);
@@ -43,7 +46,9 @@ CkdModel<IsActive>::read(const std::string& file_name,
   file.read(molecules_str, DATA_FILE_GLOBAL_SCOPE, "constituent_id");
 
   file.read(history_, DATA_FILE_GLOBAL_SCOPE, "history");
-  
+  file.read(summary_, DATA_FILE_GLOBAL_SCOPE, "summary");
+  file.read(config_,  DATA_FILE_GLOBAL_SCOPE, "config");
+
   int n_gases;
   file.read(n_gases, "n_gases");
 
@@ -181,6 +186,7 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.define_dimension("g_point", ng_);
   file.define_dimension("temperature_planck", temperature_planck_.size());
   file.define_dimension("wavenumber", nwav_);
+  file.define_dimension("band", wavenumber1_band_.size());
 
   std::string molecule_list;
   for (int igas = 0; igas < ngas(); ++igas) {
@@ -213,19 +219,25 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write_units("W m-2", "planck_function");
 
   file.define_variable("wavenumber1", FLOAT, "wavenumber");
-  file.write_long_name("Lower bound of spectral interval", "wavenumber1");
+  file.write_long_name("Lower wavenumber bound of spectral interval", "wavenumber1");
   file.write_units("cm-1", "wavenumber1");
   file.define_variable("wavenumber2", FLOAT, "wavenumber");
-  file.write_long_name("Upper bound of spectral interval", "wavenumber2");
+  file.write_long_name("Upper wavenumber bound of spectral interval", "wavenumber2");
   file.write_units("cm-1", "wavenumber2");
   file.define_variable("gpoint_fraction", FLOAT, "g_point", "wavenumber");
   file.write_long_name("Fraction of spectrum contributing to each g-point",
 		       "gpoint_fraction");
 
-  std::string title = "Gas optics definition";
-  file.write(title, "title");
-  file.write("ecCKD gas optics tool", "source");
+  file.define_variable("wavenumber1_band", FLOAT, "band");
+  file.write_long_name("Lower wavenumber bound of band", "wavenumber1_band");
+  file.write_units("cm-1", "wavenumber1_band");
+  file.define_variable("wavenumber2", FLOAT, "band");
+  file.write_long_name("Upper wavenumber bound of band", "wavenumber2_band");
+  file.write_units("cm-1", "wavenumber2_band");
+  file.define_variable("band_number", FLOAT, "g_point");
+  file.write_long_name("Band number of each g point", "band_number");
 
+  write_standard_attributes(file, "Gas optics definition");
   file.write(molecule_list, "constituent_id");
 
   for (int igas = 0; igas < ngas(); ++igas) {
@@ -306,7 +318,29 @@ CkdModel<IsActive>::write(const std::string& file_name,
   }
   file.append_history(argc, argv);
 
-  file.write(config_str, "config");
+  if (!config_.empty()) {
+    file.write(config_ + "\n" + config_str, "config");
+  }
+  else {
+    file.write(config_str, "config");
+  }
+  
+  /*
+  if (!summary_.empty()) {
+    std::string summary = summary_ + "\n - Optimized the absorption coefficients of:";
+    for (int igas = 0; igas < active_molecules.size(); ++igas) {
+      std::string Molecule = active_molecules[igas];
+      std::transform(Molecule.begin(), Molecule.end(), Molecule.begin(), ::toupper);
+      summary += " " + Molecule;
+    }
+    file.write(summary, "summary");
+  }
+  else {
+    std::string summary = "This file was created in steps shown by lines of the history and config attributes, corresponding to the following:\n"
+      " - Created file by averaging line-by-line absorption coefficients";
+    file.write(summary, "summary");
+  }
+  */
 
   // Write data
 
@@ -319,6 +353,9 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write(wavenumber1_, "wavenumber1");
   file.write(wavenumber2_, "wavenumber2");
   file.write(gpoint_fraction_, "gpoint_fraction");
+  file.write(wavenumber1_band_, "wavenumber1_band");
+  file.write(wavenumber2_band_, "wavenumber2_band");
+  file.write(band_number_, "band_number");
 
   for (int igas = 0; igas < ngas(); ++igas) {
     SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
@@ -712,7 +749,12 @@ CkdModel<IsActive>::calc_planck_function(const Vector& temperature)
 
 template CkdModel<false>::CkdModel(const std::vector<SingleGasData<false> >&,
 				   const Vector&, const Matrix&, const Vector&, const Matrix&,
-				   const Vector&, const Vector&, const Matrix&);
+				   const Vector&, const Vector&, const Matrix&,
+				   const Vector& wavenumber1_band,
+				   const Vector& wavenumber2_band,
+				   const intVector& band_number,
+				   const std::string& history,
+				   const std::string& config);
 //template CkdModel<true>::CkdModel(const std::vector<SingleGasData<false> >&,
 //				  const Vector&, const Matrix&, const Vector&, const Matrix&,
 //				  const Vector&, const Vector&, const Matrix&);

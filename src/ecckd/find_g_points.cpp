@@ -10,6 +10,7 @@
 #include "OutputDataFile.h"
 #include "single_gas_data.h"
 #include "equipartition.h"
+#include "write_standard_attributes.h"
 
 using namespace adept;
 
@@ -678,7 +679,8 @@ main(int argc, const char* argv[])
 
   LOG << "*** COMPUTING SPECTRAL OVERLAP OF GASES\n";
   // "ng" is the total number of g points for all gases
-  int ng = overlap_g_points(single_gas_data);
+  intVector band_number;
+  int ng = overlap_g_points(single_gas_data, band_number);
 
   // Work out to which multi-gas g point each wavenumber is assigned
   intVector g_point(nwav);
@@ -744,6 +746,9 @@ main(int argc, const char* argv[])
   file.write_long_name("Upper wavenumber bound of band", "wavenumber2_band");
   file.write_units("cm-1", "wavenumber2_band");
 
+  file.define_variable("band_number", FLOAT, "g_point");
+  file.write_long_name("Band number of each g point", "band_number");
+
   for (int igas = 0; igas < ngas; ++igas) {
     const SingleGasData& this_gas = single_gas_data[igas];
     const std::string& Molecule = this_gas.Molecule;
@@ -754,7 +759,7 @@ main(int argc, const char* argv[])
 			 + Molecule, molecule + "_n_g_points");
 
     file.define_variable(molecule + "_band_number", INT, dim_str);
-    file.write_long_name("Band number",  molecule + "_band_number");
+    file.write_long_name("Band number of each " + Molecule + " g point",  molecule + "_band_number");
     file.write_comment("This variable indicates the number of the band (0 based) that each g point is in.", molecule + "_band_number");
 
     file.define_variable(molecule + "_rank1", INT, dim_str);
@@ -798,16 +803,10 @@ main(int argc, const char* argv[])
 
   // Define global variables
   
-  //if (molecule.empty()) {
-  //    order_file.read(molecule, DATA_FILE_GLOBAL_SCOPE, "molecule");
-  //  }
-  //  std::string Molecule = molecule;
-  //  std::transform(Molecule.begin(), Molecule.end(), Molecule.begin(), ::toupper);
-  std::string title = "G-point definitions";// for the absorption spectrum of ";
-  //  title += Molecule;
-  file.write(title, "title");
+  std::string title = "G-point definitions";
+ 
+  write_standard_attributes(file, title);
 
-  //  file.write(molecule_list, "molecules"); // Depricated
   file.write(molecule_list, "constituent_id");
 
   file.append_history(argc, argv);
@@ -824,6 +823,8 @@ main(int argc, const char* argv[])
 
   file.write(band_bound1, "wavenumber1_band");
   file.write(band_bound2, "wavenumber2_band");
+
+  file.write(band_number, "band_number");
 
   for (int igas = 0; igas < ngas; ++igas) {
     const SingleGasData& this_gas = single_gas_data[igas];

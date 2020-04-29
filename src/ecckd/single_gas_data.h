@@ -96,7 +96,8 @@ struct SingleGasData {
   intVector g_point;
 };
 
-int overlap_g_points(std::vector<SingleGasData>& gas_data);
+int overlap_g_points(std::vector<SingleGasData>& gas_data,
+		     intVector& band_number);
 
 // Repartition g-points so that they are more evenly spaced (often the
 // most optically thick one covers too narrow a region of the spectrum

@@ -6,7 +6,8 @@
 // Overlap the g-points of the various gases using the hypercube
 // partition method of Hogan (2010)
 int
-overlap_g_points(std::vector<SingleGasData>& gas_data) {
+overlap_g_points(std::vector<SingleGasData>& gas_data,
+		 intVector& band_number) {
   const int ngas  = gas_data.size();
   const int nband = gas_data[0].n_g_points.size();
   intVector ng_band(nband);
@@ -21,6 +22,15 @@ overlap_g_points(std::vector<SingleGasData>& gas_data) {
   }
 
   int ng = sum(ng_band); // Total number of g points
+
+  band_number.resize(ng);
+  {
+    int ig = 0;
+    for (int iband = 0; iband < nband; ++iband) {
+      band_number(range(ig,ig+ng_band(iband)-1)) = iband;
+      ig += ng_band(iband);
+    }
+  }
 
   for (int igas = 0; igas < ngas; ++igas) {
     gas_data[igas].g_min.resize(ng);
