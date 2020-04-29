@@ -135,6 +135,10 @@ public:
   /// Create error covariance matrices
   void create_error_covariances(Real err, Real pressure_corr, Real temperature_corr, Real conc_corr);
 
+  /// Ensure that gases with a "relative-linear" representation cannot
+  /// lead to a negative optical depth if their concentration is zero
+  void cap_relative_linear_coeffts();
+
   /// Return the background contribution to cost function, J, and also
   /// the gradient dJ/dx, where delta_x is the difference between the
   /// current state and the prior

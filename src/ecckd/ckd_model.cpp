@@ -462,6 +462,46 @@ CkdModel<true>::calc_background_cost_function(const Vector& delta_x, Vector grad
   return cost_fn;
 }
 
+/// Ensure that gases with a "relative-linear" representation cannot
+/// lead to a negative optical depth if their concentration is zero
+template<>
+void
+CkdModel<true>::cap_relative_linear_coeffts()
+{
+  // First find index of background gas
+  int ibggas = -1;
+  bool is_rel_lin = false;
+  for (int igas = 0; igas < ngas(); ++igas) {
+    SingleGasData<true>& this_gas = single_gas_data_[igas];
+    if (this_gas.conc_dependence == NONE) {
+      ibggas = igas;
+    }
+    else if (this_gas.is_active
+	     && this_gas.conc_dependence == RELATIVE_LINEAR) {
+      is_rel_lin = true;
+    }
+  }
+  if (is_rel_lin) {
+    if (ibggas < 0) {
+      LOG << "Unable to cap the coefficients of the relative-linear gases because no background composite gas found\n";
+    }
+    else {
+      static const Real ref_frac_trigger = 0.8;
+      for (int igas = 0; igas < ngas(); ++igas) {
+	SingleGasData<true>& this_gas = single_gas_data_[igas];
+	if (this_gas.is_active
+	    && this_gas.conc_dependence == RELATIVE_LINEAR) {
+	  int nbad = count(this_gas.molar_abs*(this_gas.reference_vmr*ref_frac_trigger) > single_gas_data_[ibggas].molar_abs);
+	  if (nbad > 0) {
+	    LOG << "Correcting " << nbad << " " << this_gas.Molecule << " coefficients that could cause negative optical depth\n";
+	    this_gas.molar_abs = min(this_gas.molar_abs, single_gas_data_[ibggas].molar_abs/(this_gas.reference_vmr*ref_frac_trigger));
+	  }
+	}
+      }  
+    }
+  }
+
+}
 
 
 /// Calculate the optical depth at each g-point for multiple

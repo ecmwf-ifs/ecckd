@@ -9,6 +9,7 @@ struct MyData {
   CkdModel<true>* ckd_model;
   std::vector<LblFluxes>* lbl;
   Real flux_weight, flux_profile_weight, broadband_weight, prior_error;
+  Real negative_od_penalty;
   Array3D* relative_ckd_flux_dn;
   Array3D* relative_ckd_flux_up;
 };
@@ -56,6 +57,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 				Real flux_weight, 
 				Real flux_profile_weight,
 				Real broadband_weight,
+				Real negative_od_penalty,
 				Array3D* relative_ckd_flux_dn,
 				Array3D* relative_ckd_flux_up)
 {
@@ -78,7 +80,17 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
     aArray3D optical_depth;
     calc_total_optical_depth(ckd_model, lbl1,
 			     optical_depth, first_call);
-    
+    int nnegative = count(optical_depth < 0.0);
+    if (nnegative > 0) {
+      aArray3D penalty(optical_depth.dimensions());
+      penalty.where(optical_depth < 0.0) = either_or(optical_depth*optical_depth, 0.0);
+      aReal new_cost = negative_od_penalty * sum(penalty);
+      cost += new_cost;
+      optical_depth.where(optical_depth < 0.0) = 0.0;
+      LOG << "  Fixing negative optical depth at " << nnegative << " points: added "
+          << new_cost << " to cost function\n";
+    }
+
     // If the pointers relative_ckd_flux_[dn|up] are not NULL, then
     // they point to 3D arrays of fluxes to be subtracted from the CKD
     // calculations.  But since each profile is analyzed in turn, we
@@ -151,6 +163,7 @@ calc_cost_function_and_gradient_lbfgs(void *vdata,
 						      data.flux_weight, 
 						      data.flux_profile_weight,
 						      data.broadband_weight,
+						      data.negative_od_penalty,
 						      data.relative_ckd_flux_dn,
 						      data.relative_ckd_flux_up);
   // Prior contribution
@@ -234,7 +247,7 @@ solve_lbfgs_lw(CkdModel<true>& ckd_model,
   data.prior_error = prior_error;
   data.relative_ckd_flux_dn = relative_ckd_flux_dn;
   data.relative_ckd_flux_up = relative_ckd_flux_up;
-
+  data.negative_od_penalty = 1.0e5;
 
   LOG << "Optimizing coefficients with LBFGS algorithm\n";
   LOG << "  CKD model interpolation is ";

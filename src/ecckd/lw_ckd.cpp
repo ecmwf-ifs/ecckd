@@ -221,6 +221,9 @@ main(int argc, const char* argv[])
     }
   }
 
+  // Remove negative optical depth
+  od = max(od,0.0);
+
   if (write_od) {
     file.write(od, "optical_depth");
     file.write(planck_hl, "planck_hl");

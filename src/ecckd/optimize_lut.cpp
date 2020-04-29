@@ -98,6 +98,8 @@ main(int argc, const char* argv[])
 
   CkdModel<true> ckd_model(input, gas_list);
 
+  //  ckd_model.cap_relative_linear_coeffts();
+
   ckd_model.create_error_covariances(prior_error, pressure_corr, temperature_corr, conc_corr);
 
   // Optional: compute radiative transfer of one set of profiles
@@ -186,6 +188,7 @@ main(int argc, const char* argv[])
   std::string config_str;
   config.read(config_str);  
 
+  //  ckd_model.cap_relative_linear_coeffts();
   ckd_model.write(output, argc, argv, config_str);
 
 }
