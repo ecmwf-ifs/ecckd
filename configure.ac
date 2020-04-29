@@ -4,7 +4,7 @@
 AC_PREREQ([2.63])
 
 # Remember to update the version number for a new release
-AC_INIT([ECCKD], [0.4], [r.j.hogan@ecmwf.int], [ecckd])
+AC_INIT([ecCKD], [0.5], [r.j.hogan@ecmwf.int], [ecckd])
 
 # Most code is C++
 AC_LANG([C++])
@@ -42,7 +42,8 @@ AM_COND_IF([HAVE_NETCDF], AC_SUBST([NETCDF_DIR], [$netcdf_prefix]))
 AC_CONFIG_FILES([Makefile
                  src/tools/Makefile
                  src/ecckd/Makefile
-		 src/lbfgs/Makefile])
+		 src/lbfgs/Makefile
+		 test/version.h])
 
 # Provide a summary to the user
 AC_MSG_NOTICE([********************* Summary **************************************])

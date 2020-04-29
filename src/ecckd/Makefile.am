@@ -30,7 +30,8 @@ libecckd_a_SOURCES = \
 	single_gas_data.h \
 	single_gas_data.cpp \
 	equipartition.h \
-	equipartition.cpp
+	equipartition.cpp \
+	write_standard_attributes.h
 
 bin_PROGRAMS = reorder_spectrum find_g_points merge_spectra \
 	create_look_up_table lw_ckd lw_spectra optimize_lut \
