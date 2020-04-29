@@ -3,12 +3,6 @@
 # and checks the inputs to those scripts. It also sets the APP and
 # MIN_PRESSURE variables.
 
-# Interpret first argument as a script to be sourced
-if [ "$#" -gt 0 ]
-then
-    . $1
-fi
-
 # Check necessary variables are present
 if [ ! "${TOLERANCE}" ]
 then
@@ -32,24 +26,6 @@ fi
 if [ "$APPLICATION" = climate ]
 then 
     APP=climate
-    MIN_PRESSURE=2
-elif [ "$APPLICATION" = climate2 ]
-then
-    # Second pass of optimize...
-    APP=climate2
-    APPLICATION=climate
-    MIN_PRESSURE=2
-elif [ "$APPLICATION" = climate3 ]
-then
-    # Global optimize
-    APP=climate3
-    APPLICATION=climate
-    MIN_PRESSURE=2
-elif [ "$APPLICATION" = climate4 ]
-then
-    # Global optimize
-    APP=climate4
-    APPLICATION=climate
     MIN_PRESSURE=2
 elif [ "$APPLICATION" = global-nwp ]
 then

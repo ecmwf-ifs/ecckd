@@ -8,9 +8,19 @@
 #APPLICATION=global-nwp
 APPLICATION=climate
 
+if [ "$APPLICATION" = climate ]
+then
+    # The best strategy for climate CKD models is to optimize first
+    # H2O, CO2, O3 and O2+N2, then in subsequent optimization steps to
+    # do the three next minor gases.  CFC12 is already good enough
+    # without optimization.
+    OPTIMIZE_MODE_LIST="relative-base relative-ch4 relative-n2o relative-cfc11"
+else
+    unset OPTIMIZE_MODE_LIST
+fi
+
 BAND_STRUCTURE="fsck wide narrow"
 TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
-TOLERANCE="0.04 0.01"
 
 # Make variables available to scripts find_g_points_lw.sh onwards
 export TOLERANCE
@@ -24,28 +34,14 @@ export BAND_STRUCTURE
 ./reorder_spectrum_lw.sh
 
 # 3. Find g-points
-#./find_g_points_lw.sh
+./find_g_points_lw.sh
 
 # 4. Create raw CKD look-up table
 ./create_lut_lw.sh
 
 # 5. Optimize CKD look-up table
-./optimize_lut_lw.sh
-
-#APPLICATION=climate4 MODEL_CODE_SUFFIX=-sep-rel ./optimize_lut_lw.sh
-#APPLICATION=climate2 MODEL_CODE_SUFFIX=-sep-rel ./optimize_lut_lw.sh
-#APPLICATION=climate3 MODEL_CODE_SUFFIX=-sep ./optimize_lut_lw.sh
-#APPLICATION=climate MODEL_CODE_SUFFIX=-sep ./optimize_lut_lw.sh
-#APPLICATION=climate2 MODEL_CODE_SUFFIX=-sep ./optimize_lut_lw.sh
-
-# 5.1 Second step in the climate case
-if [ "$APPLICATION" = climate ]
-then
-    APPLICATION=climate2 ./optimize_lut_lw.sh
-fi
+./optimize_lut_lw.sh $OPTIMIZE_MODE_LIST
 
 # 6. Run two-stream radiative transfer or just compute optical depths
 # for CKDMIP scenarios
-#MODEL_CODE_SUFFIX=-sep-rel ./run_lw_ckd.sh
-
 ./run_lw_ckd.sh

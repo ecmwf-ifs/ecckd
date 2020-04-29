@@ -6,8 +6,8 @@
 . config.h
 . check_configuration.h
 
-VERSIONS="raw raw2 ckd"
-#VERSIONS=ckd
+#VERSIONS="raw2 raw3 raw4 ckd"
+VERSIONS=ckd
 NANGLE=4
 
 if [ "$NANGLE" = 0 ]
