@@ -4,9 +4,9 @@
 . config.h
 
 # 0. Settings
-#APPLICATION=limited-area-nwp
+APPLICATION=limited-area-nwp
 #APPLICATION=global-nwp
-APPLICATION=climate
+#APPLICATION=climate
 
 if [ "$APPLICATION" = climate ]
 then
@@ -21,9 +21,6 @@ fi
 
 BAND_STRUCTURE="fsck wide narrow"
 TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
-
-BAND_STRUCTURE=wide
-TOLERANCE=0.04
 
 # Make variables available to scripts find_g_points_lw.sh onwards
 export TOLERANCE
@@ -47,4 +44,4 @@ export BAND_STRUCTURE
 
 # 6. Run two-stream radiative transfer or just compute optical depths
 # for CKDMIP scenarios
-#./run_lw_ckd.sh
+./run_lw_ckd.sh

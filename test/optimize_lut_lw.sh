@@ -6,7 +6,7 @@
 . config.h
 . check_configuration.h
 
-set -ex 
+#set -ex
 
 if [ -z "$1" ]
 then
@@ -222,16 +222,17 @@ EOF
 
     for TOL in $TOLERANCE
     do
-	MODEL_CODE=${APPLICATION}_${BANDSTRUCT}_tol${TOL}${MODEL_CODE_SUFFIX}
+	MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
 	${BANNER} Optimizing CKD model: $MODEL_CODE
 
-	INPUT=${INDIR}/lw_${INCODE}_${MODEL_CODE}.nc
+	INPUT=${INDIR}/${ECCKD_PREFIX}_lw_${INCODE}_${MODEL_CODE}.nc
 	OUTPUT=${OUTDIR}/${ECCKD_PREFIX}_lw_${OUTCODE}_${MODEL_CODE}.nc
 	LOG=${OUTDIR}/${ECCKD_PREFIX}_lw_${OUTCODE}_${MODEL_CODE}.log
 
 	$OPTIMIZE_LUT \
 	    input=${INPUT} \
 	    output=${OUTPUT} \
+	    model_id=lw_${APPLICATION}_${BANDSTRUCT}-tol${TOL} \
 	    $EXTRA_ARGS \
 	    config_optimize_lut_${OPTIMIZE_MODE}.cfg \
 	    | tee $LOG

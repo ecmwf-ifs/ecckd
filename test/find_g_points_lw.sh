@@ -36,9 +36,10 @@ then
 append_path "${MMM_LW_SPECTRA_DIR}:${WORK_LW_SPECTRA_DIR}:${WORK_LW_ORDER_DIR}"
 iprofile 0
 averaging_method "transmission"
-tolerance_tolerance 0.01 
+tolerance_tolerance 0.01
 flux_weight 0.0
 min_pressure ${MIN_PRESSURE}
+max_iterations 60
 
 gases composite h2o o3
 
@@ -83,6 +84,7 @@ averaging_method "transmission"
 tolerance_tolerance 0.01 
 flux_weight 0.0
 min_pressure ${MIN_PRESSURE}
+max_iterations 60
 
 gases ch4 n2o co2 h2o o3
 
@@ -156,6 +158,7 @@ averaging_method "transmission"
 tolerance_tolerance 0.01 
 flux_weight 0.0
 min_pressure ${MIN_PRESSURE}
+max_iterations 60
 
 gases h2o o3 ch4 n2o co2
 
@@ -237,9 +240,10 @@ then
 append_path "${MMM_LW_SPECTRA_DIR}:${WORK_LW_SPECTRA_DIR}:${WORK_LW_ORDER_DIR}"
 iprofile 0
 averaging_method "transmission"
-tolerance_tolerance 0.01
+tolerance_tolerance 0.015
 flux_weight 0.0
 min_pressure ${MIN_PRESSURE}
+max_iterations 60
 
 gases composite h2o o3
 

@@ -6,8 +6,13 @@ set -ex
 VERSIONS="ckd"
 APPLICATION=climate
 BAND_STRUCTURE="fsck wide narrow"
-TOLERANCE="0.04 0.01"
+TOLERANCE="0.16 0.08 0.04 0.02 0.01"
+TOLERANCE=0.005
 #MODEL_CODE_SUFFIX=-sep
+
+#BAND_STRUCTURE=wide
+#TOLERANCE=0.08
+
 
 mkdir -p ${WORK_DIR}/lw_spectral-definition/
 
@@ -19,10 +24,10 @@ do
     do
 	for VER in $VERSIONS
 	do
-	    MODEL_CODE=${APPLICATION}_${BANDSTRUCT}_tol${TOL}${MODEL_CODE_SUFFIX}
+	    MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
 	    cd ${WORK_DIR}/lw_spectral-definition/
-	    ln -v -s ../lw_ckd-definition/lw_ckd-definition_${MODEL_CODE}.nc \
-		ecckd_lw_${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}_spectral-definition.nc
+	    ln -v -s ../lw_ckd-definition/${ECCKD_PREFIX}_lw_ckd-definition_${MODEL_CODE}.nc \
+		${ECCKD_PREFIX}_lw_${MODEL_CODE}_spectral-definition.nc
 	done
     done
 done

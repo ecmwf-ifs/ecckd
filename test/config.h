@@ -100,6 +100,8 @@ WN2_SW_WIDE="4000 8050 16000 29000 50000"
 # Prefix final files by the following
 ECCKD_PREFIX=ecckd-$ECCKD_VERSION
 
+CKDMIP_RESULTS_DIR=${CKDMIP_DATA_DIR}/results/${ECCKD_PREFIX}
+
 function my_banner {
     echo
     echo "####################################################################"
