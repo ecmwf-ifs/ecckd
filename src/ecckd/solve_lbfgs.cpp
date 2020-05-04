@@ -1,5 +1,5 @@
 #include "lbfgs.h"
-#include "solve_lbfgs_lw.h"
+#include "solve_lbfgs.h"
 #include "calc_cost_function_lw.h"
 #include "Error.h"
 
@@ -213,15 +213,15 @@ progress_lbfgs(void *data,
 
 
 int
-solve_lbfgs_lw(CkdModel<true>& ckd_model,
-	       std::vector<LblFluxes>& lbl,
-	       Real flux_weight,
-	       Real flux_profile_weight,
-	       Real broadband_weight,
-	       Real prior_error,
-	       Real convergence_criterion,
-	       Array3D* relative_ckd_flux_dn,
-	       Array3D* relative_ckd_flux_up)
+solve_lbfgs(CkdModel<true>& ckd_model,
+	    std::vector<LblFluxes>& lbl,
+	    Real flux_weight,
+	    Real flux_profile_weight,
+	    Real broadband_weight,
+	    Real prior_error,
+	    Real convergence_criterion,
+	    Array3D* relative_ckd_flux_dn,
+	    Array3D* relative_ckd_flux_up)
 {
   int status=0;
   lbfgsfloatval_t fx;

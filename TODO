@@ -2,9 +2,9 @@ SCRIPTS
 
 CODE
 
- - optimize can save only OD for CKDMIP
- - Shortwave find g points
- - Shortwave create LUT (no change?)
+ - find g points stops if lowest cost function is not in the last 10 iterations
+ - CH4 tolerance can be set separately
+
  - Shortwave optimize
 
 

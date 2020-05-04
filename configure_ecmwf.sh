@@ -5,6 +5,7 @@ set -ex
 # Compile options
 #CXXFLAGS="-Wall -g -O0 -march=native -std=c++11 -DADEPT_BOUNDS_CHECKING"
 CXXFLAGS="-Wall -g -O3 -march=native -std=c++11 -DADEPT_BOUNDS_CHECKING"
+CXXFLAGS="-Wall -g -O3 -march=native -std=c++11 -DADEPT_BOUNDS_CHECKING -DADEPT_FAST_EXPONENTIAL"
 CXXFLAGS="-Wall -g -O3 -march=native -std=c++11 -DADEPT_FAST_EXPONENTIAL"
 #CXXFLAGS="-Wall -g -O3 -march=native -std=c++11"
 

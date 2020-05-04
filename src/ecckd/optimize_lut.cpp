@@ -1,7 +1,7 @@
 #include "radiative_transfer_lw.h"
 #include "ckd_model.h"
 #include "lbl_fluxes.h"
-#include "solve_lbfgs_lw.h"
+#include "solve_lbfgs.h"
 #include "floating_point_exceptions.h"
 #include "DataFile.h"
 #include "file_manager.h"
@@ -182,10 +182,10 @@ main(int argc, const char* argv[])
     THROW(PARAMETER_ERROR);
   }
 
-  int status = solve_lbfgs_lw(ckd_model, training_data,
-			      flux_weight, flux_profile_weight, broadband_weight, prior_error,
-			      convergence_criterion,
-			      relative_ckd_flux_dn, relative_ckd_flux_up);
+  int status = solve_lbfgs(ckd_model, training_data,
+			   flux_weight, flux_profile_weight, broadband_weight, prior_error,
+			   convergence_criterion,
+			   relative_ckd_flux_dn, relative_ckd_flux_up);
 
   LOG << "Convergence status: " << lbfgs_status_string(status) << "\n";
 

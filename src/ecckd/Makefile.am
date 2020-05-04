@@ -25,8 +25,8 @@ libecckd_a_SOURCES = \
 	average_optical_depth.cpp \
 	lbl_fluxes.h \
 	lbl_fluxes.cpp \
-	solve_lbfgs_lw.h \
-	solve_lbfgs_lw.cpp \
+	solve_lbfgs.h \
+	solve_lbfgs.cpp \
 	single_gas_data.h \
 	single_gas_data.cpp \
 	equipartition.h \
