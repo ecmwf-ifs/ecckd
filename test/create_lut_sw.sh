@@ -190,6 +190,7 @@ do
 	OUTPUT=${WORK_SW_RAW_CKD_DIR}/sw_raw-ckd_${MODEL_CODE}.nc
 	$CREATE_LOOK_UP_TABLE \
 	    append_path=${WORK_SW_GPOINTS_DIR}:${IDEALIZED_SW_SPECTRA_DIR}:${MMM_CONC_DIR} \
+	    ssi=$MMM_SW_SSI \
 	    input=${INPUT} \
 	    output=${OUTPUT} \
 	    temperature_stride=1 $EXTRA_ARGS \

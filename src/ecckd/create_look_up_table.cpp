@@ -378,9 +378,18 @@ main(int argc, const char* argv[])
   // We store the fraction of the spectrum contributing to each
   // g-point in the variables gpoint_fraction, where the spectrum
   // intervals are bounded by wavenumber1 and wavenumber2.
-  int dwav = 10;
-  int startwav = 0;
-  int endwav = 3260;
+  int dwav, startwav, endwav;
+
+  if (!do_sw) {
+    dwav = 10;
+    startwav = 0;
+    endwav = 3260;
+  }
+  else {
+    dwav = 50;
+    startwav = 250;
+    endwav = 50000;
+  }
   Vector wavenumber1 = static_cast<Real>(dwav) * range(startwav/dwav,endwav/dwav-1);
   Vector wavenumber2 = static_cast<Real>(dwav) * range(startwav/dwav+1,endwav/dwav);
   nwav = wavenumber1.size();
