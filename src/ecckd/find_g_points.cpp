@@ -752,6 +752,13 @@ main(int argc, const char* argv[])
 
   file.define_variable("band_number", FLOAT, "g_point");
   file.write_long_name("Band number of each g point", "band_number");
+  
+  if (!ssi.empty()) {
+    // This is a shortwave file
+    file.define_variable("solar_irradiance", FLOAT, "g_point");
+    file.write_long_name("Solar irradiance across each g point", "solar_irradiance");
+    file.write_units("W m-2", "solar_irradiance");
+  }
 
   for (int igas = 0; igas < ngas; ++igas) {
     const SingleGasData& this_gas = single_gas_data[igas];
@@ -807,7 +814,13 @@ main(int argc, const char* argv[])
 
   // Define global variables
   
-  std::string title = "G-point definitions";
+  std::string title;
+  if (ssi.empty()) {
+    title = "Definition of the spectral intervals of a longwave CKD model";
+  }
+  else {
+    title = "Definition of the spectral intervals of a shortwave CKD model";
+  }
  
   write_standard_attributes(file, title);
 
@@ -829,6 +842,19 @@ main(int argc, const char* argv[])
   file.write(band_bound2, "wavenumber2_band");
 
   file.write(band_number, "band_number");
+  if (!ssi.empty()) {
+    Vector solar_irradiance(ng);
+    solar_irradiance = 0.0;
+    for (int ig = 0; ig < ng; ++ig) {
+      solar_irradiance(ig) = sum(ssi(find(g_point == ig)));
+    }
+    int nbad = count(solar_irradiance <= 0.0);
+    if (nbad > 0) {
+      WARNING << nbad << " shortwave g points have zero solar irradiance";
+      ENDWARNING;
+    }
+    file.write(solar_irradiance, "solar_irradiance");
+  }
 
   for (int igas = 0; igas < ngas; ++igas) {
     const SingleGasData& this_gas = single_gas_data[igas];

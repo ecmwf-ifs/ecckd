@@ -1,6 +1,7 @@
 #include "lbfgs.h"
 #include "solve_lbfgs.h"
 #include "calc_cost_function_lw.h"
+#include "calc_cost_function_sw.h"
 #include "Error.h"
 
 static const Real MIN_X = -1.0e20;
@@ -125,6 +126,19 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 					flux_weight, flux_profile_weight, broadband_weight,
 					layer_weight, rel_ckd_flux_dn, rel_ckd_flux_up, 
 					lbl1.iband_per_g);
+      /*
+      cost += calc_cost_function_ckd_sw(lbl1.pressure_hl_(iprof,__),
+					lbl1.planck_hl_(iprof,__,__),
+					lbl1.surf_emissivity_(iprof,__),
+					lbl1.surf_planck_(iprof,__),
+					optical_depth(iprof,__,__),
+					lbl1.spectral_flux_dn_(iprof,__,__),
+					lbl1.spectral_flux_up_(iprof,__,__),
+					lbl1.spectral_heating_rate_(iprof,__,__),
+					flux_weight, flux_profile_weight, broadband_weight,
+					layer_weight, rel_ckd_flux_dn, rel_ckd_flux_up, 
+					lbl1.iband_per_g);
+      */
     } 
   }
   cost.set_gradient(1.0);

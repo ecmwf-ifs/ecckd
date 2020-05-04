@@ -78,6 +78,7 @@ public:
     read(file_name, gas_list);
   }
 
+  /// Longwave constructor
   CkdModel(const std::vector<SingleGasData<false> >& single_gas_data,
 	   const Vector& temperature_planck,
 	   const Matrix& planck_function,
@@ -105,6 +106,37 @@ public:
       history_(history),
       config_(config) {
     ng_ = planck_function.size(1);
+    nt_ = temperature.size(0);
+    np_ = pressure.size();
+    nwav_ = wavenumber1.size();
+  }
+
+  /// Shortwave constructor
+  CkdModel(const std::vector<SingleGasData<false> >& single_gas_data,
+	   const Vector& solar_irradiance,
+	   const Vector& pressure, 
+	   const Matrix& temperature,
+	   const Vector& wavenumber1,
+	   const Vector& wavenumber2,
+	   const Matrix& gpoint_fraction,
+	   const Vector& wavenumber1_band,
+	   const Vector& wavenumber2_band,
+	   const intVector& band_number,
+	   const std::string& history = std::string(),
+	   const std::string& config = std::string()) 
+    : single_gas_data_(single_gas_data),
+      solar_irradiance_(eval(solar_irradiance)),
+      log_pressure_(log(pressure)),
+      temperature_(eval(temperature)),
+      wavenumber1_(eval(wavenumber1)),
+      wavenumber2_(eval(wavenumber2)),
+      gpoint_fraction_(eval(gpoint_fraction)),
+      wavenumber1_band_(eval(wavenumber1_band)),
+      wavenumber2_band_(eval(wavenumber2_band)),
+      band_number_(eval(band_number)),
+      history_(history),
+      config_(config) {
+    ng_ = solar_irradiance.size();
     nt_ = temperature.size(0);
     np_ = pressure.size();
     nwav_ = wavenumber1.size();
@@ -187,6 +219,10 @@ public:
     return iband;
   }
 
+  bool is_sw() const {
+    return (!solar_irradiance_.empty());
+  }
+
   // All the molecules in the CKD model
   std::vector<std::string> molecules;
 
@@ -245,6 +281,9 @@ private:
   /// Planck function at each g point and temperature (W m-2),
   /// dimensioned (temperature,g-point)
   Matrix planck_function_;
+
+  /// Solar irradiance in each g point (W m-2)
+  Vector solar_irradiance_;
 
   /// Natural logarithm of pressure coordinate variable for molar
   /// absorption look-up tables (Pa)

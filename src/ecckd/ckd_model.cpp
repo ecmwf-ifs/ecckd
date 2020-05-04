@@ -21,9 +21,14 @@ CkdModel<IsActive>::read(const std::string& file_name,
   LOG << "Reading CKD definition file " << file_name << "\n";
   DataFile file(file_name);
   file.throw_exceptions(true);
-  file.read(temperature_planck_, "temperature_planck");
+  if (file.exist("solar_irradiance")) {
+    file.read(solar_irradiance_, "solar_irradiance");
+  }
+  else {
+    file.read(temperature_planck_, "temperature_planck");
+    file.read(planck_function_, "planck_function");
+  }
   file.read(temperature_, "temperature");
-  file.read(planck_function_, "planck_function");
 
   {
     Vector pressure;
@@ -186,7 +191,9 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.define_dimension("temperature", nt_);
   file.define_dimension("pressure", np_);
   file.define_dimension("g_point", ng_);
-  file.define_dimension("temperature_planck", temperature_planck_.size());
+  if (!is_sw()) {
+    file.define_dimension("temperature_planck", temperature_planck_.size());
+  }
   file.define_dimension("wavenumber", nwav_);
   file.define_dimension("band", wavenumber1_band_.size());
 
@@ -212,13 +219,20 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write_long_name("Pressure", "pressure");
   file.write_units("Pa", "pressure");
 
-  file.define_variable("temperature_planck", FLOAT, "temperature_planck");
-  file.write_long_name("Temperature for Planck function look-up table", "temperature_planck");
-  file.write_units("K", "temperature_planck");
+  if (is_sw()) {
+    file.define_variable("solar_irradiance", FLOAT, "g_point");
+    file.write_long_name("Solar irradiance across each g point", "solar_irradiance");
+    file.write_units("W m-2", "solar_irradiance");
+  }
+  else {
+    file.define_variable("temperature_planck", FLOAT, "temperature_planck");
+    file.write_long_name("Temperature for Planck function look-up table", "temperature_planck");
+    file.write_units("K", "temperature_planck");
 
-  file.define_variable("planck_function", FLOAT, "temperature_planck", "g_point");
-  file.write_long_name("Planck function look-up table", "planck_function");
-  file.write_units("W m-2", "planck_function");
+    file.define_variable("planck_function", FLOAT, "temperature_planck", "g_point");
+    file.write_long_name("Planck function look-up table", "planck_function");
+    file.write_units("W m-2", "planck_function");
+  }
 
   file.define_variable("wavenumber1", FLOAT, "wavenumber");
   file.write_long_name("Lower wavenumber bound of spectral interval", "wavenumber1");
@@ -239,7 +253,12 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.define_variable("band_number", FLOAT, "g_point");
   file.write_long_name("Band number of each g point", "band_number");
 
-  write_standard_attributes(file, "Gas optics definition");
+  if (is_sw()) {
+    write_standard_attributes(file, "Definition of a correlated k-distribution model for shortwave gas absorption");
+  }
+  else {
+    write_standard_attributes(file, "Definition of a correlated k-distribution model for longwave gas absorption");
+  }
   if (!model_id_.empty()) {
     file.write(model_id_, "model_id");
   }
@@ -348,9 +367,16 @@ CkdModel<IsActive>::write(const std::string& file_name,
   */
 
   if (summary_.empty()) {
+    std::string xwave;
+    if (is_sw()) {
+      xwave = "shortwave";
+    }
+    else {
+      xwave = "longwave";
+    }
     // !--------!--------!--------!--------!--------!--------!--------!--------!--------!--------
     summary_ = "This file contains the description of a correlated k-distribution model for computing\n"
-      "longwave gas absorption in the terrestrial atmosphere.  The molar absorption coefficient\n"
+      + xwave + " gas absorption in the terrestrial atmosphere.  The molar absorption coefficient\n"
       "of each gas and each g point (k term or spectral interval) is implemented as a look-up\n"
       "table versus temperature, pressure, and optionally mole fraction.  The optical depths of\n"
       "each gas should be summed.  The model was created in a multi-step process as described by\n"
@@ -365,7 +391,13 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write(ngas(), "n_gases");
   file.write(eval(exp(log_pressure_)), "pressure");
   file.write(temperature_, "temperature");
-  file.write(temperature_planck_, "temperature_planck");
+  if (is_sw()) {
+    file.write(solar_irradiance_, "solar_irradiance");
+  }   
+  else {
+    file.write(temperature_planck_, "temperature_planck");
+    file.write(planck_function_, "planck_function");
+  }
   file.write(wavenumber1_, "wavenumber1");
   file.write(wavenumber2_, "wavenumber2");
   file.write(gpoint_fraction_, "gpoint_fraction");
@@ -409,8 +441,6 @@ CkdModel<IsActive>::write(const std::string& file_name,
       }
     }
   }
-
-  file.write(planck_function_, "planck_function");
 
   file.close();
 

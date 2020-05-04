@@ -34,7 +34,7 @@ main(int argc, const char* argv[])
   }
 
   // Names of input and output file
-  std::string input, output;
+  std::string input, output, ssi_file_name;
 
   if (!config.read(output, "output")) {
     ERROR << "\"output\" file not specified";
@@ -47,9 +47,18 @@ main(int argc, const char* argv[])
     THROW(PARAMETER_ERROR);
   }
 
+  Vector ssi;
+  bool do_sw = false;
+  if (config.read(ssi_file_name, "ssi")) {
+    DataFile ssi_file(ssi_file_name);
+    ssi_file.read(ssi, "solar_spectral_irradiance");
+    do_sw = true;
+  }
+
   intVector g_point;
-  Vector band_wn1, band_wn2;
+  Vector band_wn1, band_wn2, solar_irradiance;
   intVector band_number;
+  bool is_sw = false;
   std::string input_history, input_config;
   {
     LOG << "Reading " << input << "\n";
@@ -61,6 +70,10 @@ main(int argc, const char* argv[])
     input_file.read(band_wn1, "wavenumber1_band");
     input_file.read(band_wn2, "wavenumber2_band");
     input_file.read(band_number, "band_number");
+    if (input_file.exist("solar_irradiance")) {
+      input_file.read(solar_irradiance, "solar_irradiance");
+      is_sw = true;
+    }
     input_file.read(input_history, DATA_FILE_GLOBAL_SCOPE, "history");
     input_file.read(input_config, DATA_FILE_GLOBAL_SCOPE, "config");
   } // input_file is implicitly closed here
@@ -197,16 +210,25 @@ main(int argc, const char* argv[])
 	  Vector t_x_p = temperature_hl * pressure_hl;
 	  temperature_fl(icol,__) = 0.5 * (t_x_p(range(0,end-1)) + t_x_p(range(1,end))) / pressure_fl;
 
-	  LOG << "  Computing Planck function\n";
-	  nwav = wavenumber_cm_1.size();
-	  planck_fl.resize(nlay,nwav);
-	  planck_function(temperature_fl(icol,__), wavenumber_cm_1, d_wavenumber_cm_1,
-			  planck_fl);
-	  LOG << "  Averaging optical depths for each g point\n";
+	  if (!do_sw) {
+	    LOG << "  Computing Planck function\n";
+	    nwav = wavenumber_cm_1.size();
+	    planck_fl.resize(nlay,nwav);
+	    planck_function(temperature_fl(icol,__), wavenumber_cm_1, d_wavenumber_cm_1,
+			    planck_fl);
+	    LOG << "  Planck-weighted averaging optical depths for each g point\n";
 
-	  average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
-					   g_point, optical_depth, planck_fl, averaging_method,
-					   this_gas.molar_abs(icol,__,__));
+	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
+					     g_point, optical_depth, planck_fl, averaging_method,
+					     this_gas.molar_abs(icol,__,__));
+	  }
+	  else {
+	    LOG << "  Solar-spectrum-weighted averaging optical depths for each g point\n";
+	    Matrix ssi_matrix = spread<0>(ssi,pressure_fl.size());
+	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
+					     g_point, optical_depth, ssi_matrix, averaging_method,
+					     this_gas.molar_abs(icol,__,__));
+	  }
 
 	  ++icol;
 	}
@@ -254,16 +276,25 @@ main(int argc, const char* argv[])
 	  Vector t_x_p = temperature_hl * pressure_hl;
 	  temperature_fl(icol,__) = 0.5 * (t_x_p(range(0,end-1)) + t_x_p(range(1,end))) / pressure_fl;
 
-	  LOG << "  Computing Planck function\n";
-	  nwav = wavenumber_cm_1.size();
-	  planck_fl.resize(nlay,nwav);
-	  planck_function(temperature_fl(icol,__), wavenumber_cm_1, d_wavenumber_cm_1,
-			  planck_fl);
-	  LOG << "  Averaging optical depths for each g point\n";
+	  if (!do_sw) {
+	    LOG << "  Computing Planck function\n";
+	    nwav = wavenumber_cm_1.size();
+	    planck_fl.resize(nlay,nwav);
+	    planck_function(temperature_fl(icol,__), wavenumber_cm_1, d_wavenumber_cm_1,
+			    planck_fl);
+	    LOG << "  Planck-weighted averaging optical depths for each g point\n";
 
-	  average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
-					   g_point, optical_depth, planck_fl, averaging_method,
-					   this_gas.molar_abs(icol,__,__));
+	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
+					     g_point, optical_depth, planck_fl, averaging_method,
+					     this_gas.molar_abs(icol,__,__));
+	  }
+	  else {
+	    LOG << "  Solar-spectrum-weighted averaging optical depths for each g point\n";
+	    Matrix ssi_matrix = spread<0>(ssi,pressure_fl.size());
+	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
+					     g_point, optical_depth, ssi_matrix, averaging_method,
+					     this_gas.molar_abs(icol,__,__));
+	  }
 
 	  ++icol;
 	}
@@ -311,16 +342,25 @@ main(int argc, const char* argv[])
 	    Vector t_x_p = temperature_hl * pressure_hl;
 	    temperature_fl(icol,__) = 0.5 * (t_x_p(range(0,end-1)) + t_x_p(range(1,end))) / pressure_fl;
 
-	    LOG << "  Computing Planck function\n";
-	    nwav = wavenumber_cm_1.size();
-	    planck_fl.resize(nlay,nwav);
-	    planck_function(temperature_fl(icol,__), wavenumber_cm_1, d_wavenumber_cm_1,
-			    planck_fl);
-	    LOG << "  Averaging optical depths for each g point\n";
+	    if (!do_sw) {
+	      LOG << "  Computing Planck function\n";
+	      nwav = wavenumber_cm_1.size();
+	      planck_fl.resize(nlay,nwav);
+	      planck_function(temperature_fl(icol,__), wavenumber_cm_1, d_wavenumber_cm_1,
+			      planck_fl);
+	      LOG << "  Planck-weighted averaging optical depths for each g point\n";
 
-	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
-					     g_point, optical_depth, planck_fl, averaging_method,
-					     this_gas.molar_abs_conc(iconc,icol,__,__));
+	      average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
+					       g_point, optical_depth, planck_fl, averaging_method,
+					       this_gas.molar_abs_conc(iconc,icol,__,__));
+	    }
+	    else {
+	      LOG << "  Solar-spectrum-weighted averaging optical depths for each g point\n";
+	      Matrix ssi_matrix = spread<0>(ssi,pressure_fl.size());
+	      average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
+					       g_point, optical_depth, ssi_matrix, averaging_method,
+					       this_gas.molar_abs_conc(iconc,icol,__,__));
+	    }
 
 	    ++icol;
 	  }
@@ -331,21 +371,6 @@ main(int argc, const char* argv[])
 
 
     ++ngas;
-  }
-
-
-  LOG << "Generating Planck-function look-up table\n";
-
-  Vector temperature_lut = range(120, 350);
-  int nlut = temperature_lut.size();
-  Matrix planck_lut(nlut,ng);
-
-  for (int ig = 0; ig < ng; ++ig) {
-    intVector index = find(g_point == ig);
-    Matrix tmp_planck(nlut,index.size());
-    planck_function(temperature_lut, wavenumber_cm_1(index), d_wavenumber_cm_1(index),
-		    tmp_planck);
-    planck_lut(__,ig) = sum(tmp_planck,1);
   }
 
   LOG << "Computing fraction of spectrum contributing to each g-point\n";
@@ -378,12 +403,37 @@ main(int argc, const char* argv[])
   std::string config_str;
   config.read(config_str);
 
-  CkdModel<false> ckd_model(single_gas_data, temperature_lut, planck_lut,
-			    pressure_fl, temperature_fl,
-			    wavenumber1, wavenumber2, gpoint_fraction,
-			    band_wn1, band_wn2, band_number,
-			    input_history, input_config);
-  ckd_model.write(output, argc, argv, config_str);
+  if (is_sw) {
+    CkdModel<false> ckd_model(single_gas_data, solar_irradiance,
+			      pressure_fl, temperature_fl,
+			      wavenumber1, wavenumber2, gpoint_fraction,
+			      band_wn1, band_wn2, band_number,
+			      input_history, input_config);
+    ckd_model.write(output, argc, argv, config_str);
+  }
+  else {
+
+    LOG << "Generating Planck-function look-up table\n";
+
+    Vector temperature_lut = range(120, 350);
+    int nlut = temperature_lut.size();
+    Matrix planck_lut(nlut,ng);
+    
+    for (int ig = 0; ig < ng; ++ig) {
+      intVector index = find(g_point == ig);
+      Matrix tmp_planck(nlut,index.size());
+      planck_function(temperature_lut, wavenumber_cm_1(index), d_wavenumber_cm_1(index),
+		      tmp_planck);
+      planck_lut(__,ig) = sum(tmp_planck,1);
+    }
+
+    CkdModel<false> ckd_model(single_gas_data, temperature_lut, planck_lut,
+			      pressure_fl, temperature_fl,
+			      wavenumber1, wavenumber2, gpoint_fraction,
+			      band_wn1, band_wn2, band_number,
+			      input_history, input_config);
+    ckd_model.write(output, argc, argv, config_str);
+  }
 
   return 0;
 }
