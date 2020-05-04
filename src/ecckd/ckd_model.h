@@ -211,6 +211,9 @@ public:
   
   SingleGasData<IsActive>& single_gas(int igas) { return single_gas_data_[igas]; }
 
+  void set_model_id(const std::string mi) { model_id_ = mi; }
+  const std::string& model_id() const { return model_id_; }
+
 private:
 
   /// Is "gas" active, i.e. one for which we want to optimize its
@@ -266,7 +269,7 @@ private:
   int ng_, nt_, np_, nwav_;
 
   /// Contents of history attribute when reading file
-  std::string history_, summary_, config_;
+  std::string history_, summary_, config_, model_id_;
 
 };
 

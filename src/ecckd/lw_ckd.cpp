@@ -2,6 +2,7 @@
 #include "OutputDataFile.h"
 #include "ckd_model.h"
 #include "radiative_transfer_lw.h"
+#include "write_standard_attributes.h"
 
 using namespace adept;
 
@@ -78,6 +79,12 @@ main(int argc, const char* argv[])
 
   input.read(temperature_hl, "temperature_hl");
   input.read(pressure_hl,    "pressure_hl");
+
+  std::string experiment, experiment_id, sub_experiment, sub_experiment_id;
+  input.read(experiment, DATA_FILE_GLOBAL_SCOPE, "experiment");
+  input.read(experiment_id, DATA_FILE_GLOBAL_SCOPE, "experiment_id");
+  input.read(sub_experiment, DATA_FILE_GLOBAL_SCOPE, "sub_experiment");
+  input.read(sub_experiment_id, DATA_FILE_GLOBAL_SCOPE, "sub_experiment_id");
 
   Matrix temperature_fl, p_x_t;
   p_x_t = temperature_hl * pressure_hl;
@@ -156,10 +163,25 @@ main(int argc, const char* argv[])
     file.write_units("W m-2", "flux_dn_lw");
   }
 
+  write_standard_attributes(file, "Spectral optical depth from ecCKD gas optics scheme");
 
-  file.write("Spectral optical depth from ecCKD gas optics scheme", "title");
+  if (!ckd_model.model_id().empty()) {
+    file.write(ckd_model.model_id(), "model_id");
+  }
+
   file.append_history(argc, argv);
-  file.write("ecCKD gas optics tool", "source");
+  if (!experiment.empty()) {
+    file.write(experiment, "experiment");
+  }
+  if (!experiment_id.empty()) {
+    file.write(experiment_id, "experiment_id");
+  }
+  if (!sub_experiment.empty()) {
+    file.write(sub_experiment, "sub_experiment");
+  }
+  if (!experiment_id.empty()) {
+    file.write(sub_experiment_id, "sub_experiment_id");
+  }
 
   // Write data
   file.end_define_mode();

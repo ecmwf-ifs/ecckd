@@ -77,6 +77,8 @@ main(int argc, const char* argv[])
   Real conc_corr = 0.5;
   Real convergence_criterion = 0.02;
 
+  std::string model_id;
+
   // We may wish to merge some of the narrow bands in the LBL flux
   // files
   intVector band_mapping;
@@ -89,6 +91,7 @@ main(int argc, const char* argv[])
   config.read(pressure_corr, "pressure_corr");
   config.read(conc_corr, "conc_corr");
   config.read(convergence_criterion, "convergence_criterion");
+  config.read(model_id, "model_id");
 
   if (config.exist("band_mapping")) {
     config.read(band_mapping, "band_mapping");
@@ -97,6 +100,7 @@ main(int argc, const char* argv[])
   Stack stack;
 
   CkdModel<true> ckd_model(input, gas_list);
+  ckd_model.set_model_id(model_id);
 
   //  ckd_model.cap_relative_linear_coeffts();
 

@@ -357,7 +357,7 @@ main(int argc, const char* argv[])
   //  Real heating_rate_upper_tolerance = heating_rate_tolerance * (1.0+tolerance_tolerance);
   //  Real heating_rate_lower_tolerance = heating_rate_tolerance * (1.0-tolerance_tolerance);
 
-  int max_iterations = 100;
+  int max_iterations = 60;
   config.read(max_iterations, "max_iterations");
 
   std::string averaging_method = "linear";
@@ -695,6 +695,10 @@ main(int argc, const char* argv[])
 		     ||single_gas_data[igas].g_point > single_gas_data[igas].g_max(ig)) = false;
     }
     g_point.where(is_found) = ig;
+    if (!any(is_found)) {
+      WARNING << "g point " << ig << " occupies none of the spectrum";
+      ENDWARNING;
+    }
   }
   is_found.clear();
 

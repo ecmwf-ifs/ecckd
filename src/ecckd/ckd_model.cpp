@@ -36,6 +36,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
   file.read(gpoint_fraction_, "gpoint_fraction");
   file.read(wavenumber1_band_, "wavenumber1_band");
   file.read(wavenumber2_band_, "wavenumber2_band");
+  file.read(band_number_, "band_number");
 
   np_   = log_pressure_.size();
   nt_   = temperature_.dimension(0);
@@ -48,6 +49,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
   file.read(history_, DATA_FILE_GLOBAL_SCOPE, "history");
   file.read(summary_, DATA_FILE_GLOBAL_SCOPE, "summary");
   file.read(config_,  DATA_FILE_GLOBAL_SCOPE, "config");
+  file.read(model_id_,DATA_FILE_GLOBAL_SCOPE, "model_id");
 
   int n_gases;
   file.read(n_gases, "n_gases");
@@ -231,13 +233,16 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.define_variable("wavenumber1_band", FLOAT, "band");
   file.write_long_name("Lower wavenumber bound of band", "wavenumber1_band");
   file.write_units("cm-1", "wavenumber1_band");
-  file.define_variable("wavenumber2", FLOAT, "band");
+  file.define_variable("wavenumber2_band", FLOAT, "band");
   file.write_long_name("Upper wavenumber bound of band", "wavenumber2_band");
   file.write_units("cm-1", "wavenumber2_band");
   file.define_variable("band_number", FLOAT, "g_point");
   file.write_long_name("Band number of each g point", "band_number");
 
   write_standard_attributes(file, "Gas optics definition");
+  if (!model_id_.empty()) {
+    file.write(model_id_, "model_id");
+  }
   file.write(molecule_list, "constituent_id");
 
   for (int igas = 0; igas < ngas(); ++igas) {
@@ -341,6 +346,17 @@ CkdModel<IsActive>::write(const std::string& file_name,
     file.write(summary, "summary");
   }
   */
+
+  if (summary_.empty()) {
+    // !--------!--------!--------!--------!--------!--------!--------!--------!--------!--------
+    summary_ = "This file contains the description of a correlated k-distribution model for computing\n"
+      "longwave gas absorption in the terrestrial atmosphere.  The molar absorption coefficient\n"
+      "of each gas and each g point (k term or spectral interval) is implemented as a look-up\n"
+      "table versus temperature, pressure, and optionally mole fraction.  The optical depths of\n"
+      "each gas should be summed.  The model was created in a multi-step process as described by\n"
+      "each line of the history and config global attributes.";
+  }
+  file.write(summary_, "summary");
 
   // Write data
 

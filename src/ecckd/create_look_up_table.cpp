@@ -61,11 +61,54 @@ main(int argc, const char* argv[])
     input_file.read(band_wn1, "wavenumber1_band");
     input_file.read(band_wn2, "wavenumber2_band");
     input_file.read(band_number, "band_number");
-    input_file.read(input_history, "history");
-    input_file.read(input_config, "config");
+    input_file.read(input_history, DATA_FILE_GLOBAL_SCOPE, "history");
+    input_file.read(input_config, DATA_FILE_GLOBAL_SCOPE, "config");
   } // input_file is implicitly closed here
 
   int ng = maxval(g_point) + 1;
+
+  // Check for and remove g points that refer to none of the spectrum
+  std::vector<int> bad_g_points;
+  for (int ig = 0; ig < ng; ++ig) {
+    if (!any(g_point == ig)) {
+      bad_g_points.push_back(ig);
+    }
+  }
+  if (!bad_g_points.empty()) {
+    LOG << "Removing " << bad_g_points.size() << " g point(s) that occupies none of the spectrum\n";
+    int new_ng = ng-bad_g_points.size();
+    intVector g_point_map(new_ng);
+    int inewg = 0;
+    int ibad = 0;
+    for (int ig = 0; ig < ng; ++ig) {
+      if (ibad >= bad_g_points.size() || ig != bad_g_points[ibad]) {
+	g_point_map(inewg) = ig;
+	++inewg;
+      }
+      else {
+	++ibad;	
+      }	
+    }
+    
+    int nwav = g_point.size();
+    intVector new_g_point(nwav);
+    intVector new_band_number(new_ng);
+    new_g_point = -1;
+    for (int inewg = 0; inewg < new_ng; ++inewg) {
+      LOG << "  Mapping new g point " << inewg
+	  << " -> old g point " << g_point_map(inewg) << "\n";
+      new_g_point.where(g_point == g_point_map(inewg)) = inewg;
+      new_band_number(inewg) = g_point_map(inewg);
+    }
+    if (any(new_g_point < 0)) {
+      ERROR << "Some unassigned spectral points after mapping";
+      THROW(1);
+    }
+    g_point = new_g_point;
+    band_number.clear();
+    band_number = new_band_number;
+    ng = new_ng;
+  }
 
   std::vector<SingleGasData<false> > single_gas_data;
 

@@ -1023,6 +1023,7 @@ append_history(int argc, const char* argv[])
     std::time(&t);
     history += ctime(&t); // New-line terminated
     history[history.size()-1] = ':';
+    history += " ";
     {
       // Remove directory name from command
       std::string argv0 = argv[0];
