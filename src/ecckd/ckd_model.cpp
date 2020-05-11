@@ -45,7 +45,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
 
   np_   = log_pressure_.size();
   nt_   = temperature_.dimension(0);
-  ng_   = planck_function_.dimension(1);
+  ng_   = gpoint_fraction_.dimension(0);
   nwav_ = gpoint_fraction_.dimension(1);
 
   std::string molecules_str;

@@ -70,6 +70,10 @@ struct LblFluxes {
   // corresponds to a gas mixture)
   adept::intVector gas_mapping;
 
+  bool is_sw() const { return is_sw_; }
+
+  bool is_sw_;
+
 };
 
 

@@ -223,6 +223,8 @@ public:
     return (!solar_irradiance_.empty());
   }
 
+  const Vector& solar_irradiance() const { return solar_irradiance_; }
+
   // All the molecules in the CKD model
   std::vector<std::string> molecules;
 

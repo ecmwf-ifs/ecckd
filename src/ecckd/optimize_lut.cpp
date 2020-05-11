@@ -142,7 +142,7 @@ main(int argc, const char* argv[])
   }
 
   // LBL fluxes used for training
-  std::string training_input, training_file;
+  std::string training_file;
 
   std::vector<LblFluxes> training_data;
 
@@ -164,8 +164,10 @@ main(int argc, const char* argv[])
       }
     }
 
-    fluxes.planck_hl_   = ckd_model.calc_planck_function(fluxes.temperature_hl_);
-    fluxes.surf_planck_ = ckd_model.calc_planck_function(fluxes.temperature_hl_(__,end));
+    if (!ckd_model.is_sw()) {
+      fluxes.planck_hl_   = ckd_model.calc_planck_function(fluxes.temperature_hl_);
+      fluxes.surf_planck_ = ckd_model.calc_planck_function(fluxes.temperature_hl_(__,end));
+    }
 
     if (fluxes.have_band_fluxes) {
       fluxes.iband_per_g = ckd_model.iband_per_g(fluxes.band_wavenumber1_,
