@@ -481,12 +481,20 @@ read(Matrix& M, const std::string& scope,
 
 bool
 DataFileEngineXml::
-read(Array3& M, const std::string& varname, int j, int i) const
+read(Array3D& M, const std::string& varname, int j, int i) const
 {
   CONDITIONAL_ERROR("Cannot read 3D arrays from XML files");
   return false;
 }
 
+
+bool
+DataFileEngineCfg::
+read(Array4D& M, const std::string& varname, int j, int i) const
+{
+  CONDITIONAL_ERROR << "Cannot read 4D array from cfg file";
+  return false;
+}
 
 // Return the entire contents of the file as a string
 bool

@@ -261,7 +261,7 @@ public:
   }
 
   /// Read a real 3D array from the data file
-  bool read(Array3& A, const std::string& varname,
+  bool read(Array3D& A, const std::string& varname,
 	    int j = -1, int i = -1) const {
     DATA_FILE_READ_CHECK;
     return engine_->read(A, varname, j, i);
@@ -274,6 +274,12 @@ public:
   }
   */
 
+  /// Read a real 4D array from the data file
+  bool read(Array4D& A, const std::string& varname,
+	    int j = -1, int i = -1) const {
+    DATA_FILE_READ_CHECK;
+    return engine_->read(A, varname, j, i);
+  }
   /// Read the entire contents of the file to a string
   bool read(std::string& s) const {
     DATA_FILE_READ_CHECK;

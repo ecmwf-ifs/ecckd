@@ -636,7 +636,7 @@ read(Matrix& M, const std::string& scope,
 
 bool
 DataFileEngineNetcdf::
-read(Array3& M, const std::string& varname, int j, int i) const
+read(Array3D& M, const std::string& varname, int j, int i) const
 {
   int varid;
   NC_CHECK(nc_inq_varid(ncid_, varname.c_str(), &varid), varname);
@@ -652,6 +652,68 @@ read(Array3& M, const std::string& varname, int j, int i) const
   }
   else if (j < 0 && ndims > 3) {
     CONDITIONAL_ERROR("No index specified for 3-D array extracted from 4-D or 5-D netcdf array: "
+		      + varname);
+  }
+  
+  int* dimids = new int[ndims];
+  size_t* start = new size_t[ndims];
+  size_t* count = new size_t[ndims];
+  NC_CHECK(nc_inq_vardimid(ncid_, varid, dimids), varname);
+  std::vector<int> array_dim;
+  int start_dim = 0;
+  if (j >= 0) {
+    start[0] = j;
+    count[0] = 1;
+    if (i >= 0) {
+      start_dim = 2;
+      start[1] = i;
+      count[1] = 1;
+    }
+    else {
+      start_dim = 1;
+    }
+  }
+  
+  for (int k = start_dim; k < ndims; k++) {
+    size_t len;
+    NC_CHECK(nc_inq_dimlen(ncid_, dimids[k], &len), varname);
+    array_dim.push_back(len);
+    start[k] = 0;
+    count[k] = len;
+  }
+  delete[] dimids;
+  
+  M.resize(&array_dim[0], true); // force_contiguous=true
+#ifdef REAL_IS_FLOAT
+  NC_CHECK(nc_get_vara_float(ncid_, varid, start, 
+			     count, M.data_pointer()), varname);
+#else
+  NC_CHECK(nc_get_vara_double(ncid_, varid, start, 
+			      count, M.data_pointer()), varname);
+#endif
+  delete[] start;
+  delete[] count;
+  return true;
+}
+
+bool
+DataFileEngineNetcdf::
+read(Array4D& M, const std::string& varname, int j, int i) const
+{
+  int varid;
+  NC_CHECK(nc_inq_varid(ncid_, varname.c_str(), &varid), varname);
+  int ndims;
+  NC_CHECK(nc_inq_varndims(ncid_, varid, &ndims), varname);
+  if (ndims > 6) {
+    CONDITIONAL_ERROR("Cannot read from netcdf array with more than 6 dimensions: "
+		      + varname);
+  }
+  else if (i < 0 && ndims == 6) {
+    CONDITIONAL_ERROR("No second index specified for 4-D array extracted from 6-D netcdf array: "
+		      + varname);
+  }
+  else if (j < 0 && ndims > 4) {
+    CONDITIONAL_ERROR("No index specified for 4-D array extracted from 5-D or 6-D netcdf array: "
 		      + varname);
   }
   

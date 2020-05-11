@@ -155,10 +155,13 @@ public:
   		    const std::string& varname) const = 0;
 
   /// Read a real 3D array from the data file
-  virtual bool read(Array3& A, const std::string& varname,
+  virtual bool read(Array3D& A, const std::string& varname,
 		    int j = -1, int i = -1) const = 0;
   //  virtual bool read(Array3& A, const std::string& scope,
   //		    const std::string& varname) const = 0;
+
+  virtual bool read(Array4D& A, const std::string& varname,
+		    int j = -1, int i = -1) const = 0;
 
   /// Read the entire contents of the file to a string
   virtual bool read(std::string& s) const = 0;

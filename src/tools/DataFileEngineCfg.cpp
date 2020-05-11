@@ -415,9 +415,17 @@ read(Matrix& M, const std::string& scope,
 
 bool
 DataFileEngineCfg::
-read(Array3& M, const std::string& varname, int j, int i) const
+read(Array3D& M, const std::string& varname, int j, int i) const
 {
     ERROR << "Cannot read 3D array from cfg file";
+    THROW(READ_ERROR_PRODUCT_MODEL);
+}
+
+bool
+DataFileEngineCfg::
+read(Array4D& M, const std::string& varname, int j, int i) const
+{
+    ERROR << "Cannot read 4D array from cfg file";
     THROW(READ_ERROR_PRODUCT_MODEL);
 }
 
