@@ -9,6 +9,7 @@
 #include "planck_function.h"
 #include "heating_rate.h"
 #include "write_order.h"
+#include "calc_cost_function_sw.h"
 
 /// Comparison structure for rearranging a std::vector of indices so
 /// that they index an adept::Vector of data in ascending order
@@ -130,7 +131,7 @@ main(int argc, const char* argv[])
   }
   else {
 
-    Real cos_sza = 0.5;
+    Real cos_sza = REFERENCE_COS_SZA;
 
     Vector ssi;
 

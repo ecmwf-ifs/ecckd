@@ -23,6 +23,12 @@ calc_total_optical_depth(CkdModel<true>& ckd_model, const LblFluxes& lbl1,
   int nlev  = lbl1.pressure_hl_.dimension(1)-1;
   optical_depth.resize(nprof,nlev,ckd_model.ng());
   optical_depth = 0.0;
+
+  // Rayleigh scattering
+  if (ckd_model.is_sw()) {
+    //    optical_depth += ckd_model.calc_rayleigh_optical_depth(lbl1.pressure_hl_);
+  }
+
   for (int igas = 0; igas < ckd_model.molecules.size(); ++igas) {
     if (lbl1.gas_mapping(igas) >= 0) {
       if (first_call) {
@@ -129,7 +135,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 					  lbl1.iband_per_g);
       }
       else {
-	cost += calc_cost_function_ckd_sw(0.5,
+	cost += calc_cost_function_ckd_sw(REFERENCE_COS_SZA,
 					  lbl1.pressure_hl_(iprof,__),
 					  ckd_model.solar_irradiance(),
 					  optical_depth(iprof,__,__),

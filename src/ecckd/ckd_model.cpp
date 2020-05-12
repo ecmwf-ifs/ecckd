@@ -9,6 +9,7 @@
 #include "constants.h"
 #include "adept_scalar.h"
 #include "write_standard_attributes.h"
+#include "rayleigh_scattering.h"
 
 using namespace adept;
 
@@ -159,6 +160,15 @@ CkdModel<IsActive>::read(const std::string& file_name,
     ++igas;
   }
 
+  if (is_sw()) {
+    if (file.exist("rayleigh_molar_scattering_coeff")) {
+      file.read(rayleigh_molar_scat_, "rayleigh_molar_scattering_coeff");
+    }
+    else {
+      calc_rayleigh_molar_scat();
+    }
+  }
+
   if (!active_gas_list.empty()) {
     active_molecules = active_gas_list;
   }
@@ -255,6 +265,11 @@ CkdModel<IsActive>::write(const std::string& file_name,
 
   if (is_sw()) {
     write_standard_attributes(file, "Definition of a correlated k-distribution model for shortwave gas absorption");
+
+    file.define_variable("rayleigh_molar_scattering_coeff", FLOAT, "g_point");
+    file.write_long_name("Rayleigh molar scattering coefficient in each g-point",
+			 "rayleigh_molar_scattering_coeff");
+    file.write_units("m2 mol-1", "rayleigh_molar_scattering_coeff");
   }
   else {
     write_standard_attributes(file, "Definition of a correlated k-distribution model for longwave gas absorption");
@@ -393,6 +408,7 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write(temperature_, "temperature");
   if (is_sw()) {
     file.write(solar_irradiance_, "solar_irradiance");
+    file.write(rayleigh_molar_scat_, "rayleigh_molar_scattering_coeff");
   }   
   else {
     file.write(temperature_planck_, "temperature_planck");

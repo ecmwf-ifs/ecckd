@@ -325,7 +325,7 @@ main(int argc, const char* argv[])
   }
 
   bool do_sw = false;
-  Real cos_sza = 0.5;
+  Real cos_sza = REFERENCE_COS_SZA;
   Vector ssi;
 
   if (config.read(ssi_file_name, "ssi")) {

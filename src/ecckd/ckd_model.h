@@ -7,6 +7,8 @@
 #include <adept_arrays.h>
 
 #include "Error.h"
+#include "rayleigh_scattering.h"
+#include "calc_cost_function_sw.h"
 
 using namespace adept;
 
@@ -174,6 +176,19 @@ public:
       }
     }
 
+  /// Calculate the Rayleigh optical depth
+  Array<3,Real,IsActive> calc_rayleigh_optical_depth(const Matrix& pressure_hl) {
+    int nprof = pressure_hl.dimension(0);
+    int nlev  = pressure_hl.dimension(1)-1;
+    Array<3,Real,IsActive> rayleigh_od(nprof, nlev, ng_);
+    Matrix moles_per_layer = (pressure_hl(__,range(1,end)) - pressure_hl(__,range(0,end-1)))
+      * (1.0 / (ACCEL_GRAVITY * 0.001 * MOLAR_MASS_DRY_AIR ));
+    for (int ig = 0; ig < ng_; ++ig) {
+      rayleigh_od(__,__,ig) = moles_per_layer * rayleigh_molar_scat_(ig);
+    }
+    return rayleigh_od;
+  }
+
   /// Create error covariance matrices
   void create_error_covariances(Real err, Real pressure_corr, Real temperature_corr, Real conc_corr);
 
@@ -252,6 +267,27 @@ public:
   void set_model_id(const std::string mi) { model_id_ = mi; }
   const std::string& model_id() const { return model_id_; }
 
+  /// Calculate Rayleigh molar scattering coefficient in each g point
+  void calc_rayleigh_molar_scat()
+  {
+    Vector wavenumber_mid = 0.5 * (wavenumber1_ + wavenumber2_);
+    // High-res Rayleigh molar scattering coefficient (m2 mol-1)
+    Vector rayleigh_molar_scat_hr = rayleigh_molar_scattering_coeff(wavenumber_mid);
+    Real ref_surface_pressure = 1.0e5; // Pa
+    // Moles of air per m2 of atmospheric column
+    Real molar_column = ref_surface_pressure / (ACCEL_GRAVITY * 0.001 * MOLAR_MASS_DRY_AIR);
+    Vector optical_depth_hr = molar_column * rayleigh_molar_scat_hr;
+    Vector transmission_hr = exp(-optical_depth_hr / REFERENCE_COS_SZA);
+    Vector transmission = gpoint_fraction_ ** transmission_hr;
+    Vector optical_depth(ng_);
+    optical_depth = -log(max(1.0e-14, transmission)) * REFERENCE_COS_SZA;
+    rayleigh_molar_scat_ = optical_depth / molar_column;
+
+    LOG << "wavenumber = " << wavenumber_mid << "\n";
+    LOG << "optical_depth = " << optical_depth_hr << "\n";
+
+  }
+
 private:
 
   /// Is "gas" active, i.e. one for which we want to optimize its
@@ -286,6 +322,9 @@ private:
 
   /// Solar irradiance in each g point (W m-2)
   Vector solar_irradiance_;
+
+  /// Rayleigh molar scattering coefficient (m2 mol-1) in each g-point
+  Vector rayleigh_molar_scat_;
 
   /// Natural logarithm of pressure coordinate variable for molar
   /// absorption look-up tables (Pa)

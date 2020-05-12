@@ -3,6 +3,8 @@
 
 #include <adept_arrays.h>
 
+static const adept::Real REFERENCE_COS_SZA = 0.5;
+
 /// Compute the cost function, in the form of the root-mean-squared
 /// error in heating rate, associated with averaging the optical depth
 /// of the target gas across a range of wavenumbers
