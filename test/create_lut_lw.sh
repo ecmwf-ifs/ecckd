@@ -2,8 +2,6 @@
 # Create raw CKD look-up tables. The input requirements are the same
 # as find_g_points_lw.sh
 
-set -ex
-
 # Source the configuration and checking header scripts
 . config.h
 . check_configuration.h

@@ -32,8 +32,8 @@ export BAND_STRUCTURE
 #./create_lut_sw.sh
 
 # 5. Optimize CKD look-up table
-./optimize_lut_sw.sh
+#./optimize_lut_sw.sh
 
 # 6. Run two-stream radiative transfer or just compute optical depths
 # for CKDMIP scenarios
-#./run_sw_ckd.sh
+./run_ckd_sw.sh

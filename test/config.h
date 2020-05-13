@@ -24,7 +24,8 @@ FIND_G_POINTS=${BINDIR}/find_g_points
 CREATE_LOOK_UP_TABLE=${BINDIR}/create_look_up_table
 OPTIMIZE_LUT=${BINDIR}/optimize_lut
 LW_SPECTRA=${BINDIR}/lw_spectra
-LW_CKD=${BINDIR}/lw_ckd
+LW_CKD=${BINDIR}/run_ckd
+SW_CKD=${BINDIR}/run_ckd
 
 # CKDMIP data directories
 CKDMIP_DATA_DIR=/hugetmp/parr/ckdmip
@@ -79,6 +80,8 @@ WORK_SW_GPOINTS_DIR=${WORK_DIR}/sw_gpoints
 WORK_SW_RAW_CKD_DIR=${WORK_DIR}/sw_raw-ckd-definition
 WORK_SW_CKD_DIR=${WORK_DIR}/sw_ckd-definition
 WORK_SW_CKD_OD_DIR=${WORK_DIR}/sw_optical-depth
+WORK_SW_LBL_FLUX_DIR=${WORK_DIR}/sw_lbl_fluxes
+WORK_SW_FLUX_DIR=${WORK_DIR}/sw_fluxes
 
 WELL_MIXED_LW_SPECTRA=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_present.h5
 WELL_MIXED_LW_SPECTRA_MINIMUM=${WORK_LW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_lw_spectra_composite_minimum.h5
