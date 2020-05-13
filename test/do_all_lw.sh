@@ -44,4 +44,4 @@ export BAND_STRUCTURE
 
 # 6. Run two-stream radiative transfer or just compute optical depths
 # for CKDMIP scenarios
-./run_lw_ckd.sh
+./run_ckd_lw.sh
