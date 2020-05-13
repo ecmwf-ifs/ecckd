@@ -35,7 +35,7 @@ libecckd_a_SOURCES = \
 	rayleigh_scattering.h
 
 bin_PROGRAMS = reorder_spectrum find_g_points merge_spectra \
-	create_look_up_table lw_ckd lw_spectra optimize_lut \
+	create_look_up_table run_ckd lw_spectra optimize_lut \
 	test_equipartition
 
 reorder_spectrum_SOURCES = reorder_spectrum.cpp
@@ -46,7 +46,7 @@ merge_spectra_SOURCES = merge_spectra.cpp
 
 create_look_up_table_SOURCES = create_look_up_table.cpp
 
-lw_ckd_SOURCES = lw_ckd.cpp
+run_ckd_SOURCES = run_ckd.cpp
 
 lw_spectra_SOURCES = lw_spectra.cpp
 

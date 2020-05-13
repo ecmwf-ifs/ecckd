@@ -142,6 +142,7 @@ public:
     nt_ = temperature.size(0);
     np_ = pressure.size();
     nwav_ = wavenumber1.size();
+    calc_rayleigh_molar_scat();
   }
 
   /// Read a CKD model from a file
@@ -282,10 +283,6 @@ public:
     Vector optical_depth(ng_);
     optical_depth = -log(max(1.0e-14, transmission)) * REFERENCE_COS_SZA;
     rayleigh_molar_scat_ = optical_depth / molar_column;
-
-    LOG << "wavenumber = " << wavenumber_mid << "\n";
-    LOG << "optical_depth = " << optical_depth_hr << "\n";
-
   }
 
 private:
