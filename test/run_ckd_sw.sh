@@ -6,8 +6,6 @@
 . config.h
 . check_configuration.h
 
-set -ex
-
 VERSIONS="raw ckd"
 #VERSIONS=ckd
 FLUXESSTR=fluxes
@@ -64,7 +62,7 @@ do_write_optical_depth   = false,
 surf_albedo = 0.15,
 use_mu0_dimension = true,
 cos_solar_zenith_angle(1:5) = 0.1, 0.3, 0.5, 0.7, 0.9,
-iverbose = 3
+iverbose = 2
 /
 EOF
 
@@ -100,7 +98,8 @@ do
 		FLUX_FILE=$WORK_SW_FLUX_DIR/${EVALUATION_PREFIX}_${FLUXESSTR}_${SCENARIO}.nc
 
 		# Compute spectral optical depths from CKD model
-		$SW_CKD ckd_model=$CKD_MODEL input=${INPUT} output=${OD_FILE} write_od_only=1
+		$SW_CKD ckd_model=$CKD_MODEL input=${INPUT} output=${OD_FILE} tsi=1361.0
+# write_od_only=1
 
 		# Compute fluxes from optical depths
 		$CKDMIP_SW --config config_sw_ckd_rt_evaluation.nam \

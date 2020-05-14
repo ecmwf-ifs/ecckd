@@ -14,6 +14,13 @@
 # Optional additional arguments
 #EXTRA_ARGS="averaging_method=logarithmic"
 
+# Create output directory, if needed
+mkdir -p ${WORK_LW_GPOINTS_DIR}
+
+# Loop over each band structure and tolerance
+for BANDSTRUCT in $BAND_STRUCTURE
+do
+
 # Create configuration file
 if [ "$APP" = climate ]
 then
@@ -26,17 +33,21 @@ then
 # to be simulated. All well-mixed gases are combined into a single
 # hybrid gas.
 
+append_path "${MMM_SW_SPECTRA_DIR}:${WORK_SW_SPECTRA_DIR}:${WORK_SW_ORDER_DIR}"
+ssi $MMM_SW_SSI
 iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.01 
-flux_weight 0.0
+flux_weight 0.02
+min_pressure ${MIN_PRESSURE}
+max_iterations 60
 
 gases composite h2o o3
 
 \begin h2o
   # Water vapour in median present-day concentrations
   input ckdmip_mmm_sw_spectra_h2o_median.h5
-  reordering_input sw_order_h2o.h5
+  reordering_input sw_order_${BANDSTRUCT}_h2o.h5
   # Other gases in present-day concentrations, except ozone which uses
   # the minimum concentration
   background_input "ckdmip_mmm_sw_spectra_composite_minimum.h5
@@ -45,19 +56,20 @@ gases composite h2o o3
 
 \begin o3
   input ckdmip_mmm_sw_spectra_o3_median.h5
-  reordering_input sw_order_o3.h5
+  reordering_input sw_order_${BANDSTRUCT}_o3.h5
   background_input "ckdmip_mmm_sw_spectra_composite_minimum.h5
             ckdmip_mmm_sw_spectra_h2o_minimum.h5"
 \end o3
 
 \begin composite
   input ckdmip_mmm_sw_spectra_composite_present.h5
-  reordering_input sw_order_composite.h5
+  reordering_input sw_order_${BANDSTRUCT}_composite.h5
   background_input "ckdmip_mmm_sw_spectra_h2o_minimum.h5
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
 \end composite
 
 EOF
+
 elif [ "$APP" = nwp ]
 then
     cat > config_find_g_points_sw_nwp.cfg <<EOF
@@ -68,17 +80,21 @@ then
 # concentrations of all well-mixed gases also to present-day levels. All
 # well-mixed gases ar combined into a single hybrid gas.
 
+append_path "${MMM_SW_SPECTRA_DIR}:${WORK_SW_SPECTRA_DIR}:${WORK_SW_ORDER_DIR}"
+ssi $MMM_SW_SSI
 iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.05
 flux_weight 0.0
+min_pressure ${MIN_PRESSURE}
+max_iterations 60
 
 gases composite h2o o3
 
 \begin h2o
   # Water vapour in median present-day concentrations
   input ckdmip_mmm_sw_spectra_h2o_median.h5
-  reordering_input sw_order_h2o.h5
+  reordering_input sw_order_${BANDSTRUCT}_h2o.h5
   # Other gases in present-day concentrations, except ozone which uses
   # the minimum concentration
   background_input "ckdmip_mmm_sw_spectra_composite_present.h5
@@ -87,14 +103,14 @@ gases composite h2o o3
 
 \begin o3
   input ckdmip_mmm_sw_spectra_o3_median.h5
-  reordering_input sw_order_o3.h5
+  reordering_input sw_order_${BANDSTRUCT}_o3.h5
   background_input "ckdmip_mmm_sw_spectra_composite_present.h5
             ckdmip_mmm_sw_spectra_h2o_minimum.h5"
 \end o3
 
 \begin composite
   input ckdmip_mmm_sw_spectra_composite_present.h5
-  reordering_input sw_order_composite.h5
+  reordering_input sw_order_${BANDSTRUCT}_composite.h5
   background_input "ckdmip_mmm_sw_spectra_h2o_minimum.h5
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
 \end composite
@@ -105,12 +121,7 @@ else
     exit 1
 fi
 
-# Create output directory, if needed
-mkdir -p ${WORK_SW_GPOINTS_DIR}
 
-# Loop over each band structure and tolerance
-for BANDSTRUCT in $BAND_STRUCTURE
-do
     for TOL in $TOLERANCE
     do
 
@@ -119,13 +130,7 @@ do
 	${BANNER} Finding g-points: $MODEL_CODE
 
 	${FIND_G_POINTS} \
-	    append_path="${MMM_SW_SPECTRA_DIR}:${WORK_SW_SPECTRA_DIR}:${WORK_SW_ORDER_DIR}" \
-	    ssi=$MMM_SW_SSI \
 	    heating_rate_tolerance=${TOL} \
-	    min_pressure=${MIN_PRESSURE} \
-	    h2o.reordering_input=sw_order_${BANDSTRUCT}_h2o.h5 \
-	    o3.reordering_input=sw_order_${BANDSTRUCT}_o3.h5 \
-	    composite.reordering_input=sw_order_${BANDSTRUCT}_composite.h5 \
 	    output=${WORK_SW_GPOINTS_DIR}/sw_gpoints_${MODEL_CODE}.h5 \
 	    $EXTRA_ARGS config_find_g_points_sw_${APP}.cfg \
 	    | tee ${WORK_SW_GPOINTS_DIR}/sw_gpoints_${MODEL_CODE}.log

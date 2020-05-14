@@ -6,8 +6,6 @@
 . config.h
 . check_configuration.h
 
-set -ex
-
 if [ -z "$1" ]
 then
     OPTIMIZE_MODE_LIST=$APP
@@ -19,6 +17,7 @@ for OPTIMIZE_MODE in $OPTIMIZE_MODE_LIST
 do
 
 OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.05 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
+OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.2 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
 
 case "$OPTIMIZE_MODE" in
 
@@ -98,7 +97,7 @@ do
     if [ "$BANDSTRUCT" = wide ]
     then
 	# Map from narrow to wide bands
-	BANDMAPPING="band_mapping=0 0 1 1 1 2 2 2 3 3 3 4 4"
+	BANDMAPPING="band_mapping=0 0 0 1 1 1 1 2 2 3 3 4 4"
     elif [ "$BANDSTRUCT" = fsck ]
     then
 	BANDMAPPING="band_mapping=0 0 0 0 0 0 0 0 0 0 0 0 0"
