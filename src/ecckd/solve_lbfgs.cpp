@@ -26,8 +26,14 @@ calc_total_optical_depth(CkdModel<true>& ckd_model, const LblFluxes& lbl1,
 
   // Rayleigh scattering
   if (ckd_model.is_sw()) {
-    //    optical_depth += ckd_model.calc_rayleigh_optical_depth(lbl1.pressure_hl_);
+    optical_depth += ckd_model.calc_rayleigh_optical_depth(lbl1.pressure_hl_);
   }
+
+  Matrix temperature_fl, p_x_t;
+  p_x_t = lbl1.temperature_hl_ * lbl1.pressure_hl_;
+  temperature_fl = (p_x_t(__,range(0,end-1)) + p_x_t(__,range(1,end)))
+    / (lbl1.pressure_hl_(__,range(0,end-1)) + lbl1.pressure_hl_(__,range(1,end)));
+
 
   for (int igas = 0; igas < ckd_model.molecules.size(); ++igas) {
     if (lbl1.gas_mapping(igas) >= 0) {
@@ -36,7 +42,7 @@ calc_total_optical_depth(CkdModel<true>& ckd_model, const LblFluxes& lbl1,
       }
       optical_depth += ckd_model.calc_optical_depth(ckd_model.molecules[igas],
 						    lbl1.pressure_hl_,
-						    lbl1.temperature_hl_,
+						    temperature_fl,
 						    lbl1.vmr_fl_(__,lbl1.gas_mapping(igas),__));
     }
     else {
@@ -46,7 +52,7 @@ calc_total_optical_depth(CkdModel<true>& ckd_model, const LblFluxes& lbl1,
 	}
 	optical_depth += ckd_model.calc_optical_depth(ckd_model.molecules[igas],
 						      lbl1.pressure_hl_,
-						      lbl1.temperature_hl_);
+						      temperature_fl);
       }
       else {
 	if (first_call) {
@@ -135,9 +141,12 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 					  lbl1.iband_per_g);
       }
       else {
+	//	LOG << "   " << iprof;
+	Real tsi_scaling = sum(lbl1.spectral_flux_dn_(iprof,0,__))
+	  / (REFERENCE_COS_SZA * sum(ckd_model.solar_irradiance()));
 	cost += calc_cost_function_ckd_sw(REFERENCE_COS_SZA,
 					  lbl1.pressure_hl_(iprof,__),
-					  ckd_model.solar_irradiance(),
+					  tsi_scaling * ckd_model.solar_irradiance(),
 					  optical_depth(iprof,__,__),
 					  lbl1.spectral_flux_dn_(iprof,__,__),
 					  lbl1.spectral_flux_up_(iprof,__,__),
@@ -153,6 +162,8 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
   ckd_model.x.get_gradient(gradient);
 
   first_call = false;
+
+  //  LOG << cost << " " << maxval(fabs(gradient)) << "\n";
 
   return value(cost);
 }

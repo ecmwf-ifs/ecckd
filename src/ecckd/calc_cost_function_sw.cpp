@@ -153,6 +153,8 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
     }
   }
 
+  Real cost_fn_save = value(cost_fn);
+
   // Broadband contribution to cost function
   cost_fn = (cost_fn*(1.0-broadband_weight))/nband
     + broadband_weight*hr_weight*hr_weight*sum(layer_weight*(sum(heating_rate_fwd-hr,1)
@@ -167,5 +169,12 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
     cost_fn += broadband_weight*sum(interface_weight*(flux_dn_error*flux_dn_error
 						      +flux_up_error*flux_up_error));
   }
+  /*
+  cost_fn = sum(flux_dn_fwd(end,__)-flux_dn(end,__))*sum(flux_dn_fwd(end,__)-flux_dn(end,__));
+  LOG << " " << sum(flux_dn_fwd(end,__)) << " " << sum(flux_dn(end,__)) << " " << sum(flux_dn_fwd(end,__)-flux_dn(end,__)) << "\n";
+  LOG << "    " << flux_dn_fwd(end,1) << " " << flux_dn_fwd(end,end) << " " << optical_depth(end,1) << " " << optical_depth(end,end) << "\n";
+  */
+  //  LOG << "    " << cost_fn_save << " " << cost_fn << "\n";
+
   return cost_fn;
 }

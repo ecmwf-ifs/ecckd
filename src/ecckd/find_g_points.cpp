@@ -517,8 +517,6 @@ main(int argc, const char* argv[])
 				   total_optical_depth, flux_dn);
       flux_up = 0.0;
 
-      LOG << "sw_dn = " << sum(flux_dn,1) << "\n";
-
     }
 
     LOG << "Computing heating rate\n";

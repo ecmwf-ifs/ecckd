@@ -72,14 +72,21 @@ main(int argc, const char* argv[])
   bool write_od_only = false;
   config.read(write_od_only, "write_od_only");
 
+  // Total solar irradiance (W m-2)
+  Real tsi = 1361.0;
+  config.read(tsi, "tsi");
+
   CkdModel<false> ckd_model(ckd_file);
   std::string domain_str;
+  Real tsi_scaling = -1.0;
   if (ckd_model.is_sw()) {
     domain_str = "sw";
+    tsi_scaling = tsi / sum(ckd_model.solar_irradiance());
   }
   else {
     domain_str = "lw";
   }
+
 
   LOG << "Reading " << input_file << "\n";
   DataFile input(input_file);
@@ -295,6 +302,12 @@ main(int argc, const char* argv[])
   // Remove negative optical depth
   od = max(od,0.0);
 
+  // Create Rayleigh optical depth in the shortwave;
+  Array3D rayleigh_od;
+  if (ckd_model.is_sw()) {
+    rayleigh_od = ckd_model.calc_rayleigh_optical_depth(pressure_hl);
+  }
+
   if (write_od) {
     file.write(od, "optical_depth");
     if (!ckd_model.is_sw()) {
@@ -304,9 +317,8 @@ main(int argc, const char* argv[])
       }
     }
     else {
-      Array3D rayleigh_od = ckd_model.calc_rayleigh_optical_depth(pressure_hl);
       file.write(rayleigh_od, "rayleigh_optical_depth");
-      file.write(ckd_model.solar_irradiance(), "incoming_sw");
+      file.write(spread<0>(ckd_model.solar_irradiance()*tsi_scaling,ncol), "incoming_sw");
     }
   }
 
@@ -333,11 +345,12 @@ main(int argc, const char* argv[])
       Array3D flux_dn_direct(ncol,np+1,ng);
       for (int icol = 0; icol < ncol; ++icol) {
 	radiative_transfer_direct_sw(REFERENCE_COS_SZA,
-				     ckd_model.solar_irradiance(), od(icol,__,__),
+				     Vector(tsi_scaling * ckd_model.solar_irradiance()),
+				     Matrix(od(icol,__,__) + rayleigh_od(icol,__,__)),
 				     flux_dn_direct(icol,__,__));
       }
       file.write(flux_dn_direct, "spectral_flux_dn_direct_" + domain_str);
-      file.write(sum(flux_dn_direct,2), "flux_up_direct_" + domain_str);
+      file.write(sum(flux_dn_direct,2), "flux_dn_direct_" + domain_str);
     }
   }
 

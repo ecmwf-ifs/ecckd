@@ -759,6 +759,15 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
     }
   }
 
+  /*
+  LOG << "  CKD_MODEL: requested optical depth of " << this_gas.molecule
+      << " " << pressure_hl(0,end) << " " << temperature_fl(0,end);
+  if (!vmr_fl.empty()) {
+    LOG << " [" << vmr_fl(0,end) << "]";
+  }
+
+  LOG << " " << od(0,end,0) << "\n";
+  */
   //  LOG << "abs " << molecules[igas] << " = " << od(0,20,__) << "\n";
 
   return od;

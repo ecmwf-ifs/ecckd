@@ -157,13 +157,13 @@ public:
   /// (column,level) and the output dimensioned (column,level,g-point)
   Array<3,Real,IsActive> calc_optical_depth(int igas,         ///< Gas number 
 			    const Matrix& pressure_hl,        ///< Pressure at half levels (Pa)
-			    const Matrix& temperature_hl,     ///< Temperature at half levels (K)
+			    const Matrix& temperature_fl,     ///< Temperature at full levels (K)
 			    const Matrix& vmr_fl = Matrix()); ///< Volume mixing ratio at full levels
 
   /// As above but provide the name of the gas
   Array<3,Real,IsActive> calc_optical_depth(const std::string& gas, ///< Gas name, lower case
 			    const Matrix& pressure_hl,        ///< Pressure at half levels (Pa)
-			    const Matrix& temperature_hl,     ///< Temperature at half levels (K)
+			    const Matrix& temperature_fl,     ///< Temperature at full levels (K)
 			    const Matrix& vmr_fl = Matrix()) ///< Volume mixing ratio at full levels
     {
       auto itgas = std::find(molecules.begin(), molecules.end(), gas);
@@ -173,7 +173,7 @@ public:
       }
       else {
 	int igas = std::distance(molecules.begin(), itgas);
-	return calc_optical_depth(igas, pressure_hl, temperature_hl, vmr_fl);
+	return calc_optical_depth(igas, pressure_hl, temperature_fl, vmr_fl);
       }
     }
 
@@ -223,7 +223,9 @@ public:
       Vector weight = sum(gpoint_fraction_(__,find(wavenumber1_ >= wavenumber1(ib)
 						   && wavenumber2_ <= wavenumber2(ib))),1);
       if (any(weight > 0.05 && (weight < 0.95 || weight > 1.05))) {
-	ERROR << "G-points do not lie entirely within requested bands";
+	ERROR << "G-points do not lie entirely within requested bands: weights for band "
+	      << wavenumber1(ib) << "-" << wavenumber2(ib) << " cm-1 are "
+	      << weight;
 	THROW(1);
       }
       iband(find(weight > 0.5)) = ib;
