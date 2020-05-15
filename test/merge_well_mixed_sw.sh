@@ -17,7 +17,13 @@ then
     do
 	GAS_FILES="${GAS_FILES} ${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_${GAS_SCENARIO}.h5"
     done
-    ${CKDMIP_LW} \
+
+    if [ "$COMPOSITE_SW_INCLUDES_RAYLEIGH" = yes ]
+    then
+	GAS_FILES="${GAS_FILES} ${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_rayleigh_present.h5"
+    fi
+
+    ${CKDMIP_SW} \
 	--merge-only ${GAS_FILES} \
 	--output ${WELL_MIXED_SW_SPECTRA}
 
@@ -35,7 +41,13 @@ ${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_n2_constant.h5
 --conc 180e-6 ${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_co2_present.h5
 --conc 350e-9 ${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_ch4_present.h5
 --conc 190e-9 ${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_n2o_present.h5"
-    ${CKDMIP_LW} \
+
+    if [ "$COMPOSITE_SW_INCLUDES_RAYLEIGH" = yes ]
+    then
+	GAS_FILES="${GAS_FILES} ${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_rayleigh_present.h5"
+    fi
+
+    ${CKDMIP_SW} \
 	--merge-only ${GAS_FILES} \
 	--output ${WELL_MIXED_SW_SPECTRA_MINIMUM}
 else

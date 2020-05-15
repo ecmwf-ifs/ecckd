@@ -105,6 +105,10 @@ ECCKD_PREFIX=ecckd-$ECCKD_VERSION
 
 CKDMIP_RESULTS_DIR=${CKDMIP_DATA_DIR}/results/${ECCKD_PREFIX}
 
+# Should the shortwave composites include Rayleight scattering for
+# ordering the spectra?
+COMPOSITE_SW_INCLUDES_RAYLEIGH=yes
+
 function my_banner {
     echo
     echo "####################################################################"
@@ -126,3 +130,4 @@ function my_banner_error {
 BANNER=my_banner
 BANNER_SKIP=my_banner_skip
 BANNER_ERROR=my_banner_skip
+BANNER_MINI=my_banner_skip

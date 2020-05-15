@@ -198,6 +198,7 @@ do
 	    output=${OUTPUT} \
 	    $EXTRA_ARGS \
 	    config_create_lut_${APP}.cfg \
-	    | tee ${WORK_LW_RAW_CKD_DIR}/${ECCKD_PREFIX}_lw_raw-ckd-definition_${MODEL_CODE}.log
+	    |& tee ${WORK_LW_RAW_CKD_DIR}/${ECCKD_PREFIX}_lw_raw-ckd-definition_${MODEL_CODE}.log
+	test "${PIPESTATUS[0]}" -eq 0
     done
 done

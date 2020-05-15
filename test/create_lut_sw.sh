@@ -197,6 +197,7 @@ do
 	    output=${OUTPUT} \
 	    temperature_stride=1 $EXTRA_ARGS \
 	    config_create_lut_${APP}.cfg \
-	    | tee ${WORK_SW_RAW_CKD_DIR}/${ECCKD_PREFIX}_sw_raw-ckd-definition_${MODEL_CODE}.log
+	    |& tee ${WORK_SW_RAW_CKD_DIR}/${ECCKD_PREFIX}_sw_raw-ckd-definition_${MODEL_CODE}.log
+	test "${PIPESTATUS[0]}" -eq 0
     done
 done

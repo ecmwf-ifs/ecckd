@@ -17,7 +17,7 @@ for OPTIMIZE_MODE in $OPTIMIZE_MODE_LIST
 do
 
 OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.05 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
-OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.2 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
+OPTIONS="prior_error=8.0 broadband_weight=0.0 flux_weight=0.01 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.02"
 
 case "$OPTIMIZE_MODE" in
 
@@ -123,13 +123,14 @@ EOF
 	OUTPUT=${OUTDIR}/${ECCKD_PREFIX}_sw_${OUTCODE}_${MODEL_CODE}.nc
 	LOG=${OUTDIR}/${ECCKD_PREFIX}_sw_${OUTCODE}_${MODEL_CODE}.log
 
-	$OPTIMIZE_LUT \
+	debug $OPTIMIZE_LUT \
 	    input=${INPUT} \
 	    output=${OUTPUT} \
 	    model_id=sw_${APPLICATION}_${BANDSTRUCT}-tol${TOL} \
 	    $EXTRA_ARGS \
 	    config_optimize_lut_${OPTIMIZE_MODE}.cfg \
-	    | tee $LOG
+	    |& tee $LOG
+	test "${PIPESTATUS[0]}" -eq 0
     done
 done
 

@@ -85,7 +85,7 @@ ssi $MMM_SW_SSI
 iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.05
-flux_weight 0.0
+flux_weight 0.1
 min_pressure ${MIN_PRESSURE}
 max_iterations 60
 
@@ -133,6 +133,7 @@ fi
 	    heating_rate_tolerance=${TOL} \
 	    output=${WORK_SW_GPOINTS_DIR}/sw_gpoints_${MODEL_CODE}.h5 \
 	    $EXTRA_ARGS config_find_g_points_sw_${APP}.cfg \
-	    | tee ${WORK_SW_GPOINTS_DIR}/sw_gpoints_${MODEL_CODE}.log
+	    |& tee ${WORK_SW_GPOINTS_DIR}/sw_gpoints_${MODEL_CODE}.log
+	test "${PIPESTATUS[0]}" -eq 0
     done
 done

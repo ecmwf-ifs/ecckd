@@ -67,7 +67,7 @@ do_write_planck          = false,
 do_write_spectral_fluxes = true,
 do_write_optical_depth   = false,
 input_planck_per_sterad  = false,
-iverbose = 3
+iverbose = 2
 /
 EOF
 
@@ -93,19 +93,24 @@ do
 		VERDIR=raw-ckd-definition
 	    fi
 
+	    MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
+	    CKD_MODEL=${WORK_DIR}/lw_${VERDIR}/${ECCKD_PREFIX}_lw_${VERSTR}_${MODEL_CODE}.nc
+
+	    ${BANNER} Running CKD model ${MODEL_CODE} for relevant scenarios
+
 	    for SCENARIO in $SCENARIOS
 	    do
-		MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
-		CKD_MODEL=${WORK_DIR}/lw_${VERDIR}/${ECCKD_PREFIX}_lw_${VERSTR}_${MODEL_CODE}.nc
 		INPUT=${EVALUATION_CONC_DIR}/ckdmip_${EVALUATION_CODE}_concentrations_${SCENARIO}.nc
 		EVALUATION_PREFIX=${ECCKD_PREFIX}_${EVALUATION_CODE}_lw_${MODEL_CODE}${VERSUFFIX}
 		OD_FILE=${WORK_LW_CKD_OD_DIR}/${EVALUATION_PREFIX}_optical-depth_${SCENARIO}.nc
 		FLUX_FILE=$WORK_LW_FLUX_DIR/${EVALUATION_PREFIX}_${FLUXESSTR}_${SCENARIO}.nc
 
 		# Compute spectral optical depths from CKD model
+		${BANNER_MINI} Computing optical depths for scenario $SCENARIO
 		$LW_CKD ckd_model=$CKD_MODEL input=${INPUT} output=${OD_FILE} write_od_only=1
 
 		# Compute fluxes from optical depths
+		${BANNER_MINI} Running radiative transfer for scenario $SCENARIO
 		$CKDMIP_LW --config config_lw_ckd_rt_evaluation.nam \
 		    --scenario $SCENARIO \
 		    --ckd $OD_FILE \

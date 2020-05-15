@@ -235,7 +235,8 @@ EOF
 	    model_id=lw_${APPLICATION}_${BANDSTRUCT}-tol${TOL} \
 	    $EXTRA_ARGS \
 	    config_optimize_lut_${OPTIMIZE_MODE}.cfg \
-	    | tee $LOG
+	    |& tee $LOG
+	test "${PIPESTATUS[0]}" -eq 0
     done
 done
 
