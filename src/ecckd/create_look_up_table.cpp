@@ -47,6 +47,8 @@ main(int argc, const char* argv[])
     THROW(PARAMETER_ERROR);
   }
 
+  // The high-resolution solar spectral irradiance is used as a weight
+  // when averaging gas optical depths
   Vector ssi;
   bool do_sw = false;
   if (config.read(ssi_file_name, "ssi")) {
@@ -70,6 +72,8 @@ main(int argc, const char* argv[])
     input_file.read(band_wn1, "wavenumber1_band");
     input_file.read(band_wn2, "wavenumber2_band");
     input_file.read(band_number, "band_number");
+    // Solar irradiance in each g point copied from g-point definition
+    // file to ckd definition file
     if (input_file.exist("solar_irradiance")) {
       input_file.read(solar_irradiance, "solar_irradiance");
       is_sw = true;
@@ -120,6 +124,14 @@ main(int argc, const char* argv[])
     g_point = new_g_point;
     band_number.clear();
     band_number = new_band_number;
+
+    if (is_sw) {
+      Vector new_solar_irradiance(new_ng);
+      new_solar_irradiance = solar_irradiance(g_point_map);
+      solar_irradiance.clear();
+      solar_irradiance = new_solar_irradiance;
+    }
+
     ng = new_ng;
   }
 

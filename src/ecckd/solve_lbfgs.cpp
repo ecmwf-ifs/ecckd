@@ -143,8 +143,8 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
       else {
 	//	LOG << "   " << iprof;
 	Real tsi_scaling = sum(lbl1.spectral_flux_dn_(iprof,0,__))
-	  / (REFERENCE_COS_SZA * sum(ckd_model.solar_irradiance()));
-	cost += calc_cost_function_ckd_sw(REFERENCE_COS_SZA,
+	  / (lbl1.mu0_(iprof) * sum(ckd_model.solar_irradiance()));
+	cost += calc_cost_function_ckd_sw(lbl1.mu0_(iprof),
 					  lbl1.pressure_hl_(iprof,__),
 					  tsi_scaling * ckd_model.solar_irradiance(),
 					  optical_depth(iprof,__,__),

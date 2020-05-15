@@ -25,6 +25,7 @@ struct LblFluxes {
   adept::Matrix heating_rate_; /// Heating rate (K d-1), dimensioned (column, level)
   adept::Array3D spectral_heating_rate_; /// Spectral heating rate (K d-1), dimensioned (column, level, g_point)
   //  adept::Array3D band_heating_rate_; /// Spectral heating rate (K d-1), dimensioned (column, level, band)
+  adept::Vector mu0_; ///< Cosine of solar zenith angle
 
   adept::Matrix surf_emissivity_, surf_planck_;
   adept::Array3D planck_hl_;

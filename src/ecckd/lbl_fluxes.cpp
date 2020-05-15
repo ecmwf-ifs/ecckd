@@ -6,6 +6,33 @@
 
 using namespace adept;
 
+static
+void
+repeat_matrix(Matrix& mat, int nrep)
+{
+  int ncol = mat.size(0);
+  int nlev = mat.size(1);
+  Matrix newmat(ncol*nrep,nlev);
+  for (int icol = 0; icol < ncol; ++icol) {
+    newmat(range(icol*nrep,(icol+1)*nrep-1),__) = spread<0>(mat(icol,__),nrep);
+  }
+  swap(mat,newmat);
+}
+
+static
+void
+repeat_array3D(Array3D& mat, int nrep)
+{
+  int ncol = mat.size(0);
+  int ngas = mat.size(1);
+  int nlev = mat.size(2);
+  Array3D newmat(ncol*nrep,ngas,nlev);
+  for (int icol = 0; icol < ncol; ++icol) {
+    newmat(range(icol*nrep,(icol+1)*nrep-1),__,__) = spread<0>(mat(icol,__,__),nrep);
+  }
+  swap(mat,newmat);
+}
+
 void
 LblFluxes::read(const std::string& file_name, const intVector& band_mapping)
 {
@@ -19,64 +46,110 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping)
   file.read(temperature_hl_, "temperature_hl");
   file.read(vmr_fl_, "mole_fraction_fl");
 
+  int ncol = pressure_hl_.dimension(0);
+  int nlev = pressure_hl_.dimension(1)-1;
+
   if (file.exist("mu0")) {
     is_sw_ = true;
     domain_str = "sw";
   }
 
   if (is_sw_) {
+    // Read cosine of solar zenith angle
+    Vector mu0_all;
+    file.read(mu0_all, "mu0");
+
+    // We can have all sun angles...
+    //    intVector index_sza = range(0,mu0_all.size()-1);
+    // ...or just 60 degrees
+    //    intVector index_sza = {2};
+    intVector index_sza = {0, 2, 4};
+
+    // Number of sun angles to consider
+    int nsza = index_sza.size();
+
+    int ncol_new = ncol*nsza;
+
+    if (nsza > 1) {
+      // Need to spread the dimensions of the pressure, temperature
+      // and volume mixing ratio
+      repeat_matrix(pressure_hl_, nsza);
+      repeat_matrix(temperature_hl_, nsza);
+      repeat_array3D(vmr_fl_, nsza);
+    }
+
     Array3D flux_tmp;
     file.read(flux_tmp, "flux_dn_direct_sw");
-    // Assume that third solar zenith angle (index=2) is mu0=0.5
-    flux_dn_ = flux_tmp(__,2,__);
+
+    // Pack cosine of solar zenith angle into a vector
+    mu0_.resize(ncol_new);
+    mu0_.reshape(ncol,nsza) = spread<0>(mu0_all(index_sza),ncol);
+
+    // Pack fluxes from each column and angle into one dimension
+    flux_dn_.resize(ncol_new,nlev+1);
+
+    int icol_new = 0;
+    for (int icol = 0; icol < ncol; ++icol) {
+      for (int isza = 0; isza < nsza; ++isza) {
+	flux_dn_(icol_new++,__) = flux_tmp(icol,index_sza(isza),__);
+      }
+    }
+
     flux_up_.resize(flux_dn_.dimensions());
     flux_up_ = 0.0;
 
+    Array4D spectral_flux;
     if (file.exist("spectral_flux_dn_direct_sw")) {
-      Array4D spectral_flux;
       file.read(spectral_flux, "spectral_flux_dn_direct_sw");
-      spectral_flux_dn_ = spectral_flux(__,2,__,__);
-      spectral_flux_up_.resize(spectral_flux_dn_.dimensions());
-      spectral_flux_up_ = 0.0;
       have_spectral_fluxes = true;
       have_band_fluxes = false;
     }
     else if (file.exist("band_flux_dn_direct_sw")) {
-      Array4D spectral_flux;
       file.read(spectral_flux, "band_flux_dn_direct_sw");
-      if (band_mapping.empty()) {
-	spectral_flux_dn_ = spectral_flux(__,2,__,__);
-	spectral_flux_up_.resize(spectral_flux_dn_.dimensions());
-	spectral_flux_up_ = 0.0;
-	file.read(band_wavenumber1_, "band_wavenumber1_sw");
-	file.read(band_wavenumber2_, "band_wavenumber2_sw");
-      }
-      else {
-	// Optionally map from narrow to wide bands
-	int nband = maxval(band_mapping)+1;
-	LOG << "  Mapping fluxes from " << spectral_flux.size(2) 
-	    << " to " << nband << " bands\n";
-	spectral_flux_dn_.resize(spectral_flux.size(0), spectral_flux.size(2), nband);
-	for (int jband = 0; jband < nband; ++jband) {
-	  spectral_flux_dn_(__,__,jband) = sum(spectral_flux(__,2,__,find(band_mapping==jband)),2);
-	}
-	spectral_flux_up_.resize(spectral_flux_dn_.dimensions());
-	spectral_flux_up_ = 0.0;
-
-	Vector band_wn1, band_wn2;
-	band_wavenumber1_.resize(nband);
-	band_wavenumber2_.resize(nband);
-	file.read(band_wn1, "band_wavenumber1_sw");
-	file.read(band_wn2, "band_wavenumber2_sw");
-	for (int jband = 0; jband < nband; ++jband) {
-	  band_wavenumber1_(jband) = minval(band_wn1(find(band_mapping==jband)));
-	  band_wavenumber2_(jband) = maxval(band_wn2(find(band_mapping==jband)));
-	}
-      }
       have_spectral_fluxes = true;
       have_band_fluxes = true;
+      file.read(band_wavenumber1_, "band_wavenumber1_sw");
+      file.read(band_wavenumber2_, "band_wavenumber2_sw");
     }
 
+    if (have_spectral_fluxes) {
+      spectral_flux_dn_.resize(ncol_new,nlev+1,spectral_flux.size(3));
+      int icol_new = 0;
+      for (int icol = 0; icol < ncol; ++icol) {
+	for (int isza = 0; isza < nsza; ++isza) {
+	  spectral_flux_dn_(icol_new++,__,__) = spectral_flux(icol,index_sza(isza),__,__);
+	}
+      }
+      spectral_flux_up_.resize(spectral_flux_dn_.dimensions());
+      spectral_flux_up_ = 0.0;
+
+      if (have_band_fluxes && !band_mapping.empty()) {
+	// Optionally map from narrow to wide bands
+	int nband = maxval(band_mapping)+1;
+	LOG << "  Mapping fluxes from " << band_mapping.size()
+	    << " to " << nband << " bands\n";
+
+	Vector new_band_wn1(nband), new_band_wn2(nband);
+	Array3 new_spectral_flux_dn(ncol_new, nlev+1, nband);
+	for (int jband = 0; jband < nband; ++jband) {
+	  new_spectral_flux_dn(__,__,jband) = sum(spectral_flux_dn_(__,__,find(band_mapping==jband)),2);
+	}
+	spectral_flux_dn_.clear();
+	spectral_flux_dn_ = new_spectral_flux_dn;
+	spectral_flux_up_.resize(spectral_flux_dn_.dimensions());
+	spectral_flux_up_ = 0.0;
+	
+	for (int jband = 0; jband < nband; ++jband) {
+	  new_band_wn1(jband) = minval(band_wavenumber1_(find(band_mapping==jband)));
+	  new_band_wn2(jband) = maxval(band_wavenumber2_(find(band_mapping==jband)));
+	}
+	band_wavenumber1_.clear();
+	band_wavenumber1_ = new_band_wn1;
+	band_wavenumber2_.clear();
+	band_wavenumber2_ = new_band_wn2;
+      }
+    }
+    ncol = ncol_new;
   }
   else {
     file.read(flux_dn_, "flux_dn_lw");
@@ -134,8 +207,6 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping)
   }
   LOG << "  Contains " << molecules_str << "\n";
 
-  int ncol = pressure_hl_.dimension(0);
-  int nlev = pressure_hl_.dimension(1)-1;
   int nspec   = spectral_flux_up_.dimension(2);
   //  int nband= band_flux_up_.dimension(2);
 
