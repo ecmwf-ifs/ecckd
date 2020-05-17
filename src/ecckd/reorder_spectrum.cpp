@@ -175,6 +175,39 @@ main(int argc, const char* argv[])
       = -threshold_optical_depth + column_optical_depth;
   }
 
+  // Find the pseudo height at which optical depth down from TOA
+  // reaches threshold
+  LOG << "Finding height at which optical depth from TOA reaches "
+	<< threshold_optical_depth << "\n";
+  Vector od_threshold_height(nwav);
+  for (int iwav = 0; iwav < nwav; ++iwav) {
+    if (column_optical_depth(iwav) <= threshold_optical_depth) {
+      od_threshold_height(iwav) = column_optical_depth(iwav) - threshold_optical_depth;
+    }
+    else {
+      Real cum_od = 0.0;
+      od_threshold_height(iwav) = 0.0;
+      for (int ilay = 0; ilay < nlay; ++ilay) {
+	Real next_cum_od = cum_od + optical_depth(ilay,iwav);
+	if (next_cum_od >= threshold_optical_depth) {
+	  // Enclosed point where optical depth exceeds threshold
+	  od_threshold_height(iwav) 
+	    = ((threshold_optical_depth-cum_od)*pseudo_height(ilay+1)
+	       + (next_cum_od-threshold_optical_depth)*pseudo_height(ilay))
+	    / (optical_depth(ilay,iwav));
+	  break;
+	}
+	cum_od = next_cum_od;
+      }
+    }
+  }
+
+  if (do_sw) {
+    LOG << "Using height at which optical depth from TOA reaches "
+	<< threshold_optical_depth << "\n";
+    peak_cooling_height = od_threshold_height;
+  }
+
   Vector band_bound1, band_bound2;
   int nband = 1;
   if (config.exist("wavenumber1")) {

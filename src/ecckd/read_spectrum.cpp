@@ -29,7 +29,13 @@ read_spectrum(std::string& file_name,          ///< File name containing spectra
   }
 
   file.read(pressure_hl, "pressure_hl", iprof);
-  file.read(temperature_hl, "temperature_hl", iprof);
+  if (file.exist("temperature_hl")) {
+    file.read(temperature_hl, "temperature_hl", iprof);
+  }
+  else {
+    WARNING << "\"temperature_hl\" not present";
+    ENDWARNING;
+  }
   file.read(wavenumber_cm_1, "wavenumber");
 
   if (file.exist("d_wavenumber")) {
