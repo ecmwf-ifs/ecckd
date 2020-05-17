@@ -8,18 +8,13 @@ then
     module load netcdf4
 fi
 
-VERSIONS="ckd raw"
-APPLICATION=climate
+#VERSIONS="ckd raw"
+VERSIONS="ckd"
+APPLICATION=limited-area-nwp
 APPLICATION=global-nwp
-#APPLICATION=limited-area-nwp
-BAND_STRUCTURE="fsck wide narrow"
-TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
-
-BAND_STRUCTURE=fsck
-TOLERANCE=4
-
-BAND_STRUCTURE=wide
-TOLERANCE=0.1
+#APPLICATION=climate
+BAND_STRUCTURE="wide narrow"
+TOLERANCE="0.8 0.4 0.2 0.1 0.05 0.025"
 
 mkdir -p ${CKDMIP_RESULTS_DIR}/sw_spectral-definition/
 mkdir -p ${CKDMIP_RESULTS_DIR}/sw_optical-depth/

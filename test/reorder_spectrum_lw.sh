@@ -5,8 +5,7 @@
 
 mkdir -p ${WORK_LW_ORDER_DIR}
 
-GAS_LIST="composite h2o_median o3_median"
-GAS_LIST="co2_present ch4_present n2o_present o2n2_constant"
+GAS_LIST="composite h2o_median o3_median co2_present ch4_present n2o_present o2n2_constant"
 
 # Loop through the median/present concentrations of each gas and
 # reorder

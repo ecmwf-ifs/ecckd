@@ -1,7 +1,5 @@
 #!/bin/bash
-# Create composite gas containing all gases except H2O and O3.  Note
-# that the "--merge-only" option of ckdmip_sw doesn't seem to work
-# properly so we use ckdmip_lw.
+# Create composite gas containing all gases except H2O and O3.
 
 . config.h
 
@@ -52,4 +50,25 @@ ${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_n2_constant.h5
 	--output ${WELL_MIXED_SW_SPECTRA_MINIMUM}
 else
     ${BANNER_SKIP} Skipping merge of well-mixed gases for climate minimum as file present: ${WELL_MIXED_SW_SPECTRA_MINIMUM}
+fi
+
+# Create merge of O2 and N2 for climate applications
+if [ ! -f ${WELL_MIXED_SW_SPECTRA_O2N2} ]
+then
+    ${BANNER} Merging spectra of O2 and N2 for climate minimum conditions
+
+    GAS_FILES="${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_o2_constant.h5
+${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_n2_constant.h5"
+
+    if [ "$COMPOSITE_SW_INCLUDES_RAYLEIGH" = yes ]
+    then
+	GAS_FILES="${GAS_FILES} ${MMM_SW_SPECTRA_DIR}/ckdmip_${MMM_CODE}_sw_spectra_rayleigh_present.h5"
+    fi
+
+    ${CKDMIP_SW} \
+	--merge-only ${GAS_FILES} \
+	--output ${WELL_MIXED_SW_SPECTRA_O2N2}
+
+else
+    ${BANNER_SKIP} Skipping merge of O2 and N2 for climate minimum as file present: ${WELL_MIXED_SW_SPECTRA_O2N2}
 fi

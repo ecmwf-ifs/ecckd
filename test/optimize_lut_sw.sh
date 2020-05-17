@@ -18,6 +18,7 @@ do
 
 OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.05 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
 OPTIONS="prior_error=8.0 broadband_weight=0.0 flux_weight=0.01 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.02"
+OPTIONS="prior_error=8.0 broadband_weight=0.2 flux_weight=0.02 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
 
 case "$OPTIMIZE_MODE" in
 
@@ -101,7 +102,11 @@ do
     elif [ "$BANDSTRUCT" = fsck ]
     then
 	BANDMAPPING="band_mapping=0 0 0 0 0 0 0 0 0 0 0 0 0"
+    elif [ "$BANDSTRUCT" = double ]
+    then
+	BANDMAPPING="band_mapping=0 0 0 0 0 0 0 0 1 1 1 1 1"
     else
+	# narrow
 	BANDMAPPING="band_mapping=0 1 2 3 4 5 6 7 8 9 10 11 12"
     fi
 

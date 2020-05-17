@@ -5,9 +5,13 @@
 
 mkdir -p ${WORK_SW_ORDER_DIR}
 
+OPTIONS="ssi=$MMM_SW_SSI threshold_optical_depth=0.5"
+
+GAS_LIST="composite h2o_median o3_median co2_present ch4_present n2o_present o2n2_constant rayleigh_present"
+
 # Loop through the median/present concentrations of each gas and
 # reorder
-for GAS_SCENARIO in composite h2o_median o3_median
+for GAS_SCENARIO in ${GAS_LIST}
 do
     GAS=$(echo ${GAS_SCENARIO} | awk -F_ '{print $1}')
     GAS1=$(echo ${GAS} | awk -F- '{print $1}')
@@ -15,11 +19,14 @@ do
     if [ "$GAS1" = composite ]
     then
 	INPUT=${WELL_MIXED_SW_SPECTRA}
+    elif [ "$GAS1" = o2n2 ]
+    then
+	INPUT=${WELL_MIXED_SW_SPECTRA_O2N2}
     else
 	INPUT=${MMM_SW_SPECTRA_DIR}/ckdmip_mmm_sw_spectra_${GAS_SCENARIO}.h5
     fi
 
-    for BAND_STRUCTURE in fsck wide narrow
+    for BAND_STRUCTURE in double fsck wide narrow
     do
 
 	OUTPUT=${WORK_SW_ORDER_DIR}/sw_order_${BAND_STRUCTURE}_${GAS}.h5
@@ -30,17 +37,22 @@ do
 	    if [ "$BAND_STRUCTURE" = narrow ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
-		    ssi=$MMM_SW_SSI \
+		    ${OPTIONS} \
 		    "wavenumber1=$WN1_SW_NARROW" "wavenumber2=$WN2_SW_NARROW"
 	    elif [ "$BAND_STRUCTURE" = wide ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
-		    ssi=$MMM_SW_SSI \
+		    ${OPTIONS} \
 		    "wavenumber1=$WN1_SW_WIDE" "wavenumber2=$WN2_SW_WIDE"
+	    elif [ "$BAND_STRUCTURE" = double ]
+	    then
+		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
+		    ${OPTIONS} \
+		    "wavenumber1=$WN1_SW_DOUBLE" "wavenumber2=$WN2_SW_DOUBLE"
 	    else
 		# Assuming FSCK
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
-		    ssi=$MMM_SW_SSI
+		    ${OPTIONS}
 	    fi
 	else
 	    ${BANNER_SKIP} Skipping reordering of ${GAS} as file present: ${OUTPUT}
