@@ -54,6 +54,7 @@ TRAINING_LW_SPECTRA_DIR=${TRAINING_DIR}/lw_spectra
 TRAINING_LW_FLUXES_DIR=${TRAINING_DIR}/lw_fluxes
 TRAINING_SW_SPECTRA_DIR=${TRAINING_DIR}/sw_spectra
 TRAINING_SW_FLUXES_DIR=${TRAINING_DIR}/sw_fluxes
+TRAINING_SW_SSI=${TRAINING_SW_SPECTRA_DIR}/ckdmip_ssi.h5
 
 # Evaluation dataset (could be evaluation1 or evaluation2)
 EVALUATION_CODE=evaluation1

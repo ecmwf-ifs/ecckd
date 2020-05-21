@@ -24,19 +24,19 @@ do
 	INPUT=${MMM_LW_SPECTRA_DIR}/ckdmip_mmm_lw_spectra_${GAS_SCENARIO}.h5
     fi
 
-    for BAND_STRUCTURE in fsck wide narrow
+    for BANDSTRUCT in ${BAND_STRUCTURE}
     do
 
-	OUTPUT=${WORK_LW_ORDER_DIR}/lw_order_${BAND_STRUCTURE}_${GAS}.h5
+	OUTPUT=${WORK_LW_ORDER_DIR}/lw_order_${BANDSTRUCT}_${GAS}.h5
 
 	if [ ! -f ${OUTPUT} ]
 	then
-	    ${BANNER} Reordering ${GAS}, band structure ${BAND_STRUCTURE}
-	    if [ "$BAND_STRUCTURE" = narrow ]
+	    ${BANNER} Reordering ${GAS}, band structure ${BANDSTRUCT}
+	    if [ "$BANDSTRUCT" = narrow ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    "wavenumber1=$WN1_LW_NARROW" "wavenumber2=$WN2_LW_NARROW"
-	    elif [ "$BAND_STRUCTURE" = wide ]
+	    elif [ "$BANDSTRUCT" = wide ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    "wavenumber1=$WN1_LW_WIDE" "wavenumber2=$WN2_LW_WIDE"

@@ -5,7 +5,8 @@
 
 mkdir -p ${WORK_SW_ORDER_DIR}
 
-OPTIONS="ssi=$MMM_SW_SSI threshold_optical_depth=0.5"
+#OPTIONS="ssi=$MMM_SW_SSI threshold_optical_depth=0.5"
+OPTIONS="ssi=$MMM_SW_SSI threshold_optical_depth=0.25"
 
 GAS_LIST="composite h2o_median o3_median co2_present ch4_present n2o_present o2n2_constant rayleigh_present"
 
@@ -26,25 +27,25 @@ do
 	INPUT=${MMM_SW_SPECTRA_DIR}/ckdmip_mmm_sw_spectra_${GAS_SCENARIO}.h5
     fi
 
-    for BAND_STRUCTURE in double fsck wide narrow
+    for BANDSTRUCT in ${BAND_STRUCTURE}
     do
 
-	OUTPUT=${WORK_SW_ORDER_DIR}/sw_order_${BAND_STRUCTURE}_${GAS}.h5
+	OUTPUT=${WORK_SW_ORDER_DIR}/sw_order_${BANDSTRUCT}_${GAS}.h5
 
 	if [ ! -f ${OUTPUT} ]
 	then
-	    ${BANNER} Reordering ${GAS}, band structure ${BAND_STRUCTURE}
-	    if [ "$BAND_STRUCTURE" = narrow ]
+	    ${BANNER} Reordering ${GAS}, band structure ${BANDSTRUCT}
+	    if [ "$BANDSTRUCT" = narrow ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    ${OPTIONS} \
 		    "wavenumber1=$WN1_SW_NARROW" "wavenumber2=$WN2_SW_NARROW"
-	    elif [ "$BAND_STRUCTURE" = wide ]
+	    elif [ "$BANDSTRUCT" = wide ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    ${OPTIONS} \
 		    "wavenumber1=$WN1_SW_WIDE" "wavenumber2=$WN2_SW_WIDE"
-	    elif [ "$BAND_STRUCTURE" = double ]
+	    elif [ "$BANDSTRUCT" = double ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    ${OPTIONS} \

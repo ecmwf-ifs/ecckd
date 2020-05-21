@@ -5,13 +5,24 @@
 
 # 0. Settings
 APPLICATION=limited-area-nwp
-#APPLICATION=global-nwp
-#APPLICATION=climate
+APPLICATION=global-nwp
+APPLICATION=climate
+
+if [ "$APPLICATION" = climate ]
+then
+    # The best strategy for climate CKD models is to optimize first
+    # H2O, CO2, O3 and O2+N2, then in subsequent optimization steps to
+    # do CH4 and N2O. The CFCs may be ignored in the shortwave.
+    OPTIMIZE_MODE_LIST="relative-base relative-ch4 relative-n2o"
+    #OPTIMIZE_MODE_LIST="relative-base relative-minor" # Less good than CH4 and N2O separate
+    #OPTIMIZE_MODE_LIST="relative-ch4 relative-n2o"
+else
+    unset OPTIMIZE_MODE_LIST
+fi
 
 #BAND_STRUCTURE="fsck double wide narrow"
 BAND_STRUCTURE="wide narrow"
-TOLERANCE="0.8 0.4 0.2 0.1 0.05 0.025"
-TOLERANCE="0.4 0.2 0.1"
+TOLERANCE="0.6 0.4 0.2 0.15 0.1 0.05 0.025"
 
 # Make variables available to scripts find_g_points_sw.sh onwards
 export TOLERANCE
@@ -31,7 +42,7 @@ export BAND_STRUCTURE
 ./create_lut_sw.sh
 
 # 5. Optimize CKD look-up table
-./optimize_lut_sw.sh
+./optimize_lut_sw.sh $OPTIMIZE_MODE_LIST
 
 # 6. Run two-stream radiative transfer or just compute optical depths
 # for CKDMIP scenarios

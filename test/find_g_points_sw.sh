@@ -15,7 +15,7 @@
 #EXTRA_ARGS="averaging_method=logarithmic"
 
 # Create output directory, if needed
-mkdir -p ${WORK_LW_GPOINTS_DIR}
+mkdir -p ${WORK_SW_GPOINTS_DIR}
 
 # Loop over each band structure and tolerance
 for BANDSTRUCT in $BAND_STRUCTURE
@@ -85,7 +85,8 @@ ssi $MMM_SW_SSI
 iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.02
-flux_weight 0.001
+#flux_weight 0.001 # Previous
+flux_weight 0.0002
 min_pressure ${MIN_PRESSURE}
 max_iterations 60
 
@@ -169,7 +170,8 @@ iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.02
 #flux_weight 0.005
-flux_weight 0.001
+#flux_weight 0.001 ### Previous
+flux_weight 0.0002
 min_pressure ${MIN_PRESSURE}
 max_iterations 60
 

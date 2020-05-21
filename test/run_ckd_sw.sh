@@ -7,7 +7,8 @@
 . check_configuration.h
 
 VERSIONS="raw ckd"
-#VERSIONS=ckd
+VERSIONS=ckd
+#VERSIONS=raw2
 FLUXESSTR=fluxes
 
 if [ "$APP" = nwp ]
@@ -32,10 +33,6 @@ n2o-190
 n2o-270
 n2o-405
 n2o-540
-cfc11-0
-cfc11-2000
-cfc12-0
-cfc12-550
 co2-180-ch4-350
 co2-2240-ch4-350
 co2-180-ch4-3500

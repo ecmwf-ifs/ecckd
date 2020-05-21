@@ -10,11 +10,16 @@ fi
 
 #VERSIONS="ckd raw"
 VERSIONS="ckd"
+#VERSIONS=raw2
 APPLICATION=limited-area-nwp
 APPLICATION=global-nwp
 #APPLICATION=climate
 BAND_STRUCTURE="wide narrow"
-TOLERANCE="0.8 0.4 0.2 0.1 0.05 0.025"
+TOLERANCE="0.6 0.4 0.2 0.15 0.1 0.05 0.025"
+
+#BAND_STRUCTURE=narrow
+#TOLERANCE="0.2 0.1"
+
 
 mkdir -p ${CKDMIP_RESULTS_DIR}/sw_spectral-definition/
 mkdir -p ${CKDMIP_RESULTS_DIR}/sw_optical-depth/
@@ -43,12 +48,19 @@ do
 
 	    CKD_FILE=${ECCKD_PREFIX}_sw_ckd-definition_${MODEL_CODE}.nc
 
+	    if [ ! -r "$CKD_FILE" ]
+	    then
+		echo ... not found, trying ${WORK_SW_RAW_CKD_DIR}
+		cd ${WORK_SW_RAW_CKD_DIR}
+		CKD_FILE=${ECCKD_PREFIX}_sw_${VER}-ckd-definition_${MODEL_CODE}.nc
+	    fi
+
 	    # Get number of g points
 	    NG=$(ncdump -h $CKD_FILE | head -10 | grep g_point | awk '{print $3}')
 
 	    NEW_MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-${NG}
 
-	    NEW_CKD_FILE=${CKDMIP_RESULTS_DIR}/sw_spectral-definition/${ECCKD_PREFIX}_sw_${NEW_MODEL_CODE}${VER_SUFFIX}_spectral-definition.nc
+	    NEW_CKD_FILE=${CKDMIP_RESULTS_DIR}/sw_spectral-definition/${ECCKD_PREFIX}_sw_${NEW_MODEL_CODE}_spectral-definition.nc
 
 	    echo "  Copying $CKD_FILE -> $NEW_CKD_FILE"
 	    cp -f $CKD_FILE $NEW_CKD_FILE
