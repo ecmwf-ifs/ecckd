@@ -3,6 +3,7 @@
 #include "planck_function.h"
 #include "DataFile.h"
 #include "radiative_transfer_lw.h"
+#include "radiative_transfer_sw.h"
 
 using namespace adept;
 
@@ -97,6 +98,9 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping)
 
     flux_up_.resize(flux_dn_.dimensions());
     flux_up_ = 0.0;
+
+    // Save total solar irradiance
+    tsi_ = flux_dn_(0,0) / mu0_(0);
 
     Array4D spectral_flux;
     if (file.exist("spectral_flux_dn_direct_sw")) {
@@ -277,8 +281,16 @@ LblFluxes::calc_ckd_fluxes(const Array3D& optical_depth,
   flux_up.resize(nprof,nlay+1,ng);
 
   for (int iprof = 0; iprof < nprof; ++iprof) {
-    radiative_transfer_lw(planck_hl_(iprof,__,__), optical_depth(iprof,__,__),
-			  surf_emissivity_(iprof,iband_per_g), surf_planck_(iprof,__),
-			  flux_dn(iprof,__,__), flux_up(iprof,__,__));
+    if (is_sw_) {
+      Real tsi_scaling = tsi_ / sum(solar_irradiance_);
+      radiative_transfer_direct_sw(mu0_(iprof), tsi_scaling * solar_irradiance_, optical_depth(iprof,__,__),
+				   flux_dn(iprof,__,__));
+      flux_up(iprof,__,__) = 0.0;
+    }
+    else {
+      radiative_transfer_lw(planck_hl_(iprof,__,__), optical_depth(iprof,__,__),
+			    surf_emissivity_(iprof,iband_per_g), surf_planck_(iprof,__),
+			    flux_dn(iprof,__,__), flux_up(iprof,__,__));
+    }
   }
 }

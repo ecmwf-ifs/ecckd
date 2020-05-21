@@ -142,8 +142,9 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
       }
       else {
 	//	LOG << "   " << iprof;
-	Real tsi_scaling = sum(lbl1.spectral_flux_dn_(iprof,0,__))
-	  / (lbl1.mu0_(iprof) * sum(ckd_model.solar_irradiance()));
+	//Real tsi_scaling = sum(lbl1.spectral_flux_dn_(iprof,0,__))
+	//  / (lbl1.mu0_(iprof) * sum(ckd_model.solar_irradiance()));
+	Real tsi_scaling = lbl1.tsi_ / sum(ckd_model.solar_irradiance());
 	cost += calc_cost_function_ckd_sw(lbl1.mu0_(iprof),
 					  lbl1.pressure_hl_(iprof,__),
 					  tsi_scaling * ckd_model.solar_irradiance(),
@@ -251,6 +252,7 @@ solve_lbfgs(CkdModel<true>& ckd_model,
 	    Real flux_profile_weight,
 	    Real broadband_weight,
 	    Real prior_error,
+	    int max_iterations,
 	    Real convergence_criterion,
 	    Array3D* relative_ckd_flux_dn,
 	    Array3D* relative_ckd_flux_up)
@@ -260,7 +262,7 @@ solve_lbfgs(CkdModel<true>& ckd_model,
   lbfgs_parameter_t param;
   lbfgs_parameter_init(&param);
   param.epsilon = convergence_criterion;
-  param.max_iterations = 3000;
+  param.max_iterations = max_iterations;
   param.max_step = 2.0;
   param.initial_step_size = 0.5;
 
@@ -281,7 +283,8 @@ solve_lbfgs(CkdModel<true>& ckd_model,
   data.relative_ckd_flux_up = relative_ckd_flux_up;
   data.negative_od_penalty = 1.0e5;
 
-  LOG << "Optimizing coefficients with LBFGS algorithm\n";
+  LOG << "Optimizing coefficients with LBFGS algorithm: max iterations = "
+      << max_iterations << ", convergence criterion = " << convergence_criterion << "\n";
   LOG << "  CKD model interpolation is ";
   if (ckd_model.logarithmic_interpolation) {
     LOG << "LOGARITHMIC\n";

@@ -179,6 +179,8 @@ main(int argc, const char* argv[])
   // reaches threshold
   LOG << "Finding height at which optical depth from TOA reaches "
 	<< threshold_optical_depth << "\n";
+
+  Vector pseudo_height_hl = log(pressure_hl(end)) - log(pressure_hl);
   Vector od_threshold_height(nwav);
   for (int iwav = 0; iwav < nwav; ++iwav) {
     if (column_optical_depth(iwav) <= threshold_optical_depth) {
@@ -192,9 +194,12 @@ main(int argc, const char* argv[])
 	if (next_cum_od >= threshold_optical_depth) {
 	  // Enclosed point where optical depth exceeds threshold
 	  od_threshold_height(iwav) 
-	    = ((threshold_optical_depth-cum_od)*pseudo_height(ilay+1)
-	       + (next_cum_od-threshold_optical_depth)*pseudo_height(ilay))
-	    / (optical_depth(ilay,iwav));
+	    = ((threshold_optical_depth-cum_od)*pseudo_height_hl(ilay+1)
+	       + (next_cum_od-threshold_optical_depth)*pseudo_height_hl(ilay))
+	    / std::max(1.0e-12,optical_depth(ilay,iwav));
+	  if (od_threshold_height(iwav) > 30.0) {
+	    throw;
+	  }
 	  break;
 	}
 	cum_od = next_cum_od;

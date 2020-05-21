@@ -93,6 +93,9 @@ main(int argc, const char* argv[])
   config.read(convergence_criterion, "convergence_criterion");
   config.read(model_id, "model_id");
 
+  int max_iterations = 3000;
+  config.read(max_iterations, "max_iterations");
+
   if (config.exist("band_mapping")) {
     config.read(band_mapping, "band_mapping");
   }
@@ -124,8 +127,13 @@ main(int argc, const char* argv[])
     relative_to_fluxes.read(relative_to_file, band_mapping);
 
     relative_to_fluxes.make_gas_mapping(ckd_model.molecules);
-    relative_to_fluxes.planck_hl_   = ckd_model.calc_planck_function(relative_to_fluxes.temperature_hl_);
-    relative_to_fluxes.surf_planck_ = ckd_model.calc_planck_function(relative_to_fluxes.temperature_hl_(__,end));
+    if (!ckd_model.is_sw()) {
+      relative_to_fluxes.planck_hl_   = ckd_model.calc_planck_function(relative_to_fluxes.temperature_hl_);
+      relative_to_fluxes.surf_planck_ = ckd_model.calc_planck_function(relative_to_fluxes.temperature_hl_(__,end));
+    }
+    else {
+      relative_to_fluxes.solar_irradiance_ = ckd_model.solar_irradiance();
+    }
 
     if (relative_to_fluxes.have_band_fluxes) {
       relative_to_fluxes.iband_per_g = ckd_model.iband_per_g(relative_to_fluxes.band_wavenumber1_,
@@ -168,6 +176,9 @@ main(int argc, const char* argv[])
       fluxes.planck_hl_   = ckd_model.calc_planck_function(fluxes.temperature_hl_);
       fluxes.surf_planck_ = ckd_model.calc_planck_function(fluxes.temperature_hl_(__,end));
     }
+    else {
+      fluxes.solar_irradiance_ = ckd_model.solar_irradiance();
+    }
 
     if (fluxes.have_band_fluxes) {
       fluxes.iband_per_g = ckd_model.iband_per_g(fluxes.band_wavenumber1_,
@@ -186,7 +197,7 @@ main(int argc, const char* argv[])
 
   int status = solve_lbfgs(ckd_model, training_data,
 			   flux_weight, flux_profile_weight, broadband_weight, prior_error,
-			   convergence_criterion,
+			   max_iterations, convergence_criterion,
 			   relative_ckd_flux_dn, relative_ckd_flux_up);
 
   LOG << "Convergence status: " << lbfgs_status_string(status) << "\n";

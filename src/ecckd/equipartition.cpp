@@ -6,7 +6,7 @@
 
 
 // abound <= ascale*abound + bscale*bbound
-static void merge_bounds(int ni, ep_real* abound, ep_real* bbound,
+static void merge_bounds(int ni, ep_real* abound, const ep_real* bbound,
 			 ep_real ascale, ep_real bscale) {
   for (int ii = 0; ii <= ni; ++ii) {
     abound[ii] = ascale*abound[ii] + bscale*bbound[ii];

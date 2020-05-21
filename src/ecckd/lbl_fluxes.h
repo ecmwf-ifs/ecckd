@@ -29,8 +29,12 @@ struct LblFluxes {
 
   adept::Matrix surf_emissivity_, surf_planck_;
   adept::Array3D planck_hl_;
+  adept::Vector solar_irradiance_; // At g points
 
   std::vector<std::string> molecules_;
+
+  // Total solar irradiance (W m-2)
+  adept::Real tsi_;
 
   int ngas() { return molecules_.size(); }
 

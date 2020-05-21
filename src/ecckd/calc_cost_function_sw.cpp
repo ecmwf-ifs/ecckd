@@ -112,7 +112,6 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
     flux_up_fwd_orig -= *relative_ckd_flux_up;
   }
 
-
   aMatrix flux_dn_fwd, flux_up_fwd;
 
   int nband = ng;
@@ -161,7 +160,6 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
 							     *sum(heating_rate_fwd-hr,1)))
     + broadband_weight*flux_weight*(sum(flux_dn_fwd(end,__)-flux_dn(end,__))*sum(flux_dn_fwd(end,__)-flux_dn(end,__))
 				    +sum(flux_up_fwd(0,__)-flux_up(0,__))*sum(flux_up_fwd(0,__)-flux_up(0,__)));
-  //LOG << sum(flux_dn_fwd(end,__)) << " " << sum(flux_dn_fwd_orig(end,__)) << " " << sum(flux_dn(end,__)) << "\n";
 
   if (flux_profile_weight > 0.0) {
     aVector flux_dn_error = sum(flux_dn_fwd(range(1,end-1),__)-flux_dn(range(1,end-1),__),1);
@@ -169,12 +167,6 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
     cost_fn += broadband_weight*sum(interface_weight*(flux_dn_error*flux_dn_error
 						      +flux_up_error*flux_up_error));
   }
-  /*
-  cost_fn = sum(flux_dn_fwd(end,__)-flux_dn(end,__))*sum(flux_dn_fwd(end,__)-flux_dn(end,__));
-  LOG << " " << sum(flux_dn_fwd(end,__)) << " " << sum(flux_dn(end,__)) << " " << sum(flux_dn_fwd(end,__)-flux_dn(end,__)) << "\n";
-  LOG << "    " << flux_dn_fwd(end,1) << " " << flux_dn_fwd(end,end) << " " << optical_depth(end,1) << " " << optical_depth(end,end) << "\n";
-  */
-  //  LOG << "    " << cost_fn_save << " " << cost_fn << "\n";
 
   return cost_fn;
 }
