@@ -797,6 +797,9 @@ main(int argc, const char* argv[])
   }
 
   if (nwav > 0) {
+    file.define_variable("wavenumber", DOUBLE, "wavenumber");
+    file.write_long_name("Wavenumber", "wavenumber");
+    file.write_units("cm-1", "wavenumber");
     file.define_variable("g_point", SHORT, "wavenumber");
     file.write_long_name("G point", "g_point");
     file.deflate_variable("g_point");
@@ -870,6 +873,7 @@ main(int argc, const char* argv[])
   }
 
   if (nwav > 0) {
+    file.write(wavenumber_cm_1, "wavenumber");
     file.write(g_point, "g_point");
     for (int igas = 0; igas < ngas; ++igas) {
       const SingleGasData& this_gas = single_gas_data[igas];
