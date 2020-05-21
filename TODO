@@ -5,6 +5,8 @@ CODE
  - find g points stops if lowest cost function is not in the last 10 iterations
  - CH4 tolerance can be set separately
 
+ - Check band_number is correct in CKD definition file
+
  - Shortwave optimize
 
 
