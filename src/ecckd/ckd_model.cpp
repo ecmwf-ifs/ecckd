@@ -260,7 +260,7 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.define_variable("wavenumber2_band", FLOAT, "band");
   file.write_long_name("Upper wavenumber bound of band", "wavenumber2_band");
   file.write_units("cm-1", "wavenumber2_band");
-  file.define_variable("band_number", FLOAT, "g_point");
+  file.define_variable("band_number", SHORT, "g_point");
   file.write_long_name("Band number of each g point", "band_number");
 
   if (is_sw()) {
@@ -664,6 +664,14 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 
       // Weight
       Real simple_weight = global_weight * (pressure_hl(icol,ip+1)-pressure_hl(icol,ip));
+
+      /*
+      if (icol == 0) {
+	std::cout << ip << " " << log_pressure_fl << " " << pindex0 << " " << ip0 << " " << pweight0 << " " << pweight1 << " " << t_0 << " " << tindex0 << " " << it0 << " " << tweight0 << " " << tweight1 << " " << simple_weight << "\n";
+	std::cout << "  " << temperature_fl(icol,ip) << " " << d_t << " " << nt_ << "\n";
+      }
+      */
+
       Real weight = 0.0;
       bool no_vmr_provided = true;
       if (!vmr_fl.empty()) {
@@ -685,6 +693,12 @@ CkdModel<IsActive>::calc_optical_depth(int igas,                         ///< Ga
 	int ic0 = static_cast<int>(cindex0);
 	Real cweight1 = cindex0 - ic0;
 	Real cweight0 = 1.0 - cweight1;
+	/*
+        if (icol == 0) {
+	  std::cout << "  " << log_conc << " " << vmr_fl(icol,ip) << " " << cindex0 << " " << log(this_gas.vmr(0)) << " " << ic0 << " " << cweight0 << " " << cweight1 << " " << d_log_c << "\n";
+	}
+	*/
+
 	if (no_vmr_provided) {
 	  ERROR << "Concentration of " << molecules[igas] << " not provided";
 	  THROW(1);

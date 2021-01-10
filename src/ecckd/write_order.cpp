@@ -51,7 +51,7 @@ write_order(std::string& file_name,                    ///< Name of NetCDF file 
   file.write_long_name("Wavenumber interval", "d_wavenumber");
   file.write_units("cm-1", "d_wavenumber");
 
-  file.define_variable("band_number", INT, "wavenumber");
+  file.define_variable("band_number", SHORT, "wavenumber");
   file.deflate_variable("band_number");
   file.write_long_name("Band number", "band_number");
   file.write_comment("This variable indicates the number of the band (0 based) that each wavenumber is in, with -1 indicating a wavenumber not considered.", "band_number");

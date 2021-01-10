@@ -748,7 +748,7 @@ main(int argc, const char* argv[])
   file.write_long_name("Upper wavenumber bound of band", "wavenumber2_band");
   file.write_units("cm-1", "wavenumber2_band");
 
-  file.define_variable("band_number", FLOAT, "g_point");
+  file.define_variable("band_number", SHORT, "g_point");
   file.write_long_name("Band number of each g point", "band_number");
   
   if (!ssi.empty()) {
@@ -767,7 +767,7 @@ main(int argc, const char* argv[])
     file.write_long_name(std::string("Number of g points for ")
 			 + Molecule, molecule + "_n_g_points");
 
-    file.define_variable(molecule + "_band_number", INT, dim_str);
+    file.define_variable(molecule + "_band_number", SHORT, dim_str);
     file.write_long_name("Band number of each " + Molecule + " g point",  molecule + "_band_number");
     file.write_comment("This variable indicates the number of the band (0 based) that each g point is in.", molecule + "_band_number");
 
