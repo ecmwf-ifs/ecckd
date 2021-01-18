@@ -22,8 +22,16 @@ heating_rate(const adept::Vector& pressure,                      ///< Half-level
 
   // Factor to convert from difference in net flux across a layer to heating rate
   Vector conversion = -(ACCEL_GRAVITY/SPECIFIC_HEAT_AIR) / (pressure(range(1,end))-pressure(range(0,end-1)));
-  hr = spread<1>(conversion,nwav) * (  flux_dn(range(1,end),__) - flux_dn(range(0,end-1),__)
-				       - flux_up(range(1,end),__) + flux_up(range(0,end-1),__)  );
+
+  if (flux_up.empty()) {
+    // Shortwave calculation may be direct only, in which case
+    // upwelling may not be present
+    hr = spread<1>(conversion,nwav) * (  flux_dn(range(1,end),__) - flux_dn(range(0,end-1),__) );
+  }
+  else {
+    hr = spread<1>(conversion,nwav) * (  flux_dn(range(1,end),__) - flux_dn(range(0,end-1),__)
+					 - flux_up(range(1,end),__) + flux_up(range(0,end-1),__)  );
+  }
 }
 
 /// As above but for a single profile

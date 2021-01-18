@@ -13,6 +13,7 @@
 
 # Optional additional arguments
 #EXTRA_ARGS="averaging_method=logarithmic"
+EXTRA_ARGS="averaging_method=total-transmission"
 
 # Create output directory, if needed
 mkdir -p ${WORK_SW_GPOINTS_DIR}
@@ -52,6 +53,8 @@ gases composite h2o o3
   # the minimum concentration
   background_input "ckdmip_mmm_sw_spectra_composite_minimum.h5
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
+  min_scaling 0.1
+  max_scaling 10.0
 \end h2o
 
 \begin o3
@@ -59,6 +62,8 @@ gases composite h2o o3
   reordering_input sw_order_${BANDSTRUCT}_o3.h5
   background_input "ckdmip_mmm_sw_spectra_composite_minimum.h5
             ckdmip_mmm_sw_spectra_h2o_minimum.h5"
+  min_scaling 0.5
+  max_scaling 2.0
 \end o3
 
 \begin composite
@@ -100,6 +105,8 @@ gases h2o o3 ch4 n2o co2 o2n2
   # the minimum concentration
   background_input "ckdmip_mmm_sw_spectra_composite_minimum.h5
 ckdmip_mmm_sw_spectra_o3_minimum.h5"
+  min_scaling 0.1
+  max_scaling 10.0
 \end h2o
 
 \begin o3
@@ -107,6 +114,8 @@ ckdmip_mmm_sw_spectra_o3_minimum.h5"
   reordering_input sw_order_${BANDSTRUCT}_o3.h5
   background_input "ckdmip_mmm_sw_spectra_composite_minimum.h5
 ckdmip_mmm_sw_spectra_h2o_minimum.h5"
+  min_scaling 0.5
+  max_scaling 2.0
 \end o3
 
 \begin co2
@@ -118,6 +127,8 @@ ckdmip_mmm_sw_spectra_ch4_present.h5
 ckdmip_mmm_sw_spectra_n2o_present.h5
 ckdmip_mmm_sw_spectra_o2n2_constant.h5"
   background_conc -1 -1 350e-9 190e-9 -1
+  min_scaling 0.43
+  max_scaling 5.4
 \end co2
 
 \begin ch4
@@ -129,6 +140,8 @@ ckdmip_mmm_sw_spectra_co2_present.h5
 ckdmip_mmm_sw_spectra_n2o_present.h5
 ckdmip_mmm_sw_spectra_o2n2_constant.h5"
   background_conc -1 -1 180e-6 190e-9 -1
+  min_scaling 1.8
+  max_scaling 0.18
 \end ch4
 
 \begin n2o
@@ -140,6 +153,8 @@ ckdmip_mmm_sw_spectra_co2_present.h5
 ckdmip_mmm_sw_spectra_ch4_present.h5
 ckdmip_mmm_sw_spectra_o2n2_constant.h5"
   background_conc -1 -1 180e-6 350e-9 -1
+  min_scaling 1.6
+  max_scaling 0.57
 \end n2o
 
 \begin o2n2
@@ -186,13 +201,18 @@ gases composite h2o o3
   # the minimum concentration
   background_input "ckdmip_mmm_sw_spectra_composite_present.h5
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
+  min_scaling 0.1
+  max_scaling 10.0
 \end h2o
 
 \begin o3
   input ckdmip_mmm_sw_spectra_o3_median.h5
+
   reordering_input sw_order_${BANDSTRUCT}_o3.h5
   background_input "ckdmip_mmm_sw_spectra_composite_present.h5
             ckdmip_mmm_sw_spectra_h2o_minimum.h5"
+  min_scaling 0.5
+  max_scaling 2.0
 \end o3
 
 \begin composite

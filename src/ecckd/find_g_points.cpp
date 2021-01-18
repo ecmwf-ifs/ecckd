@@ -34,7 +34,7 @@ calc_median_sorting_variable(const Vector& sorting_variable,
 }
 
 // Calculate the "fitted" optical depth averaged over a range of
-// wavenumbers selected via "index", using the Planck function to
+// wavenumbers from indices i1 to i2, using the Planck function to
 // weight at each height
 Vector fit_optical_depth_lw(const std::string& averaging_method,
 			    int i1, int i2,
@@ -92,7 +92,7 @@ Vector fit_optical_depth_lw(const std::string& averaging_method,
 
 
 // Calculate the "fitted" optical depth averaged over a range of
-// wavenumbers selected via "index", using the spectral solar
+// wavenumbers from indices i1 to i2, using the spectral solar
 // irradiance
 Vector fit_optical_depth_sw(const std::string& averaging_method,
 			    int i1, int i2,
@@ -149,6 +149,44 @@ Vector fit_optical_depth_sw(const std::string& averaging_method,
   return optical_depth_fit;
 }
 
+
+// Calculate the "fitted" optical depth averaged over a range of
+// wavenumbers from indices i1 to i2, using the spectral solar
+// irradiance and the total-transmission shortwave method
+Vector fit_optical_depth_sw_total_trans(
+			    int i1, int i2,
+			    const Vector& ssi,
+			    const Matrix& bg_od, const Matrix& od) {
+  int nz = od.size(0);
+  Vector optical_depth_fit(nz);
+  Vector flux_dn; flux_dn = ssi(range(i1,i2));
+  Vector bg_flux_dn; bg_flux_dn = flux_dn;
+  Real bb_flux_dn_top, bb_flux_dn_base;
+  Real bb_bg_flux_dn_top, bb_bg_flux_dn_base;
+
+  bb_flux_dn_top = bb_bg_flux_dn_top = sum(flux_dn);
+
+  Real norm_factor = 1.0 / sum(ssi(range(i1,i2)));
+  Real bg_od_fit;
+
+  for (int iz = 0; iz < nz; ++iz) {
+    // Factor of 2.0 is because we consider a 60 degree solar zenith angle
+    bg_flux_dn *= exp(-2.0 * bg_od(iz,range(i1,i2)));
+    flux_dn *= exp(-2.0 * (bg_od(iz,range(i1,i2))+od(iz,range(i1,i2))));
+    bb_bg_flux_dn_base = sum(bg_flux_dn);
+    bb_flux_dn_base = sum(flux_dn);
+    if (bb_bg_flux_dn_base > 0.0 && bb_flux_dn_base > 0.0) {
+      bg_od_fit = -0.5*log(bb_bg_flux_dn_base / bb_bg_flux_dn_top);
+      optical_depth_fit(iz) = -0.5*log(bb_flux_dn_base / bb_flux_dn_top) - bg_od_fit;
+    }
+    else {
+      optical_depth_fit = sum(od(__,range(i1,i2)) * spread<0>(ssi(range(i1,i2)),nz),1) * norm_factor;
+    }
+    bb_flux_dn_top = bb_flux_dn_base;
+    bb_bg_flux_dn_top = bb_bg_flux_dn_base;
+  }
+  return optical_depth_fit;
+}
 
 class CkdEquipartition : public Equipartition {
 public:
@@ -207,6 +245,22 @@ public:
 
   }
 
+  void init_sw_extras(const Vector& fdsl, const Vector& futl,
+		      const Vector& fdsh, const Vector& futh,
+		      Real mins, Real maxs,
+		      const Matrix& hl, const Matrix& hh,
+		      int i1, int i2) {
+    flux_dn_surf_low  = fdsl(range(i1,i2));
+    flux_up_toa_low   = futl(range(i1,i2));
+    flux_dn_surf_high = fdsh(range(i1,i2));
+    flux_up_toa_high  = futh(range(i1,i2));
+    min_scaling = mins;
+    max_scaling = maxs;
+    hr_low  = hl(__,range(i1,i2));
+    hr_high = hh(__,range(i1,i2));
+  }
+
+
   int lower_index(ep_real bound) const {
     return static_cast<int>(std::ceil(bound*(npoints-1)));
   }
@@ -255,20 +309,60 @@ public:
 				   flux_weight, layer_weight.soft_link());
     }
     else {
-      Vector optical_depth_fit = fit_optical_depth_sw(averaging_method,
-						      ibound1, ibound2,
-						      ssi.soft_link(),
-						      metric.soft_link());
+      if (averaging_method == "total-transmission") {
+	Vector optical_depth_fit = fit_optical_depth_sw_total_trans(
+							ibound1, ibound2,
+							ssi.soft_link(),
+							bg_optical_depth.soft_link(),
+							metric.soft_link());
+	Real cf_low = calc_cost_function_sw(cos_sza,
+				     pressure_hl.soft_link(),
+				     ssi.soft_link()(range(ibound1,ibound2)),
+				     bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
+				     optical_depth_fit * min_scaling,
+				     flux_dn_surf_low.soft_link()(range(ibound1,ibound2)),
+				     flux_up_toa_low.soft_link()(range(ibound1,ibound2)),
+				     hr_low.soft_link()(__,range(ibound1,ibound2)),
+				     flux_weight, layer_weight.soft_link());
+	Real cf_high = calc_cost_function_sw(cos_sza,
+				     pressure_hl.soft_link(),
+				     ssi.soft_link()(range(ibound1,ibound2)),
+				     bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
+				     optical_depth_fit * max_scaling,
+				     flux_dn_surf_high.soft_link()(range(ibound1,ibound2)),
+				     flux_up_toa_high.soft_link()(range(ibound1,ibound2)),
+				     hr_high.soft_link()(__,range(ibound1,ibound2)),
+				     flux_weight, layer_weight.soft_link());
+	/*
+	Real cf = calc_cost_function_sw(cos_sza,
+				     pressure_hl.soft_link(),
+				     ssi.soft_link()(range(ibound1,ibound2)),
+				     bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
+				     optical_depth_fit,
+				     flux_dn_surf.soft_link()(range(ibound1,ibound2)),
+				     flux_up_toa.soft_link()(range(ibound1,ibound2)),
+				     hr.soft_link()(__,range(ibound1,ibound2)),
+				     flux_weight, layer_weight.soft_link());
+	std::cout << "*** cost functions = " << cf_low << " " << cf << " " << cf_high << "\n";
+	*/
+	return 0.5 * (cf_low + cf_high);
+      }
+      else {
+	Vector optical_depth_fit = fit_optical_depth_sw(averaging_method,
+							ibound1, ibound2,
+							ssi.soft_link(),
+							metric.soft_link());
 	  
-      return calc_cost_function_sw(cos_sza,
-				   pressure_hl.soft_link(),
-				   ssi.soft_link()(range(ibound1,ibound2)),
-				   bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
-				   optical_depth_fit.soft_link(),
-				   flux_dn_surf.soft_link()(range(ibound1,ibound2)),
-				   flux_up_toa.soft_link()(range(ibound1,ibound2)),
-				   hr.soft_link()(__,range(ibound1,ibound2)),
-				   flux_weight, layer_weight.soft_link());
+	return calc_cost_function_sw(cos_sza,
+				     pressure_hl.soft_link(),
+				     ssi.soft_link()(range(ibound1,ibound2)),
+				     bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
+				     optical_depth_fit.soft_link(),
+				     flux_dn_surf.soft_link()(range(ibound1,ibound2)),
+				     flux_up_toa.soft_link()(range(ibound1,ibound2)),
+				     hr.soft_link()(__,range(ibound1,ibound2)),
+				     flux_weight, layer_weight.soft_link());
+      }
     }
   }
 
@@ -283,6 +377,11 @@ public:
   int npoints;
   ep_real total_comp_cost;
   bool do_sw;
+
+  Vector flux_dn_surf_low, flux_up_toa_low;
+  Vector flux_dn_surf_high, flux_up_toa_high;
+  Real min_scaling, max_scaling;
+  Matrix hr_low, hr_high;
 };
 
 
@@ -393,6 +492,15 @@ main(int argc, const char* argv[])
     std::transform(Gas.begin(), Gas.end(), Gas.begin(), ::toupper);
     LOG << "*** FINDING G POINTS FOR " << Gas << "\n";
 
+    // Used by the shortwave total-transmission averaging method
+    Real min_scaling = 1.0, max_scaling = 1.0;
+    config.read(min_scaling, gas_str, "min_scaling");
+    config.read(max_scaling, gas_str, "max_scaling");
+    // We always have to account for some scaling of the optical path
+    // due to the variation of solar zenith angle
+    min_scaling = std::min(0.5, min_scaling);
+    max_scaling = std::max(2.5, max_scaling);
+
     // READ ORDERING
     std::string reordering_input;
     if (!config.read(reordering_input, gas_str, "reordering_input")) {
@@ -473,10 +581,17 @@ main(int argc, const char* argv[])
     LOG << nlay << " layers\n";
     LOG << nwav << " spectral points\n";
 
-    Matrix flux_dn(nlay+1,nwav), flux_up(nlay+1,nwav);
+    Matrix flux_dn(nlay+1,nwav);
+    Matrix flux_up;
     Vector surf_emissivity;
 
+    // For total-transmission method we need to do flux calculations
+    // with the target gas optical depth scaled up and down
+    Matrix flux_dn_high, flux_dn_low;
+
     if (!do_sw) {
+
+      flux_up.resize(nlay+1,nwav);
 
       // COMPUTE PLANCK FUNCTION
   
@@ -515,7 +630,21 @@ main(int argc, const char* argv[])
       Matrix total_optical_depth = bg_optical_depth + optical_depth;
       radiative_transfer_direct_sw(cos_sza, ssi,
 				   total_optical_depth, flux_dn);
-      flux_up = 0.0;
+
+      if (averaging_method == "total-transmission") {
+	// We generat two further benchmark spectral radiation fields,
+	// one with the optical depths scaled down, the other with
+	// them scaled up
+	flux_dn_low.resize(nlay+1,nwav);
+	total_optical_depth = bg_optical_depth + min_scaling * optical_depth;
+	radiative_transfer_direct_sw(cos_sza, ssi,
+				     total_optical_depth, flux_dn_low);
+
+	flux_dn_high.resize(nlay+1,nwav);
+	total_optical_depth = bg_optical_depth + max_scaling * optical_depth;
+	radiative_transfer_direct_sw(cos_sza, ssi,
+				     total_optical_depth, flux_dn_high);
+      }
 
     }
 
@@ -527,10 +656,38 @@ main(int argc, const char* argv[])
     // Save top-of-atmosphere and surface fluxes
     Vector flux_dn_surf, flux_up_toa;
     flux_dn_surf = flux_dn(end,__);
-    flux_up_toa  = flux_up(0,__);
+
+    if (flux_up.empty()) {
+      flux_up_toa.resize(flux_dn_surf.size());
+      flux_up_toa = 0.0;
+    }
+    else {
+      flux_up_toa  = flux_up(0,__);
+    }
 
     flux_dn.clear();
     flux_up.clear();
+
+    // Additional benchmark values for the shortwave
+    // total-transmission averaging method
+    Matrix hr_low, hr_high;
+    Vector flux_dn_surf_low,  flux_up_toa_low;
+    Vector flux_dn_surf_high, flux_up_toa_high;
+    if (do_sw && averaging_method == "total-transmission") {
+      hr_low.resize(nlay,nwav);
+      heating_rate(pressure_hl, flux_dn_low, flux_up, hr_low);
+      flux_dn_surf_low = flux_dn_low(end,__);
+      flux_up_toa_low.resize(flux_dn_surf_low.size());
+      flux_up_toa_low = 0.0;
+      flux_dn_low.clear();
+
+      hr_high.resize(nlay,nwav);
+      heating_rate(pressure_hl, flux_dn_high, flux_up, hr_high);
+      flux_dn_surf_high = flux_dn_high(end,__);
+      flux_up_toa_high.resize(flux_dn_surf_high.size());
+      flux_up_toa_high = 0.0;
+      flux_dn_high.clear();
+    }
 
     Vector layer_weight = sqrt(pressure_hl(range(1,end)))-sqrt(pressure_hl(range(0,end-1)));
     Vector pressure_fl = 0.5*(pressure_hl(range(1,end))+pressure_hl(range(0,end-1)));
@@ -610,6 +767,12 @@ main(int argc, const char* argv[])
 		   cos_sza, pressure_hl, ssi,
 		   flux_dn_surf, flux_up_toa,
 		   bg_optical_depth, metric, hr, ibegin, iend);
+	if (averaging_method == "total-transmission") {
+	  Eq.init_sw_extras(flux_dn_surf_low, flux_up_toa_low,
+			    flux_dn_surf_high, flux_up_toa_high,
+			    min_scaling, max_scaling, 
+			    hr_low, hr_high, ibegin, iend);
+	}
       }
       Eq.set_partition_max_iterations(max_iterations);
       Eq.set_partition_tolerance(tolerance_tolerance);
