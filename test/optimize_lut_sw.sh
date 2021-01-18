@@ -150,6 +150,14 @@ do
     elif [ "$BANDSTRUCT" = double ]
     then
 	BANDMAPPING="band_mapping=0 0 0 0 0 0 0 0 1 1 1 1 1"
+    elif [ "$BANDSTRUCT" = rgb ]
+    then
+	# Assume we are training from the sw_fluxes-rgb LBL files
+	BANDMAPPING="band_mapping=0 0 0 0 1 2 3 4 4"
+	# Modify training files and directory
+	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's/sw_fluxes/sw_fluxes-rgb/g')
+	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
+	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
     else
 	# narrow
 	BANDMAPPING="band_mapping=0 1 2 3 4 5 6 7 8 9 10 11 12"
