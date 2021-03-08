@@ -36,7 +36,7 @@ libecckd_a_SOURCES = \
 
 bin_PROGRAMS = reorder_spectrum find_g_points merge_spectra \
 	create_look_up_table run_ckd lw_spectra optimize_lut \
-	test_equipartition
+	test_equipartition scale_lut
 
 reorder_spectrum_SOURCES = reorder_spectrum.cpp
 
@@ -53,5 +53,7 @@ lw_spectra_SOURCES = lw_spectra.cpp
 optimize_lut_SOURCES = optimize_lut.cpp
 
 test_equipartition_SOURCES = test_equipartition.cpp
+
+scale_lut_SOURCES = scale_lut.cpp
 
 LDADD = ./libecckd.a ../tools/libtools.a ../lbfgs/liblbfgs.a

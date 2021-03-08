@@ -166,16 +166,40 @@ public:
 			    const Matrix& temperature_fl,     ///< Temperature at full levels (K)
 			    const Matrix& vmr_fl = Matrix()) ///< Volume mixing ratio at full levels
     {
-      auto itgas = std::find(molecules.begin(), molecules.end(), gas);
-      if (itgas == molecules.end()) {
+      int igas = get_gas_index(gas);
+      if (igas == -1) {
 	ERROR << "CKD model does not contain " << gas;
 	THROW(UNEXPECTED_EXCEPTION);
       }
       else {
-	int igas = std::distance(molecules.begin(), itgas);
 	return calc_optical_depth(igas, pressure_hl, temperature_fl, vmr_fl);
       }
     }
+
+  // Return the index to gas called "gas", where an empty string or
+  // "composite" will match the first gas with no concentration
+  // dependence
+  int get_gas_index(std::string gas) {
+    if (gas.empty()) {
+      gas = "composite";
+    }
+    auto itgas = std::find(molecules.begin(), molecules.end(), gas);
+    if (itgas == molecules.end()) {
+      if (gas == "composite") {
+	// Search for first gas 
+	for (int igas = 0; igas < ngas(); ++igas) {
+	  const SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
+	  if (this_gas.conc_dependence == NONE) {
+	    return igas;
+	  }
+	}
+      }
+      return -1; // Gas not found
+    }
+    else {
+      return std::distance(molecules.begin(), itgas);
+    }
+  }
 
   /// Calculate the Rayleigh optical depth
   Array<3,Real,IsActive> calc_rayleigh_optical_depth(const Matrix& pressure_hl) {
@@ -189,6 +213,10 @@ public:
     }
     return rayleigh_od;
   }
+
+  /// Scale the optical depth coefficients of each gas equally, where
+  /// scaling is dimensioned (nz,ng)
+  void scale_optical_depth(const Vector& pressure_fl, const Matrix& scaling);
 
   /// Create error covariance matrices
   void create_error_covariances(Real err, Real pressure_corr, Real temperature_corr, Real conc_corr);

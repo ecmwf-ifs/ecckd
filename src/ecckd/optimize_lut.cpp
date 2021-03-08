@@ -208,4 +208,5 @@ main(int argc, const char* argv[])
   //  ckd_model.cap_relative_linear_coeffts();
   ckd_model.write(output, argc, argv, config_str);
 
+  return 0;
 }

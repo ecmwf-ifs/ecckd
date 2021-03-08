@@ -830,6 +830,28 @@ CkdModel<IsActive>::calc_planck_function(const Vector& temperature)
   return planck;
 }
 
+/// Scale the optical depth coefficients of each gas equally, where
+/// scaling is dimensioned (nz,ng)
+template<bool IsActive>
+void
+CkdModel<IsActive>::scale_optical_depth(const Vector& pressure_fl, const Matrix& scaling) {
+  Matrix local_scaling = interp(log(pressure_fl), scaling, log_pressure_);
+  for (int ip = 2; ip < log_pressure_.size(); ip += 10) {
+    LOG << "  Scalings at " << exp(log_pressure_(ip)) << " Pa: " << local_scaling[ip] << "\n";
+  }
+
+  for (int igas = 0; igas < ngas(); ++igas) {
+    SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
+    if (this_gas.conc_dependence == LUT) {
+      this_gas.molar_abs_conc *= spread<0>(spread<0>(local_scaling, nt_), this_gas.molar_abs_conc.size(0));
+    }
+    else {
+      this_gas.molar_abs *= spread<0>(local_scaling, nt_);
+    }
+  }
+}
+
+
 // Instantiate both active and passive versions of CkdModel
 
 template CkdModel<false>::CkdModel(const std::vector<SingleGasData<false> >&,
@@ -853,3 +875,4 @@ template Array3 CkdModel<false>::calc_planck_function(const Matrix&);
 template Array3 CkdModel<true>::calc_planck_function(const Matrix&);
 template Matrix CkdModel<false>::calc_planck_function(const Vector&);
 template Matrix CkdModel<true>::calc_planck_function(const Vector&);
+template void CkdModel<false>::scale_optical_depth(const Vector&, const Matrix&);
