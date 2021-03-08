@@ -236,7 +236,6 @@ else
     exit 1
 fi
 
-
     for TOL in $TOLERANCE
     do
 

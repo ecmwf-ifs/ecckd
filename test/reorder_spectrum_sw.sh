@@ -60,8 +60,15 @@ do
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    ${OPTIONS}
 	    else
-		${BANNER_ERROR} "Band structure\"$BANDSTRUCT\" not understood"
-		exit 1
+		if [ "$WN1_SW_CUSTOM" ]
+		then
+		    ${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
+		    ${OPTIONS} \
+		    "wavenumber1=$WN1_SW_CUSTOM" "wavenumber2=$WN2_SW_CUSTOM"
+		else
+		    ${BANNER_ERROR} "Band structure\"$BANDSTRUCT\" not understood"
+		    exit 1
+		fi
 	    fi
 	else
 	    ${BANNER_SKIP} Skipping reordering of ${GAS} as file present: ${OUTPUT}

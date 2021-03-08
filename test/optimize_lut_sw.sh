@@ -72,7 +72,8 @@ case "$OPTIMIZE_MODE" in
 	GASLIST="composite h2o o3 co2"
 	INDIR=${WORK_SW_RAW_CKD_DIR}
 	OUTDIR=${WORK_SW_RAW_CKD_DIR}
-	INCODE=raw-ckd-definition
+#	INCODE=raw-ckd-definition
+	INCODE=scaled-ckd-definition
 	OUTCODE=raw2-ckd-definition
 # New 21 May
 	#OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.075 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
@@ -155,7 +156,7 @@ do
 	# Assume we are training from the sw_fluxes-rgb LBL files
 	BANDMAPPING="band_mapping=0 0 0 0 1 2 3 4 4"
 	# Modify training files and directory
-	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's/sw_fluxes/sw_fluxes-rgb/g')
+	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-rgb|g')
 	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
 	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
     else

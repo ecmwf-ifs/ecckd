@@ -7,12 +7,11 @@ VERSIONS="ckd"
 APPLICATION=climate
 BAND_STRUCTURE="fsck wide narrow"
 TOLERANCE="0.16 0.08 0.04 0.02 0.01"
-TOLERANCE=0.005
+
 #MODEL_CODE_SUFFIX=-sep
 
-#BAND_STRUCTURE=wide
-#TOLERANCE=0.08
-
+BAND_STRUCTURE=fsck
+TOLERANCE=0.02
 
 mkdir -p ${WORK_DIR}/lw_spectral-definition/
 

@@ -1,7 +1,7 @@
 # -*- shell-script -*-
 # This script is included by the some of the others in this directory,
-# and checks the inputs to those scripts. It also sets the APP and
-# MIN_PRESSURE variables.
+# and checks the inputs to those scripts. It also sets the APP (if not
+# already set) and MIN_PRESSURE variables.
 
 # Check necessary variables are present
 if [ ! "${TOLERANCE}" ]
@@ -25,17 +25,23 @@ fi
 # Application-dependent actions
 if [ "$APPLICATION" = climate ]
 then 
-    APP=climate
+    APP_LOCAL=climate
     MIN_PRESSURE=2
 elif [ "$APPLICATION" = global-nwp ]
 then
-    APP=nwp
+    APP_LOCAL=nwp
     MIN_PRESSURE=2
 elif [ "$APPLICATION" = limited-area-nwp ]
 then
-    APP=nwp
+    APP_LOCAL=nwp
     MIN_PRESSURE=400
 else
     ${BANNER_ERROR} 'APPLICATION "'$APPLICATION'" not understood'
     exit 1
+fi
+
+# Only write APP if not already defined
+if [ ! "$APP" ]
+then
+    APP=${APP_LOCAL}
 fi

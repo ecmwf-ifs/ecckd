@@ -10,10 +10,12 @@ fi
 
 VERSIONS="ckd"
 APPLICATION=climate
-APPLICATION=global-nwp
-APPLICATION=limited-area-nwp
+#APPLICATION=global-nwp
+#APPLICATION=limited-area-nwp
 BAND_STRUCTURE="fsck wide narrow"
 TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
+BAND_STRUCTURE="fsck"
+TOLERANCE="0.02"
 
 mkdir -p ${CKDMIP_RESULTS_DIR}/lw_spectral-definition/
 mkdir -p ${CKDMIP_RESULTS_DIR}/lw_optical-depth/

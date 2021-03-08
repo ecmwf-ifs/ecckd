@@ -23,6 +23,7 @@ REORDER_SPECTRUM="${BINDIR}/reorder_spectrum"
 FIND_G_POINTS=${BINDIR}/find_g_points
 CREATE_LOOK_UP_TABLE=${BINDIR}/create_look_up_table
 OPTIMIZE_LUT=${BINDIR}/optimize_lut
+SCALE_LUT=${BINDIR}/scale_lut
 LW_SPECTRA=${BINDIR}/lw_spectra
 LW_CKD=${BINDIR}/run_ckd
 SW_CKD=${BINDIR}/run_ckd

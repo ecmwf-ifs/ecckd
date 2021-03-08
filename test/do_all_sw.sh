@@ -15,7 +15,8 @@ then
     # do CH4 and N2O. The CFCs may be ignored in the shortwave.
     OPTIMIZE_MODE_LIST="relative-base relative-ch4 relative-n2o"
     #OPTIMIZE_MODE_LIST="relative-base relative-minor" # Less good than CH4 and N2O separate
-    #OPTIMIZE_MODE_LIST="relative-ch4 relative-n2o"
+    OPTIMIZE_MODE_LIST="relative-ch4 relative-n2o"
+    #OPTIMIZE_MODE_LIST="relative-n2o"
 else
     unset OPTIMIZE_MODE_LIST
 fi
@@ -24,26 +25,37 @@ fi
 BAND_STRUCTURE="wide narrow"
 TOLERANCE="0.6 0.4 0.2 0.15 0.1 0.05 0.025"
 
+BAND_STRUCTURE="wide"
+TOLERANCE=0.1
+
+BAND_STRUCTURE="rgb"
+TOLERANCE="0.2 0.15 0.1 0.05"
+TOLERANCE="0.8"
+#TOLERANCE="0.801 0.401"
+
 # Make variables available to scripts find_g_points_sw.sh onwards
 export TOLERANCE
 export APPLICATION
 export BAND_STRUCTURE
 
 # 1. Merge well-mixed gases
-./merge_well_mixed_sw.sh
+#./merge_well_mixed_sw.sh
 
 # 2. Reorder spectra
-./reorder_spectrum_sw.sh
+#./reorder_spectrum_sw.sh
 
 # 3. Find g-points
-./find_g_points_sw.sh
+#./find_g_points_sw.sh
 
 # 4. Create raw CKD look-up table
-./create_lut_sw.sh
+#./create_lut_sw.sh
+
+# 4b. Scale look-up table to be exact for median profile
+#./scale_lut_sw.sh
 
 # 5. Optimize CKD look-up table
 ./optimize_lut_sw.sh $OPTIMIZE_MODE_LIST
 
 # 6. Run two-stream radiative transfer or just compute optical depths
 # for CKDMIP scenarios
-./run_ckd_sw.sh
+#./run_ckd_sw.sh
