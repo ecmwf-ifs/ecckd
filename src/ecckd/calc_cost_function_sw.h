@@ -19,8 +19,8 @@ calc_cost_function_sw(adept::Real cos_sza,
 		      const adept::Matrix& hr,                ///< True heating rate (K s-1)
 		      adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
 		      const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
-		      const adept::intVector& index = adept::intVector() ///< Indices of wavenumbers to consider
-		      );
+		      const adept::intVector& index = adept::intVector(), ///< Indices of wavenumbers to consider
+		      bool iverbose = false); ///< Print details for debugging final result
 
 /// Compute the cost function, in the form of the mean-squared error
 /// in heating rate, of a CKD scheme

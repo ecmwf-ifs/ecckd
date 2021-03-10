@@ -216,8 +216,9 @@ public:
     set_parallel(true);
     set_verbose(true);
     set_minimize_frac_range(true);
-
+    debug_partition = false;
   }
+
   void init_sw(std::string am, Real fw, const Vector& lw, Real cs,
 	       const Vector& prhl, const Vector& si, 
 	       const Vector& fds, const Vector& fut, 
@@ -242,6 +243,7 @@ public:
     set_parallel(true);
     set_verbose(true);
     set_minimize_frac_range(true);
+    debug_partition = false;
 
   }
 
@@ -315,6 +317,9 @@ public:
 							ssi.soft_link(),
 							bg_optical_depth.soft_link(),
 							metric.soft_link());
+	if (debug_partition) {
+	  std::cerr << "  debug_partition_LOW\n";
+	}
 	Real cf_low = calc_cost_function_sw(cos_sza,
 				     pressure_hl.soft_link(),
 				     ssi.soft_link()(range(ibound1,ibound2)),
@@ -323,7 +328,11 @@ public:
 				     flux_dn_surf_low.soft_link()(range(ibound1,ibound2)),
 				     flux_up_toa_low.soft_link()(range(ibound1,ibound2)),
 				     hr_low.soft_link()(__,range(ibound1,ibound2)),
-				     flux_weight, layer_weight.soft_link());
+				     flux_weight, layer_weight.soft_link(),
+				     intVector(), debug_partition);
+	if (debug_partition) {
+	  std::cerr << "  debug_partition_HIGH\n";
+	}
 	Real cf_high = calc_cost_function_sw(cos_sza,
 				     pressure_hl.soft_link(),
 				     ssi.soft_link()(range(ibound1,ibound2)),
@@ -332,19 +341,22 @@ public:
 				     flux_dn_surf_high.soft_link()(range(ibound1,ibound2)),
 				     flux_up_toa_high.soft_link()(range(ibound1,ibound2)),
 				     hr_high.soft_link()(__,range(ibound1,ibound2)),
-				     flux_weight, layer_weight.soft_link());
-	/*
-	Real cf = calc_cost_function_sw(cos_sza,
-				     pressure_hl.soft_link(),
-				     ssi.soft_link()(range(ibound1,ibound2)),
-				     bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
-				     optical_depth_fit,
-				     flux_dn_surf.soft_link()(range(ibound1,ibound2)),
-				     flux_up_toa.soft_link()(range(ibound1,ibound2)),
-				     hr.soft_link()(__,range(ibound1,ibound2)),
-				     flux_weight, layer_weight.soft_link());
-	std::cout << "*** cost functions = " << cf_low << " " << cf << " " << cf_high << "\n";
-	*/
+				     flux_weight, layer_weight.soft_link(),
+				     intVector(), debug_partition);
+	if (debug_partition) {
+	  std::cerr << "  debug_partition_MID\n";
+	  Real cf = calc_cost_function_sw(cos_sza,
+					  pressure_hl.soft_link(),
+					  ssi.soft_link()(range(ibound1,ibound2)),
+					  bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
+					  optical_depth_fit,
+					  flux_dn_surf.soft_link()(range(ibound1,ibound2)),
+					  flux_up_toa.soft_link()(range(ibound1,ibound2)),
+					  hr.soft_link()(__,range(ibound1,ibound2)),
+					  flux_weight, layer_weight.soft_link(),
+					  intVector(), debug_partition);
+	  //	  std::cout << "*** cost functions = " << cf_low << " " << cf << " " << cf_high << "\n";
+	}
 	return 0.5 * (cf_low + cf_high);
       }
       else {
@@ -382,6 +394,7 @@ public:
   Vector flux_dn_surf_high, flux_up_toa_high;
   Real min_scaling, max_scaling;
   Matrix hr_low, hr_high;
+  bool debug_partition = false;
 };
 
 
@@ -427,6 +440,9 @@ main(int argc, const char* argv[])
   Real cos_sza = REFERENCE_COS_SZA;
   Vector ssi;
 
+  bool debug_partition = false;
+  config.read(debug_partition, "debug_partition");
+
   if (config.read(ssi_file_name, "ssi")) {
     do_sw = true;
     LOG << "Assuming shortwave spectral region (ssi provided)\n";
@@ -444,8 +460,8 @@ main(int argc, const char* argv[])
   int iprofile = 0;
   config.read(iprofile, "iprofile");
 
-  Real heating_rate_tolerance; // K d-1
-  if (!config.read(heating_rate_tolerance, "heating_rate_tolerance")) {
+  Vector heating_rate_tolerance_in; // K d-1
+  if (!config.read(heating_rate_tolerance_in, "heating_rate_tolerance")) {
     ERROR << "heating_rate_tolerance not defined";
     THROW(PARAMETER_ERROR);
   }
@@ -517,6 +533,19 @@ main(int argc, const char* argv[])
     order_file.read(band_bound2, "wavenumber2_band");
     order_file.read(sorting_variable, "sorting_variable");
     nband = band_bound1.size();
+
+    // Copy the tolerances to the bandwise vector
+    Vector heating_rate_tolerance(nband);
+    if (heating_rate_tolerance_in.size() == 1) {
+      heating_rate_tolerance = heating_rate_tolerance_in(0);
+    }
+    else if (heating_rate_tolerance_in.size() == nband) {
+      heating_rate_tolerance = heating_rate_tolerance_in;
+    }
+    else {
+      ERROR << "heating_rate_tolerance must have either 1 element, or one per band";
+      THROW(PARAMETER_ERROR);
+    }
 
     // "irank" is the rank of each point of the spectrum from the
     // least to the most absorbing.  We want an index that will
@@ -727,7 +756,8 @@ main(int argc, const char* argv[])
 	LOG << "logarithmic averaging of optical depth\n";
       }
       else {
-	LOG << "Total-transmission averaging of optical depth\n";
+	LOG << "Total-transmission averaging of optical depth, scaling "
+	    << min_scaling << "-" << max_scaling << "\n";
       }
     }
     else if (averaging_method == "transmission") {
@@ -780,7 +810,7 @@ main(int argc, const char* argv[])
 #define PARTITION_BY_ERROR 1
 #ifdef PARTITION_BY_ERROR
       std::vector<ep_real> bounds, error;
-      EpStatus istatus = Eq.equipartition_e(heating_rate_tolerance, 
+      EpStatus istatus = Eq.equipartition_e(heating_rate_tolerance(jband), 
 					    0.0, 1.0, ng, bounds, error);
 #else
       Vector bounds(ng+1), error(ng);
@@ -812,6 +842,15 @@ main(int argc, const char* argv[])
 
 	//g_point(rank_band(range(ind1,ind2))) = ig;
 	g_point(irank(range(ind1,ind2))) = ig;
+      }
+
+      if (debug_partition) {
+	std::cerr << "debug_partition_" << Gas << "_band = " << jband << "\n";
+	Eq.debug_partition = true;
+	Eq.set_parallel(false);
+	Eq.calc_error_all(ng, &bounds[0], &error[0]);
+	Eq.set_parallel(true);
+	Eq.debug_partition = false;
       }
     
     }

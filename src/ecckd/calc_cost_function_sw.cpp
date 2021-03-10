@@ -14,8 +14,8 @@ calc_cost_function_sw(adept::Real cos_sza,
 		      const adept::Matrix& hr,                ///< True heating rate (K s-1)
 		      adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
 		      const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
-		      const adept::intVector& index           ///< Indices of wavenumbers to consider
-		      ) {
+		      const adept::intVector& index,          ///< Indices of wavenumbers to consider
+		      bool iverbose) {
   using namespace adept;
 
   // Convert K s-1 to K day-1
@@ -60,10 +60,19 @@ calc_cost_function_sw(adept::Real cos_sza,
   Vector hr_fit(nlay);
   heating_rate_single(pressure_hl, flux_dn_fit, flux_up_fit, hr_fit);
 
-  //  std::cout << " {" << flux_dn_fit(end) << " " << flux_dn_surf_true << "} ";
-
-  //  std::cout << "HRtrue = " << hr_true << "\n";
-  //  std::cout << "HRfit = " << hr_fit << "\n";
+  if (iverbose) {
+    adept::set_array_print_style(PRINT_STYLE_MATLAB);
+    std::cerr << "    debug_partition.flux_dn_surf_true = " << flux_dn_surf_true << "\n";
+    std::cerr << "    debug_partition.flux_dn_surf_fit = " << flux_dn_fit(end) << "\n";
+    std::cerr << "    debug_partition.flux_up_toa_true = " << flux_up_toa_true << "\n";
+    std::cerr << "    debug_partition.flux_up_toa_fit = " << flux_up_fit(0) << "\n";
+    std::cerr << "    debug_partition.layer_weight = " << layer_weight << "\n";
+    std::cerr << "    debug_partition.hr_true = " << hr_true << "\n";
+    std::cerr << "    debug_partition.hr_fit = " << hr_fit << "\n";
+    std::cerr << "    debug_partition.cf_hr = " << sqrt(hr_weight*hr_weight*sum(layer_weight*((hr_fit-hr_true)*(hr_fit-hr_true)))) << "\n";
+    std::cerr << "    debug_partition.cf_flux = " << sqrt(flux_weight*((flux_dn_fit(end)-flux_dn_surf_true)*(flux_dn_fit(end)-flux_dn_surf_true)
+								       +(flux_up_fit(0)-flux_up_toa_true)*(flux_up_fit(0)-flux_up_toa_true))) << "\n";
+  }
 
   return sqrt(hr_weight*hr_weight*sum(layer_weight*((hr_fit-hr_true)*(hr_fit-hr_true)))
 	      + flux_weight*((flux_dn_fit(end)-flux_dn_surf_true)*(flux_dn_fit(end)-flux_dn_surf_true)
