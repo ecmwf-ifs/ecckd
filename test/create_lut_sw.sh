@@ -167,7 +167,7 @@ do
 	MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
 	${BANNER} Creating raw CKD model: $MODEL_CODE
 
-	INPUT=sw_gpoints_${MODEL_CODE}.h5
+	INPUT=${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.h5
 	OUTPUT=${WORK_SW_RAW_CKD_DIR}/${ECCKD_PREFIX}_sw_raw-ckd-definition_${MODEL_CODE}.nc
 	$CREATE_LOOK_UP_TABLE \
 	    ssi=$MMM_SW_SSI \

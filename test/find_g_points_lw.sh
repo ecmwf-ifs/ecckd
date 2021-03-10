@@ -286,9 +286,9 @@ fi
 
 	${FIND_G_POINTS} \
 	    heating_rate_tolerance=${TOL} \
-	    output=${WORK_LW_GPOINTS_DIR}/lw_gpoints_${MODEL_CODE}.h5 \
+	    output=${WORK_LW_GPOINTS_DIR}/${ECCKD_PREFIX}_lw_gpoints_${MODEL_CODE}.h5 \
 	    $EXTRA_ARGS config_find_g_points_lw_${APP}.cfg \
-	    |& tee ${WORK_LW_GPOINTS_DIR}/lw_gpoints_${MODEL_CODE}.log
+	    |& tee ${WORK_LW_GPOINTS_DIR}/${ECCKD_PREFIX}_lw_gpoints_${MODEL_CODE}.log
 	test "${PIPESTATUS[0]}" -eq 0
     done
 done

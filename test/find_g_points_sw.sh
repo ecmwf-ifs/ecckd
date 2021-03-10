@@ -37,9 +37,11 @@ then
 append_path "${MMM_SW_SPECTRA_DIR}:${WORK_SW_SPECTRA_DIR}:${WORK_SW_ORDER_DIR}"
 ssi $MMM_SW_SSI
 iprofile 0
-averaging_method "transmission"
-tolerance_tolerance 0.01 
-flux_weight 0.02
+averaging_method "total-transmission"
+#tolerance_tolerance 0.01 
+tolerance_tolerance 0.02
+#flux_weight 0.02
+flux_weight 0.0002
 min_pressure ${MIN_PRESSURE}
 max_iterations 60
 
@@ -243,11 +245,21 @@ fi
 
 	${BANNER} Finding g-points: $MODEL_CODE
 
+	# Halve the tolerance for the UV band of the RGB band
+	# structure
+	TOL_BAND=$TOL
+	if [ "$BANDSTRUCT" = rgb ]
+	then
+	    TOL_BAND="$TOL $TOL $TOL $TOL $(echo $TOL/5.0 | bc -l)"
+	fi
+
 	${FIND_G_POINTS} \
-	    heating_rate_tolerance=${TOL} \
-	    output=${WORK_SW_GPOINTS_DIR}/sw_gpoints_${MODEL_CODE}.h5 \
+	    "heating_rate_tolerance=${TOL_BAND}" \
+	    output=${WORK_SW_GPOINTS_DIR}/${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.h5 \
 	    $EXTRA_ARGS config_find_g_points_sw_${APP}.cfg \
-	    |& tee ${WORK_SW_GPOINTS_DIR}/sw_gpoints_${MODEL_CODE}.log
+	    |& tee ${WORK_SW_GPOINTS_DIR}/${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.log
+	# 2> debug_partition.m \
+	# | tee ${WORK_SW_GPOINTS_DIR}/${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.log
 	test "${PIPESTATUS[0]}" -eq 0
     done
 done

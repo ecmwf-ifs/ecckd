@@ -21,7 +21,11 @@ do
 #OPTIONS="prior_error=8.0 broadband_weight=0.2 flux_weight=0.02 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
 #OPTIONS="prior_error=8.0 broadband_weight=0.2 flux_weight=0.03 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
 
+# ECCKD 0.6
 COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.1 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=1500"
+
+# ECCKD 0.7
+COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.0 flux_weight=0.1 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=1000"
 
 case "$OPTIMIZE_MODE" in
 
