@@ -26,6 +26,7 @@ struct LblFluxes {
   adept::Array3D spectral_heating_rate_; /// Spectral heating rate (K d-1), dimensioned (column, level, g_point)
   //  adept::Array3D band_heating_rate_; /// Spectral heating rate (K d-1), dimensioned (column, level, band)
   adept::Vector mu0_; ///< Cosine of solar zenith angle
+  adept::Vector effective_spectral_albedo_; // Surface albedo in each band, actually up/direct_dn
 
   adept::Matrix surf_emissivity_, surf_planck_;
   adept::Array3D planck_hl_;
@@ -56,6 +57,11 @@ struct LblFluxes {
   /// model for the same scenario as the present object
   void calc_ckd_fluxes(const adept::Array3D& optical_depth,
 		       adept::Array3D& flux_dn, adept::Array3D& flux_up) const;
+
+  // Remove upwelling fluxes affected by Rayleigh scattering since
+  // they will not be adequately modelled by the fast scheme used for
+  // the optimization
+  void mask_rayleigh_up(adept::Real max_no_rayleigh_wavenumber);
 
   // Do we have fluxes in either g-points or bands?
   bool have_spectral_fluxes = false;

@@ -263,8 +263,15 @@ main(int argc, const char* argv[])
   for (int jband = 0; jband < nband; ++jband) {
     LOG << "  Band " << jband << ": " << band_bound_clamp1(jband)
 	<< "-" << band_bound_clamp2(jband) << " cm-1\n";
-    intVector index = find(   wavenumber_cm_1 >= band_bound1(jband)
-			   && wavenumber_cm_1 <  band_bound2(jband));
+    intVector index;
+    if (jband < nband-1) {
+      index = find(   wavenumber_cm_1 >= band_bound1(jband)
+		   && wavenumber_cm_1 <  band_bound2(jband));
+    }
+    else {
+      index = find(   wavenumber_cm_1 >= band_bound1(jband)
+		   && wavenumber_cm_1 <= band_bound2(jband));
+    }
     iband(index) = jband;
     int index1 = index(0);
     int index2 = index(end);

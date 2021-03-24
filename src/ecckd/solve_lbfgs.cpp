@@ -82,6 +82,9 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 
   ADEPT_ACTIVE_STACK->new_recording();
   aReal cost = 0.0;
+  Vector cost_fn_per_band(maxval(lbl[0].iband_per_g)+1);
+  cost_fn_per_band = 0.0;
+
   // Loop over training scenes
   for (int ilbl = 0; ilbl < lbl.size(); ++ilbl) {
     if (first_call) {
@@ -148,13 +151,14 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 	cost += calc_cost_function_ckd_sw(lbl1.mu0_(iprof),
 					  lbl1.pressure_hl_(iprof,__),
 					  tsi_scaling * ckd_model.solar_irradiance(),
+					  lbl1.effective_spectral_albedo_,
 					  optical_depth(iprof,__,__),
 					  lbl1.spectral_flux_dn_(iprof,__,__),
 					  lbl1.spectral_flux_up_(iprof,__,__),
 					  lbl1.spectral_heating_rate_(iprof,__,__),
 					  flux_weight, flux_profile_weight, broadband_weight,
 					  layer_weight, rel_ckd_flux_dn, rel_ckd_flux_up, 
-					  lbl1.iband_per_g);
+					  lbl1.iband_per_g, cost_fn_per_band);
       }
     } 
   }
@@ -165,6 +169,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
   first_call = false;
 
   //  LOG << cost << " " << maxval(fabs(gradient)) << "\n";
+  LOG << "  Cost per band = " << cost_fn_per_band << "\n";
 
   return value(cost);
 }

@@ -53,8 +53,11 @@ main(int argc, const char* argv[])
   // Read location of g-points
   Vector wavenumber_cm_1;
   intVector g_point;
-  int ng;
-  {
+  int ng = ckd_model.ng();
+  // First check if the g_points are stored in the raw CKD file - they
+  // should be if they were modified from those in the find_g_points
+  // program
+  if (!ckd_model.read_g_points(wavenumber_cm_1, g_point)) {
     std::string gpoint_filename;
     if (!config.read(gpoint_filename, "gpointfile")) {
       ERROR << "gpointfile not provided";
@@ -63,13 +66,11 @@ main(int argc, const char* argv[])
     DataFile gpointfile(gpoint_filename);
     gpointfile.read(wavenumber_cm_1, "wavenumber");
     gpointfile.read(g_point, "g_point");
-    ng = ckd_model.ng();
     if (ng != maxval(g_point)+1) {
       ERROR << "Number of g-points in " << input << " does not match number in " << gpoint_filename;
       THROW(PARAMETER_ERROR);
     }
   }
-
 
   // Read spectral direct fluxes computed for reference atmosphere
   Matrix spectral_flux_dn;

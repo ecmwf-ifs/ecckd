@@ -7,6 +7,7 @@ adept::Real
 calc_cost_function_sw(adept::Real cos_sza,
 		      const adept::Vector& pressure_hl,       ///< Pressure (Pa)
 		      const adept::Vector& ssi,               ///< Spectral solar irradiance (W m-2)
+		      adept::Real albedo,                     ///< Surface albedo
 		      const adept::Matrix& bg_optical_depth,  ///< Background optical depth
 		      const adept::Vector& optical_depth_fit, ///< Fitted optical depth of target gas
 		      const adept::Vector& flux_dn_surf,      ///< True downwelling surface flux (W m-2)
@@ -41,24 +42,40 @@ calc_cost_function_sw(adept::Real cos_sza,
 
   Vector flux_dn_fit(nlay+1);
   Vector flux_up_fit(nlay+1);
+  flux_up_fit = 0.0; // By default no upwelling
   if (index.empty()) {
-    radiative_transfer_direct_sw_bb(cos_sza,
-				    ssi,
-				    bg_optical_depth,
-				    optical_depth_fit,
-				    flux_dn_fit);
+    if (albedo <= 0.0) {
+      radiative_transfer_direct_sw_bb(cos_sza,
+				      ssi,
+				      bg_optical_depth,
+				      optical_depth_fit,
+				      flux_dn_fit);
+    }
+    else {
+      radiative_transfer_norayleigh_sw_bb(cos_sza, ssi,
+				      bg_optical_depth, optical_depth_fit, albedo,
+				      flux_dn_fit, flux_up_fit);
+    }
   }
   else {
-    radiative_transfer_direct_sw_bb(cos_sza,
-				    ssi,
-				    eval(bg_optical_depth(__,index)),
-				    optical_depth_fit,
-				    flux_dn_fit);
+    if (albedo <= 0.0) {
+      radiative_transfer_direct_sw_bb(cos_sza,
+				      ssi,
+				      eval(bg_optical_depth(__,index)),
+				      optical_depth_fit,
+				      flux_dn_fit);
+    }
+    else {
+      radiative_transfer_norayleigh_sw_bb(cos_sza, ssi,
+				      eval(bg_optical_depth(__,index)), optical_depth_fit, albedo,
+				      flux_dn_fit, flux_up_fit);
+    }
   }
-  flux_up_fit = 0.0;
 
   Vector hr_fit(nlay);
-  heating_rate_single(pressure_hl, flux_dn_fit, flux_up_fit, hr_fit);
+ // Unallocated upwelling ensures that we don't
+  // include upwelling in the heating rate calculation
+  heating_rate_single(pressure_hl, flux_dn_fit, Vector(), hr_fit);
 
   if (iverbose) {
     adept::set_array_print_style(PRINT_STYLE_MATLAB);
@@ -86,6 +103,7 @@ adept::aReal
 calc_cost_function_ckd_sw(adept::Real cos_sza,
 			  const adept::Vector& pressure_hl,       ///< Pressure (Pa)
 			  const adept::Vector& ssi,               ///< Spectral solar irradiance (W m-2)
+			  const adept::Vector& albedo,            ///< Spectral albedo
 			  const adept::aMatrix& optical_depth,    ///< Optical depth of gases
 			  const adept::Matrix& flux_dn,           ///< True downwelling flux (W m-2)
 			  const adept::Matrix& flux_up,           ///< True upwelling flux (W m-2)
@@ -96,12 +114,15 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
 			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
 			  adept::Matrix* relative_ckd_flux_dn,    ///< Subtract relative-to flux dn, if not NULL
 			  adept::Matrix* relative_ckd_flux_up,    ///< Subtract relative-to flux up, if not NULL
-			  const adept::intVector& band_mapping)
+			  const adept::intVector& band_mapping,
+			  adept::Vector cost_fn_per_band)
 {
   using namespace adept;
 
   // Convert K s-1 to K day-1
   static const Real hr_weight = 3600.0*24.0;
+
+  static bool warning_issued = false;
 
   int nlay = pressure_hl.size()-1;
   int ng   = optical_depth.dimension(1);
@@ -109,11 +130,18 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
   aMatrix flux_dn_fwd_orig(nlay+1,ng);
   aMatrix flux_up_fwd_orig(nlay+1,ng);
 
-  radiative_transfer_direct_sw(cos_sza,
-			       ssi,
-			       optical_depth,
-			       flux_dn_fwd_orig);
-  flux_up_fwd_orig = 0.0;
+  if (all(albedo <= 0.0)) {
+    radiative_transfer_direct_sw(cos_sza, ssi,
+				 optical_depth,
+				 flux_dn_fwd_orig);
+    flux_up_fwd_orig = 0.0;
+  }
+  else {
+    Vector albedo_gpoint = albedo(band_mapping);
+    radiative_transfer_norayleigh_sw(cos_sza, ssi,
+				     optical_depth, albedo_gpoint,
+				     flux_dn_fwd_orig, flux_up_fwd_orig);
+  }
 
   // Fluxes are to be computed relative to a reference scenario
   if (relative_ckd_flux_dn) {
@@ -140,7 +168,8 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
   }
 
   aMatrix heating_rate_fwd(nlay,nband);
-  heating_rate(pressure_hl, flux_dn_fwd, flux_up_fwd, heating_rate_fwd);
+  //heating_rate(pressure_hl, flux_dn_fwd, flux_up_fwd, heating_rate_fwd);
+  heating_rate(pressure_hl, flux_dn_fwd, aMatrix(), heating_rate_fwd);
 
   aReal cost_fn = 0.0;
   // Spectral contribution to cost function
@@ -148,33 +177,70 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
   // Weighting for interior fluxes 
   Vector interface_weight = flux_profile_weight * 0.5*(layer_weight(range(0,end-1))+layer_weight(range(1,end)));
 
+  Vector incoming_error_band(nband);
+
+  //  LOG << "TOA up LBL: " << flux_up_fwd(0,__) << ", CKD: " << flux_up(0,__) << "\n";
+
   for (int iband = 0; iband < nband; ++iband) {
-    cost_fn += hr_weight*hr_weight*sum(layer_weight*((heating_rate_fwd(__,iband))-hr(__,iband))
-				       *(heating_rate_fwd(__,iband)-hr(__,iband)))
+    aReal cost_fn_local;
+    cost_fn_local = hr_weight*hr_weight*sum(layer_weight*(heating_rate_fwd(__,iband)-hr(__,iband))
+					                *(heating_rate_fwd(__,iband)-hr(__,iband)))
       + flux_weight*((flux_dn_fwd(end,iband)-flux_dn(end,iband))*(flux_dn_fwd(end,iband)-flux_dn(end,iband))
-		     +(flux_up_fwd(0,iband)-flux_up(0,iband))*(flux_up_fwd(0,iband)-flux_up(0,iband)));
+		     +20.0*(flux_up_fwd(0,iband)-flux_up(0,iband))*(flux_up_fwd(0,iband)-flux_up(0,iband)));
+
+    //    LOG << "  band=" << iband << ": dn cost = " << flux_weight*((flux_dn_fwd(end,iband)-flux_dn(end,iband))*(flux_dn_fwd(end,iband)-flux_dn(end,iband))) << "\n";
+    //    LOG << "  band=" << iband << ": up cost = " << flux_weight*((flux_up_fwd(0,iband)-flux_up(0,iband))*(flux_up_fwd(0,iband)-flux_up(0,iband))) << "\n";
+
+    incoming_error_band(iband) = value(flux_dn_fwd(0,iband)-flux_dn(0,iband));
     if (flux_profile_weight > 0.0) {
-      cost_fn += sum(interface_weight*((flux_dn_fwd(range(1,end-1),iband)-flux_dn(range(1,end-1),iband))
+      cost_fn_local += sum(interface_weight*((flux_dn_fwd(range(1,end-1),iband)-flux_dn(range(1,end-1),iband))
 				       *(flux_dn_fwd(range(1,end-1),iband)-flux_dn(range(1,end-1),iband))
 				       +(flux_up_fwd(range(1,end-1),iband)-flux_up(range(1,end-1),iband))
 				       *(flux_up_fwd(range(1,end-1),iband)-flux_up(range(1,end-1),iband))));
     }
+    cost_fn += cost_fn_local;
+    // Store cost function per band
+    if (!cost_fn_per_band.empty()) {
+      cost_fn_per_band(iband) += value(cost_fn_local);
+    }
+  }
+
+  //  LOG << "BAND ERROR " << incoming_error_band << "\n";
+
+  if (any(fabs(incoming_error_band) > 0.1) && !warning_issued) {
+    WARNING << "Incoming flux in band differs by more than 0.1 W m-2: "
+	    << incoming_error_band << "\n";
+    ENDWARNING;
+    warning_issued = true;
   }
 
   Real cost_fn_save = value(cost_fn);
 
-  // Broadband contribution to cost function
-  cost_fn = (cost_fn*(1.0-broadband_weight))/nband
-    + broadband_weight*hr_weight*hr_weight*sum(layer_weight*(sum(heating_rate_fwd-hr,1)
-							     *sum(heating_rate_fwd-hr,1)))
-    + broadband_weight*flux_weight*(sum(flux_dn_fwd(end,__)-flux_dn(end,__))*sum(flux_dn_fwd(end,__)-flux_dn(end,__))
-				    +sum(flux_up_fwd(0,__)-flux_up(0,__))*sum(flux_up_fwd(0,__)-flux_up(0,__)));
-
-  if (flux_profile_weight > 0.0) {
-    aVector flux_dn_error = sum(flux_dn_fwd(range(1,end-1),__)-flux_dn(range(1,end-1),__),1);
-    aVector flux_up_error = sum(flux_up_fwd(range(1,end-1),__)-flux_up(range(1,end-1),__),1);
-    cost_fn += broadband_weight*sum(interface_weight*(flux_dn_error*flux_dn_error
-						      +flux_up_error*flux_up_error));
+  if (broadband_weight > 0.0) {
+    // Broadband contribution to cost function
+    cost_fn = (cost_fn*(1.0-broadband_weight))/nband
+      + broadband_weight*hr_weight*hr_weight*sum(layer_weight*(sum(heating_rate_fwd-hr,1)
+							      *sum(heating_rate_fwd-hr,1)));
+    // Note that the sums here are over band
+    cost_fn += broadband_weight*flux_weight*(sum(flux_dn_fwd(end,__)-flux_dn(end,__))
+					    *sum(flux_dn_fwd(end,__)-flux_dn(end,__)));
+    if (all(albedo > 0.0)) {
+      cost_fn += broadband_weight*flux_weight*(sum(flux_up_fwd(0,__)-flux_up(0,__))
+					      *sum(flux_up_fwd(0,__)-flux_up(0,__)));
+    }
+    // else:
+    // Some of the bands have too much Rayleigh for the simpler RT
+    // model used here to be applicable, so we can't use the broadband
+    // upwelling in the cost function.
+    
+    if (flux_profile_weight > 0.0) {
+      aVector flux_dn_error = sum(flux_dn_fwd(range(1,end-1),__)-flux_dn(range(1,end-1),__),1);
+      cost_fn += broadband_weight*sum(interface_weight*(flux_dn_error*flux_dn_error));
+      if (all(albedo > 0.0)) {
+	aVector flux_up_error = sum(flux_up_fwd(range(1,end-1),__)-flux_up(range(1,end-1),__),1);
+	cost_fn += broadband_weight*sum(interface_weight*(flux_up_error*flux_up_error));
+      }
+    }
   }
 
   return cost_fn;

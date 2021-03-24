@@ -44,6 +44,12 @@ CkdModel<IsActive>::read(const std::string& file_name,
   file.read(wavenumber2_band_, "wavenumber2_band");
   file.read(band_number_, "band_number");
 
+  // Optional input
+  if (file.exist("g_point")) {
+    file.read(wavenumber_hr_, "wavenumber_hr");
+    file.read(g_point_, "g_point");
+  }
+
   np_   = log_pressure_.size();
   nt_   = temperature_.dimension(0);
   ng_   = gpoint_fraction_.dimension(0);
@@ -74,6 +80,10 @@ CkdModel<IsActive>::read(const std::string& file_name,
 	nx += product(ndims);
       }
     }
+  }
+
+  if (is_sw() && is_active_("rayleigh", active_gas_list)) {
+    nx += ng_;
   }
 
   if (IsActive) {
@@ -160,12 +170,25 @@ CkdModel<IsActive>::read(const std::string& file_name,
     ++igas;
   }
 
+  rayleigh_is_active_ = false;
   if (is_sw()) {
     if (file.exist("rayleigh_molar_scattering_coeff")) {
-      file.read(rayleigh_molar_scat_, "rayleigh_molar_scattering_coeff");
+      if (is_active_("rayleigh", active_gas_list)) {
+	rayleigh_molar_scat_ >>= x(range(ix,ix+ng_-1));
+	rayleigh_is_active_ = true;
+	rayleigh_ix_ = ix;
+	ix += ng_;
+      }
+      else {
+	rayleigh_molar_scat_.clear();
+      }
+      Vector tmp;
+      file.read(tmp, "rayleigh_molar_scattering_coeff");
+      rayleigh_molar_scat_ = tmp;
     }
     else {
-      calc_rayleigh_molar_scat();
+      ERROR << "rayleigh_molar_scattering_coeff not present";
+      THROW(PARAMETER_ERROR);
     }
   }
 
@@ -206,6 +229,10 @@ CkdModel<IsActive>::write(const std::string& file_name,
   }
   file.define_dimension("wavenumber", nwav_);
   file.define_dimension("band", wavenumber1_band_.size());
+
+  if (do_save_g_points_) {
+    file.define_dimension("wavenumber_hr", wavenumber_hr_.size());
+  }
 
   std::string molecule_list;
   for (int igas = 0; igas < ngas(); ++igas) {
@@ -262,6 +289,14 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write_units("cm-1", "wavenumber2_band");
   file.define_variable("band_number", SHORT, "g_point");
   file.write_long_name("Band number of each g point", "band_number");
+
+  if (do_save_g_points_) {
+    file.define_variable("wavenumber_hr", DOUBLE, "wavenumber_hr");
+    file.write_long_name("High-resolution wavenumber", "wavenumber_hr");
+    file.write_units("cm-1", "wavenumber_hr");
+    file.define_variable("g_point", SHORT, "wavenumber_hr");
+    file.write_long_name("G point", "g_point");
+  }
 
   if (is_sw()) {
     write_standard_attributes(file, "Definition of a correlated k-distribution model for shortwave gas absorption");
@@ -408,7 +443,7 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write(temperature_, "temperature");
   if (is_sw()) {
     file.write(solar_irradiance_, "solar_irradiance");
-    file.write(rayleigh_molar_scat_, "rayleigh_molar_scattering_coeff");
+    file.write(rayleigh_molar_scat_.inactive_link(), "rayleigh_molar_scattering_coeff");
   }   
   else {
     file.write(temperature_planck_, "temperature_planck");
@@ -420,6 +455,11 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write(wavenumber1_band_, "wavenumber1_band");
   file.write(wavenumber2_band_, "wavenumber2_band");
   file.write(band_number_, "band_number");
+
+  if (do_save_g_points_) {
+    file.write(wavenumber_hr_, "wavenumber_hr");
+    file.write(g_point_, "g_point");
+  }
 
   for (int igas = 0; igas < ngas(); ++igas) {
     SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
@@ -467,7 +507,8 @@ CkdModel<IsActive>::write(const std::string& file_name,
 template<>
 void
 CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
-					 Real temperature_corr, Real conc_corr)
+					 Real temperature_corr, Real conc_corr,
+					 Real rayleigh_prior_error)
 {
   for (int igas = 0; igas < ngas(); ++igas) {
     SingleGasData<true>& this_gas = single_gas_data_[igas];
@@ -497,6 +538,9 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
       background *= pow(pressure_corr,1.0*abs(spread<0>(p_index_vec,nx)-spread<1>(p_index_vec,nx)));
 
       this_gas.inv_background = inv(background);
+      LOG << "    fraction of elements less than 1.0e-8 is "
+	  << static_cast<Real>(count(this_gas.inv_background < 1.0e-8))
+	/static_cast<Real>(this_gas.inv_background.size()) << "\n";
     }
     else {
       int nconc = this_gas.vmr.size();
@@ -523,7 +567,18 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
       background *= pow(conc_corr,1.0*abs(spread<0>(c_index_vec,nx)-spread<1>(c_index_vec,nx)));
 
       this_gas.inv_background = inv(background);
+      LOG << "    fraction of elements less than 1.0e-8 is "
+	  << static_cast<Real>(count(this_gas.inv_background < 1.0e-8))
+	/static_cast<Real>(this_gas.inv_background.size()) << "\n";
+
     }
+  }
+  if (rayleigh_prior_error > 0.0 && rayleigh_is_active_) {
+    rayleigh_inv_background_.resize(ng_);
+    rayleigh_inv_background_ = 1.0 / (rayleigh_prior_error*rayleigh_prior_error);
+  }
+  else {
+    rayleigh_inv_background_.clear();
   }
 
 }
@@ -539,6 +594,7 @@ CkdModel<true>::calc_background_cost_function(const Vector& delta_x, Vector grad
   Real cost_fn = 0.0;
   gradient = 0.0;
 
+  //#pragma omp parallel for schedule (dynamic)
   for (int igas = 0; igas < ngas(); ++igas) {
     const SingleGasData<true>& this_gas = single_gas_data_[igas];
     if (this_gas.is_active) {
@@ -548,14 +604,21 @@ CkdModel<true>::calc_background_cost_function(const Vector& delta_x, Vector grad
       // g-point is fastest varying dimension so need to stride over it
       int nstride = ng_;
       for (int ig = 0; ig < ng_; ++ig) {
-	Vector delta_x_local = delta_x(stride(ix,ix+(nx-1)*nstride,nstride));
+	Vector delta_x_local = delta_x.soft_link()(stride(ix,ix+(nx-1)*nstride,nstride));
 	//	LOG << "??? " << this_gas.Molecule << " " << delta_x.size() << " " << ix << " " << nx << " " << nstride << " " << ig << " " << delta_x_local.size() << "\n";
 	gradient_local = this_gas.inv_background ** delta_x_local;
 	cost_fn += 0.5*dot_product(delta_x_local,gradient_local);
-	gradient(stride(ix,ix+(nx-1)*nstride,nstride)) += gradient_local;
+	gradient.soft_link()(stride(ix,ix+(nx-1)*nstride,nstride)) += gradient_local;
 	++ix;
       }
     }
+  }
+
+  if (rayleigh_is_active_ && !rayleigh_inv_background_.empty()) {
+    Vector gradient_local(ng_);
+    Vector delta_x_local = delta_x(range(rayleigh_ix_,rayleigh_ix_+ng_-1));
+    gradient_local = rayleigh_inv_background_ * delta_x_local;
+    cost_fn += 0.5*dot_product(delta_x_local,gradient_local);
   }
 
   return cost_fn;

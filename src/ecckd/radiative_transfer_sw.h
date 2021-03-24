@@ -30,4 +30,29 @@ radiative_transfer_direct_sw_bb(adept::Real cos_sza,         ///< Cosine of the 
 			 const adept::Array<1,adept::Real,IsActive>& grey_od,     ///< Grey layer optical depth
 			 adept::Array<1,adept::Real,IsActive> flux_dn ///< Broadband flux down in W m-2
 			 );
+
+/// As radiative_transfer_direct_sw but the upwelling flux is also
+/// computed assuming no Rayleigh scattering
+template <bool IsActive>
+void
+radiative_transfer_norayleigh_sw(adept::Real cos_sza,      ///< Cosine of the solar zenith angle
+				 const adept::Vector& ssi, ///< Spectral solar irradiance in W m-2
+				 const adept::Array<2,adept::Real,IsActive>& optical_depth, ///< Layer optical depth
+				 const adept::Vector& albedo, ///< Surface albedo
+				 adept::Array<2,adept::Real,IsActive> flux_dn, ///< Spectral flux down in W m-2
+				 adept::Array<2,adept::Real,IsActive> flux_up ///< Spectral flux up in W m-2
+				 );
+
+/// As radiative_transfer_norayleigh_sw but with broadband outputs
+template <bool IsActive>
+void
+radiative_transfer_norayleigh_sw_bb(adept::Real cos_sza,      ///< Cosine of the solar zenith angle
+				 const adept::Vector& ssi, ///< Spectral solar irradiance in W m-2
+				 const adept::Array<2,adept::Real,IsActive>& optical_depth, ///< Layer optical depth
+				 const adept::Array<1,adept::Real,IsActive>& grey_od,     ///< Grey layer optical depth
+				 adept::Real albedo, ///< Surface albedo
+				 adept::Array<1,adept::Real,IsActive> flux_dn, ///< Spectral flux down in W m-2
+				 adept::Array<1,adept::Real,IsActive> flux_up ///< Spectral flux up in W m-2
+				 );
+
 #endif

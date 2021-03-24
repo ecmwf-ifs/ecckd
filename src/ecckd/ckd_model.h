@@ -115,12 +115,13 @@ public:
 
   /// Shortwave constructor
   CkdModel(const std::vector<SingleGasData<false> >& single_gas_data,
-	   const Vector& solar_irradiance,
+	   const Vector& solar_irradiance, // per g point
 	   const Vector& pressure, 
 	   const Matrix& temperature,
 	   const Vector& wavenumber1,
 	   const Vector& wavenumber2,
 	   const Matrix& gpoint_fraction,
+	   const Vector& ssi_intervals, // In the intervals bounded by wavenumber1,2
 	   const Vector& wavenumber1_band,
 	   const Vector& wavenumber2_band,
 	   const intVector& band_number,
@@ -142,7 +143,7 @@ public:
     nt_ = temperature.size(0);
     np_ = pressure.size();
     nwav_ = wavenumber1.size();
-    calc_rayleigh_molar_scat();
+    calc_rayleigh_molar_scat(ssi_intervals);
   }
 
   /// Read a CKD model from a file
@@ -219,7 +220,8 @@ public:
   void scale_optical_depth(const Vector& pressure_fl, const Matrix& scaling);
 
   /// Create error covariance matrices
-  void create_error_covariances(Real err, Real pressure_corr, Real temperature_corr, Real conc_corr);
+  void create_error_covariances(Real err, Real pressure_corr, Real temperature_corr, Real conc_corr,
+				Real rayleigh_prior_error = -1.0);
 
   /// Ensure that gases with a "relative-linear" representation cannot
   /// lead to a negative optical depth if their concentration is zero
@@ -271,6 +273,23 @@ public:
 
   const Vector& solar_irradiance() const { return solar_irradiance_; }
 
+  void save_g_points(const Vector& wn, const intVector& gp) {
+    wavenumber_hr_ = wn;
+    g_point_ = gp;
+    do_save_g_points_ = true;
+  }
+
+  bool read_g_points(Vector& wn, intVector& gp) {
+    if (!wavenumber_hr_.empty()) {
+      wn = wavenumber_hr_;
+      gp = g_point_;
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
   // All the molecules in the CKD model
   std::vector<std::string> molecules;
 
@@ -299,17 +318,20 @@ public:
   const std::string& model_id() const { return model_id_; }
 
   /// Calculate Rayleigh molar scattering coefficient in each g point
-  void calc_rayleigh_molar_scat()
+  void calc_rayleigh_molar_scat(const Vector& ssi_intervals)
   {
     Vector wavenumber_mid = 0.5 * (wavenumber1_ + wavenumber2_);
-    // High-res Rayleigh molar scattering coefficient (m2 mol-1)
+    // High-res (50 cm-1 resolution) Rayleigh molar scattering
+    // coefficient (m2 mol-1)
     Vector rayleigh_molar_scat_hr = rayleigh_molar_scattering_coeff(wavenumber_mid);
     Real ref_surface_pressure = 1.0e5; // Pa
     // Moles of air per m2 of atmospheric column
     Real molar_column = ref_surface_pressure / (ACCEL_GRAVITY * 0.001 * MOLAR_MASS_DRY_AIR);
     Vector optical_depth_hr = molar_column * rayleigh_molar_scat_hr;
     Vector transmission_hr = exp(-optical_depth_hr / REFERENCE_COS_SZA);
-    Vector transmission = gpoint_fraction_ ** transmission_hr;
+    // Weight by solar irradiance
+    Vector transmission = (gpoint_fraction_ ** (ssi_intervals*transmission_hr))
+                        / (gpoint_fraction_ ** ssi_intervals);
     Vector optical_depth(ng_);
     optical_depth = -log(max(1.0e-14, transmission)) * REFERENCE_COS_SZA;
     rayleigh_molar_scat_ = optical_depth / molar_column;
@@ -351,7 +373,18 @@ private:
   Vector solar_irradiance_;
 
   /// Rayleigh molar scattering coefficient (m2 mol-1) in each g-point
-  Vector rayleigh_molar_scat_;
+  Array<1,adept::Real,IsActive> rayleigh_molar_scat_;
+
+  /// Are we retrieving the Rayleigh molar scattering coefficient?
+  bool rayleigh_is_active_;
+
+  // Offset to start of state vector where Rayleigh coefficients are
+  // stored
+  int rayleigh_ix_;
+
+  /// Inverse of diagonal of prior error covariance matrix for
+  /// Rayleigh coefficients
+  Vector rayleigh_inv_background_;
 
   /// Natural logarithm of pressure coordinate variable for molar
   /// absorption look-up tables (Pa)
@@ -371,6 +404,12 @@ private:
   Vector wavenumber1_band_, wavenumber2_band_;
   /// Band to which each wavenumber belongs
   intVector band_number_;
+
+  /// Sometimes create_lut changes the number of g points, in which
+  /// case it needs to write the full mapping for scale_lut.
+  Vector wavenumber_hr_;
+  intVector g_point_;
+  bool do_save_g_points_ = false;
 
   /// Number of g points, pressures, temperatures
   int ng_, nt_, np_, nwav_;

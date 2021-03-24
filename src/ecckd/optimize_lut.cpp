@@ -71,11 +71,16 @@ main(int argc, const char* argv[])
   Real flux_profile_weight = 0.0;
   Real broadband_weight = 0.5;
   Real prior_error = 1.0;
+  Real rayleigh_prior_error = 0.0;
 
   Real temperature_corr = 0.5;
   Real pressure_corr = 0.5;
   Real conc_corr = 0.5;
   Real convergence_criterion = 0.02;
+
+  // Wavenumber above which is it not safe to neglect Rayleigh
+  // scattering in calculating upwelling fluxes
+  Real max_no_rayleigh_wavenumber = 10000.0;
 
   std::string model_id;
 
@@ -87,11 +92,18 @@ main(int argc, const char* argv[])
   config.read(flux_profile_weight, "flux_profile_weight");
   config.read(broadband_weight, "broadband_weight");
   config.read(prior_error, "prior_error");
+  if (config.read(rayleigh_prior_error, "rayleigh_prior_error")) {
+    if (rayleigh_prior_error > 0.0) {
+      LOG << "Optimizing Rayleigh scattering coefficients with prior error of " << rayleigh_prior_error << "\n";
+      gas_list.push_back("rayleigh");
+    }
+  }
   config.read(temperature_corr, "temperature_corr");
   config.read(pressure_corr, "pressure_corr");
   config.read(conc_corr, "conc_corr");
   config.read(convergence_criterion, "convergence_criterion");
   config.read(model_id, "model_id");
+  config.read(max_no_rayleigh_wavenumber, "max_no_rayleigh_wavenumber");
 
   int max_iterations = 3000;
   config.read(max_iterations, "max_iterations");
@@ -107,7 +119,8 @@ main(int argc, const char* argv[])
 
   //  ckd_model.cap_relative_linear_coeffts();
 
-  ckd_model.create_error_covariances(prior_error, pressure_corr, temperature_corr, conc_corr);
+  ckd_model.create_error_covariances(prior_error, pressure_corr, temperature_corr, conc_corr,
+				     rayleigh_prior_error);
 
   // Optional: compute radiative transfer of one set of profiles
   // relative to another, useful to get the forcing of minor gases
@@ -183,6 +196,13 @@ main(int argc, const char* argv[])
     if (fluxes.have_band_fluxes) {
       fluxes.iband_per_g = ckd_model.iband_per_g(fluxes.band_wavenumber1_,
 						 fluxes.band_wavenumber2_);
+    }
+
+    if (ckd_model.is_sw()) {
+      // Remove upwelling fluxes affected by Rayleigh scattering since
+      // they will not be adequately modelled by the fast scheme used
+      // for the optimization
+      fluxes.mask_rayleigh_up(max_no_rayleigh_wavenumber);
     }
 
     training_data.push_back(fluxes);

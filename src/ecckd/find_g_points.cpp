@@ -220,7 +220,7 @@ public:
   }
 
   void init_sw(std::string am, Real fw, const Vector& lw, Real cs,
-	       const Vector& prhl, const Vector& si, 
+	       const Vector& prhl, const Vector& si, Real sa,
 	       const Vector& fds, const Vector& fut, 
 	       const Matrix& bod, const Matrix& met,
 	       const Matrix& h, int i1, int i2) {
@@ -231,6 +231,7 @@ public:
     cos_sza = cs;
     pressure_hl = prhl;
     ssi = si(range(i1,i2));
+    surf_albedo = sa;
     flux_dn_surf = fds(range(i1,i2));
     flux_up_toa = fut(range(i1,i2));
     bg_optical_depth = bod(__,range(i1,i2));
@@ -322,7 +323,7 @@ public:
 	}
 	Real cf_low = calc_cost_function_sw(cos_sza,
 				     pressure_hl.soft_link(),
-				     ssi.soft_link()(range(ibound1,ibound2)),
+				     ssi.soft_link()(range(ibound1,ibound2)), surf_albedo,
 				     bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
 				     optical_depth_fit * min_scaling,
 				     flux_dn_surf_low.soft_link()(range(ibound1,ibound2)),
@@ -335,7 +336,7 @@ public:
 	}
 	Real cf_high = calc_cost_function_sw(cos_sza,
 				     pressure_hl.soft_link(),
-				     ssi.soft_link()(range(ibound1,ibound2)),
+				     ssi.soft_link()(range(ibound1,ibound2)), surf_albedo,
 				     bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
 				     optical_depth_fit * max_scaling,
 				     flux_dn_surf_high.soft_link()(range(ibound1,ibound2)),
@@ -347,7 +348,7 @@ public:
 	  std::cerr << "  debug_partition_MID\n";
 	  Real cf = calc_cost_function_sw(cos_sza,
 					  pressure_hl.soft_link(),
-					  ssi.soft_link()(range(ibound1,ibound2)),
+					  ssi.soft_link()(range(ibound1,ibound2)), surf_albedo,
 					  bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
 					  optical_depth_fit,
 					  flux_dn_surf.soft_link()(range(ibound1,ibound2)),
@@ -367,7 +368,7 @@ public:
 	  
 	return calc_cost_function_sw(cos_sza,
 				     pressure_hl.soft_link(),
-				     ssi.soft_link()(range(ibound1,ibound2)),
+				     ssi.soft_link()(range(ibound1,ibound2)), surf_albedo,
 				     bg_optical_depth.soft_link()(__,range(ibound1,ibound2)),
 				     optical_depth_fit.soft_link(),
 				     flux_dn_surf.soft_link()(range(ibound1,ibound2)),
@@ -384,7 +385,9 @@ public:
   Vector layer_weight;
   Vector pressure_hl;
   Vector ssi;
-  Vector surf_emissivity, surf_planck, flux_dn_surf, flux_up_toa;
+  Vector surf_emissivity, surf_planck;
+  Real surf_albedo;
+  Vector flux_dn_surf, flux_up_toa;
   Matrix planck_hl, bg_optical_depth, metric, hr;
   int npoints;
   ep_real total_comp_cost;
@@ -438,6 +441,7 @@ main(int argc, const char* argv[])
 
   bool do_sw = false;
   Real cos_sza = REFERENCE_COS_SZA;
+  Real reference_albedo = 0.15;
   Vector ssi;
 
   bool debug_partition = false;
@@ -488,6 +492,11 @@ main(int argc, const char* argv[])
   int repartition_repeat = 1;
   config.read(repartition_repeat, "repartition_repeat");
 
+  // Wavenumber above which is it not safe to neglect Rayleigh
+  // scattering in calculating upwelling fluxes
+  Real max_no_rayleigh_wavenumber = 10000.0;
+  config.read(max_no_rayleigh_wavenumber, "max_no_rayleigh_wavenumber");
+
   int ngas = 0;
   int nband = 0;
   std::string gas_str;
@@ -495,6 +504,9 @@ main(int argc, const char* argv[])
   Matrix planck_hl;
   Vector surf_planck;
   Vector band_bound1, band_bound2;
+
+  // Surface albedo at every high-res wavenumber and just in the bands
+  Vector albedo, band_albedo;
 
   std::vector<SingleGasData> single_gas_data;
 
@@ -533,6 +545,13 @@ main(int argc, const char* argv[])
     order_file.read(band_bound2, "wavenumber2_band");
     order_file.read(sorting_variable, "sorting_variable");
     nband = band_bound1.size();
+
+    // Set the albedo by band
+    band_albedo.resize(nband);
+    band_albedo = 0.0;
+    intVector iband_no_rayleigh = find(band_bound2 <= max_no_rayleigh_wavenumber);
+    band_albedo(iband_no_rayleigh) = reference_albedo;
+    max_no_rayleigh_wavenumber = maxval(band_bound2(iband_no_rayleigh));
 
     // Copy the tolerances to the bandwise vector
     Vector heating_rate_tolerance(nband);
@@ -599,16 +618,43 @@ main(int argc, const char* argv[])
 			 wavenumber_cm_1, d_wavenumber_cm_1,
 			 optical_depth, molecule, vmr_fl);
 
+    nwav = wavenumber_cm_1.size();
+
+    Vector albedo_orig;
+    if (do_sw) {
+      albedo_orig.resize(nwav);
+      albedo_orig = 0.0;
+      albedo_orig(find(wavenumber_cm_1 < max_no_rayleigh_wavenumber)) = reference_albedo;
+    }
+
     LOG << "  Reordering\n";
     optical_depth = eval(optical_depth(__,ireorder));
     wavenumber_cm_1 = eval(wavenumber_cm_1(ireorder));
     d_wavenumber_cm_1 = eval(d_wavenumber_cm_1(ireorder));
  
     int nlay = pressure_hl.size()-1;
-    nwav = wavenumber_cm_1.size();
 
     LOG << nlay << " layers\n";
     LOG << nwav << " spectral points\n";
+
+    if (do_sw) {
+      albedo = albedo_orig(ireorder);
+      // Albedo is constant within a band, so reordering should not do
+      // anything - check this!
+      if (any(albedo != albedo_orig)) {
+	WARNING << "Albedo is not constant within a band";
+	ENDWARNING;
+      }
+      // Check albedo per band
+      for (int jband = 0; jband < nband; ++jband) {
+	LOG << "  Band " << jband << ": target albedo = " << band_albedo(jband) 
+	    << ", mean spectral albedo = "
+	    << sum(albedo_orig(find(iband == jband))*ssi(find(iband == jband))) / sum(ssi(find(iband == jband)))
+	    << ", mean reordered spectral albedo = "
+	    << sum(albedo(find(iband == jband))*ssi(find(iband == jband))) / sum(ssi(find(iband == jband)))
+	    << "\n";
+      }
+    }
 
     Matrix flux_dn(nlay+1,nwav);
     Matrix flux_up;
@@ -617,6 +663,7 @@ main(int argc, const char* argv[])
     // For total-transmission method we need to do flux calculations
     // with the target gas optical depth scaled up and down
     Matrix flux_dn_high, flux_dn_low;
+    Matrix flux_up_high, flux_up_low;
 
     if (!do_sw) {
 
@@ -655,7 +702,9 @@ main(int argc, const char* argv[])
     else {
 
       LOG << "Performing shortwave radiative transfer\n";
-      
+      // Note that flux_up is not allocated, which ensures that
+      // heating rates do not include the upwelling flux contribution
+
       Matrix total_optical_depth = bg_optical_depth + optical_depth;
       radiative_transfer_direct_sw(cos_sza, ssi,
 				   total_optical_depth, flux_dn);
@@ -665,14 +714,27 @@ main(int argc, const char* argv[])
 	// one with the optical depths scaled down, the other with
 	// them scaled up
 	flux_dn_low.resize(nlay+1,nwav);
-	total_optical_depth = bg_optical_depth + min_scaling * optical_depth;
-	radiative_transfer_direct_sw(cos_sza, ssi,
-				     total_optical_depth, flux_dn_low);
-
 	flux_dn_high.resize(nlay+1,nwav);
-	total_optical_depth = bg_optical_depth + max_scaling * optical_depth;
-	radiative_transfer_direct_sw(cos_sza, ssi,
-				     total_optical_depth, flux_dn_high);
+	if (max_no_rayleigh_wavenumber > 0.0) {
+	  flux_up_low.resize(nlay+1,nwav);
+	  flux_up_high.resize(nlay+1,nwav);
+	  total_optical_depth = bg_optical_depth + min_scaling * optical_depth;
+	  radiative_transfer_norayleigh_sw(cos_sza, ssi,
+					   total_optical_depth, albedo,
+					   flux_dn_low, flux_up_low);
+	  total_optical_depth = bg_optical_depth + max_scaling * optical_depth;
+	  radiative_transfer_norayleigh_sw(cos_sza, ssi,
+					   total_optical_depth, albedo,
+					   flux_dn_high, flux_up_high);
+	}
+	else {
+	  total_optical_depth = bg_optical_depth + min_scaling * optical_depth;
+	  radiative_transfer_direct_sw(cos_sza, ssi,
+				       total_optical_depth, flux_dn_low);
+	  total_optical_depth = bg_optical_depth + max_scaling * optical_depth;
+	  radiative_transfer_direct_sw(cos_sza, ssi,
+				       total_optical_depth, flux_dn_high);
+	}
       }
 
     }
@@ -704,18 +766,32 @@ main(int argc, const char* argv[])
     Vector flux_dn_surf_high, flux_up_toa_high;
     if (do_sw && averaging_method == "total-transmission") {
       hr_low.resize(nlay,nwav);
+      // We intentionally use the unallocated flux_up array here as
+      // the heating rates do not include the upwelling contribution
       heating_rate(pressure_hl, flux_dn_low, flux_up, hr_low);
       flux_dn_surf_low = flux_dn_low(end,__);
-      flux_up_toa_low.resize(flux_dn_surf_low.size());
-      flux_up_toa_low = 0.0;
       flux_dn_low.clear();
+      if (flux_up_low.empty()) {
+	flux_up_toa_low.resize(flux_dn_surf_low.size());
+	flux_up_toa_low = 0.0;
+      }
+      else {
+	flux_up_toa_low = flux_up_low(0,__);
+	flux_up_low.clear();
+      }	
 
       hr_high.resize(nlay,nwav);
       heating_rate(pressure_hl, flux_dn_high, flux_up, hr_high);
       flux_dn_surf_high = flux_dn_high(end,__);
-      flux_up_toa_high.resize(flux_dn_surf_high.size());
-      flux_up_toa_high = 0.0;
       flux_dn_high.clear();
+      if (flux_up_high.empty()) {
+	flux_up_toa_high.resize(flux_dn_surf_high.size());
+	flux_up_toa_high = 0.0;
+      }
+      else {
+	flux_up_toa_high = flux_up_high(0,__);
+	flux_up_high.clear();
+      }	
     }
 
     Vector layer_weight = sqrt(pressure_hl(range(1,end)))-sqrt(pressure_hl(range(0,end-1)));
@@ -794,7 +870,7 @@ main(int argc, const char* argv[])
       }
       else {
 	Eq.init_sw(averaging_method, flux_weight, layer_weight,
-		   cos_sza, pressure_hl, ssi,
+		   cos_sza, pressure_hl, ssi, band_albedo(jband),
 		   flux_dn_surf, flux_up_toa,
 		   bg_optical_depth, metric, hr, ibegin, iend);
 	if (averaging_method == "total-transmission") {
@@ -853,7 +929,7 @@ main(int argc, const char* argv[])
 	Eq.debug_partition = false;
       }
     
-    }
+    } // Loop over bands
     metric.clear();
 
     // Create intVector pointing to std::vector

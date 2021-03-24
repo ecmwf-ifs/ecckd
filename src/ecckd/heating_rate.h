@@ -46,9 +46,15 @@ heating_rate_single(const adept::Vector& pressure,               ///< Half-level
   using namespace adept;
 
   // Factor to convert from difference in net flux across a layer to heating rate
-  hr = -((ACCEL_GRAVITY/SPECIFIC_HEAT_AIR) / (pressure(range(1,end))-pressure(range(0,end-1))))
-    * (  flux_dn(range(1,end)) - flux_dn(range(0,end-1))
-	 - flux_up(range(1,end)) + flux_up(range(0,end-1))  );
+  if (flux_up.empty()) {
+    hr = -((ACCEL_GRAVITY/SPECIFIC_HEAT_AIR) / (pressure(range(1,end))-pressure(range(0,end-1))))
+      * (  flux_dn(range(1,end)) - flux_dn(range(0,end-1))  );
+  }
+  else {
+    hr = -((ACCEL_GRAVITY/SPECIFIC_HEAT_AIR) / (pressure(range(1,end))-pressure(range(0,end-1))))
+      * (  flux_dn(range(1,end)) - flux_dn(range(0,end-1))
+	   - flux_up(range(1,end)) + flux_up(range(0,end-1))  );
+  }
 }
 
 #endif

@@ -47,13 +47,20 @@ main(int argc, const char* argv[])
     THROW(PARAMETER_ERROR);
   }
 
+  // Additional wavenumber boundaries to split the base (first)
+  // g-points of some of the bands
+  Vector base_wavenumber_boundary;
+  config.read(base_wavenumber_boundary, "base_wavenumber_boundary");
+
   // The high-resolution solar spectral irradiance is used as a weight
   // when averaging gas optical depths
   Vector ssi;
+  Vector wavenumber_cm_1;
   bool do_sw = false;
   if (config.read(ssi_file_name, "ssi")) {
     DataFile ssi_file(ssi_file_name);
     ssi_file.read(ssi, "solar_spectral_irradiance");
+    ssi_file.read(wavenumber_cm_1, "wavenumber");
     do_sw = true;
   }
 
@@ -135,6 +142,71 @@ main(int argc, const char* argv[])
     ng = new_ng;
   }
 
+  if (!base_wavenumber_boundary.empty()) {
+    for (int iband = 0; iband < band_wn1.size(); ++iband) {
+      intVector index = find(base_wavenumber_boundary > band_wn1(iband)
+			     && base_wavenumber_boundary < band_wn2(iband));
+      if (index.size() > 0) {
+	LOG << "Splitting base g-point of band " << iband
+	    << " into " << index.size()+1 << "\n";
+	// Need to update:
+	// ng: total number of g points
+	// band_number(ng): band to which each g point belongs
+	// g_point(nwav): g-point to which each high-res wavenumber belongs
+	// solar_irradiance(ng): solar irradiance in each g point
+	int ig = minval(find(band_number == iband));
+
+	int new_ng = ng + index.size();
+	intVector new_band_number(new_ng);
+	intVector new_g_point;
+	Vector new_solar_irradiance(new_ng);
+
+	// Copy over the band number and solar irradiance for the
+	// unchanged g points below
+	new_band_number(range(0,ig)) = band_number(range(0,ig));
+	new_band_number(range(ig+1,ig+index.size())) = iband;
+	if (iband > 0) {
+	  new_solar_irradiance(range(0,ig-1)) = solar_irradiance(range(0,ig-1));
+	}
+	// Copy over the band number and solar irradiance for the
+	// unchanged g points above
+	if (iband < band_wn1.size()-1) {
+	  new_band_number(range(ig+index.size()+1,end)) = band_number(range(ig+1,end));
+	  new_solar_irradiance(range(ig+index.size()+1,end)) = solar_irradiance(range(ig+1,end));
+	}
+
+	// Initialize from the current g points
+	new_g_point = g_point;
+	// Increase the g-points above
+	new_g_point.where(g_point > ig) = new_g_point+index.size();
+
+	Vector new_bounds(index.size()+2);
+	new_bounds(0) = band_wn1(iband);
+	new_bounds(range(1,end-1)) = base_wavenumber_boundary(index);
+	new_bounds(end) = band_wn2(iband);
+
+	for (int new_ig = ig; new_ig <= ig+index.size(); ++new_ig) {
+	  new_g_point.where(g_point == ig 
+			    && wavenumber_cm_1 >= new_bounds(new_ig-ig)
+			    && wavenumber_cm_1 < new_bounds(new_ig-ig+1)) = new_ig;
+	}
+
+	for (int new_ig = ig; new_ig <= ig+index.size(); ++new_ig) {
+	  new_solar_irradiance(new_ig) = sum(ssi(find(new_g_point == new_ig)));
+	}
+	band_number.clear();
+	band_number = new_band_number;
+	solar_irradiance.clear();
+	solar_irradiance = new_solar_irradiance;
+	g_point.clear();
+	g_point = new_g_point;
+	ng = new_ng;
+
+      }
+    }
+  }
+
+
   std::vector<SingleGasData<false> > single_gas_data;
 
   int ngas = 0;
@@ -145,7 +217,7 @@ main(int argc, const char* argv[])
 
   Vector pressure_fl;
   Matrix temperature_fl; // Dimensioned (temperature,pressure)
-  Vector wavenumber_cm_1, d_wavenumber_cm_1;
+  Vector d_wavenumber_cm_1;
   Matrix optical_depth;
   Matrix planck_fl;
   int nwav;
@@ -425,12 +497,25 @@ main(int argc, const char* argv[])
   config.read(config_str);
 
   if (is_sw) {
+    // Solar irradiance in each 50 cm-1 interval
+    Vector ssi_intervals(nwav);
+    for (int iwav = 0; iwav < nwav; ++iwav) {
+      ssi_intervals(iwav) = sum(ssi(find(wavenumber_cm_1    >  wavenumber1(iwav)
+					 && wavenumber_cm_1 <= wavenumber2(iwav))));
+    }
+
     CkdModel<false> ckd_model(single_gas_data, solar_irradiance,
 			      pressure_fl, temperature_fl,
 			      wavenumber1, wavenumber2, gpoint_fraction,
+			      ssi_intervals,
 			      band_wn1, band_wn2, band_number,
 			      input_history, input_config);
+
+    if (!bad_g_points.empty() || !base_wavenumber_boundary.empty()) {
+      ckd_model.save_g_points(wavenumber_cm_1, g_point);
+    }
     ckd_model.write(output, argc, argv, config_str);
+
   }
   else {
 
@@ -453,7 +538,11 @@ main(int argc, const char* argv[])
 			      wavenumber1, wavenumber2, gpoint_fraction,
 			      band_wn1, band_wn2, band_number,
 			      input_history, input_config);
+    if (!bad_g_points.empty() || !base_wavenumber_boundary.empty()) {
+      ckd_model.save_g_points(wavenumber_cm_1, g_point);
+    }
     ckd_model.write(output, argc, argv, config_str);
+
   }
 
   return 0;

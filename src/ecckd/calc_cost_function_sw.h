@@ -12,6 +12,7 @@ adept::Real
 calc_cost_function_sw(adept::Real cos_sza,
 		      const adept::Vector& pressure_hl,       ///< Pressure (Pa)
 		      const adept::Vector& ssi,               ///< Spectral solar irradiance (W m-2)
+		      adept::Real albedo,                     ///< Surface albedo
 		      const adept::Matrix& bg_optical_depth,  ///< Background optical depth
 		      const adept::Vector& optical_depth_fit, ///< Fitted optical depth of target gas
 		      const adept::Vector& flux_dn_surf,      ///< True downwelling surface flux (W m-2)
@@ -28,6 +29,7 @@ adept::aReal
 calc_cost_function_ckd_sw(adept::Real cos_sza,
 			  const adept::Vector& pressure_hl,       ///< Pressure (Pa)
 			  const adept::Vector& ssi,               ///< Spectral solar irradiance (W m-2)
+			  const adept::Vector& albedo,            ///< Spectral albedo
 			  const adept::aMatrix& optical_depth,    ///< Optical depth of gases
 			  const adept::Matrix& flux_dn,           ///< True downwelling flux (W m-2)
 			  const adept::Matrix& flux_up,           ///< True upwelling flux (W m-2)
@@ -38,6 +40,7 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
 			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
 			  adept::Matrix* relative_ckd_flux_dn,    ///< Subtract relative-to flux dn, if not NULL
 			  adept::Matrix* relative_ckd_flux_up,    ///< Subtract relative-to flux up, if not NULL
-			  const adept::intVector& band_mapping = adept::intVector());
+			  const adept::intVector& band_mapping = adept::intVector(),
+			  adept::Vector cost_fn_per_band = adept::Vector());
 
 #endif
