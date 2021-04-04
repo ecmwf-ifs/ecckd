@@ -510,6 +510,10 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
 					 Real temperature_corr, Real conc_corr,
 					 Real rayleigh_prior_error)
 {
+
+  // Exploit sparsity and treat numbers less than this as zero
+  static const Real MIN_ERROR_COVARIANCE = 1.0e-6;
+
   for (int igas = 0; igas < ngas(); ++igas) {
     SingleGasData<true>& this_gas = single_gas_data_[igas];
     if (!this_gas.is_active) {
@@ -537,10 +541,13 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
       background = (err*err)*pow(temperature_corr,1.0*abs(spread<0>(t_index_vec,nx)-spread<1>(t_index_vec,nx)));
       background *= pow(pressure_corr,1.0*abs(spread<0>(p_index_vec,nx)-spread<1>(p_index_vec,nx)));
 
-      this_gas.inv_background = inv(background);
-      LOG << "    fraction of elements less than 1.0e-8 is "
-	  << static_cast<Real>(count(this_gas.inv_background < 1.0e-8))
-	/static_cast<Real>(this_gas.inv_background.size()) << "\n";
+      Matrix inv_background = inv(background);
+      LOG << "    fraction of elements less than " << MIN_ERROR_COVARIANCE << " is "
+	  << static_cast<Real>(count(fabs(inv_background) < MIN_ERROR_COVARIANCE))
+	/static_cast<Real>(inv_background.size()) << "\n";
+      inv_background.where(fabs(inv_background) < MIN_ERROR_COVARIANCE) = 0.0;
+      // Save as a sparse matrix
+      this_gas.inv_background = inv_background;
     }
     else {
       int nconc = this_gas.vmr.size();
@@ -566,11 +573,13 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
       background *= pow(pressure_corr,1.0*abs(spread<0>(p_index_vec,nx)-spread<1>(p_index_vec,nx)));
       background *= pow(conc_corr,1.0*abs(spread<0>(c_index_vec,nx)-spread<1>(c_index_vec,nx)));
 
-      this_gas.inv_background = inv(background);
-      LOG << "    fraction of elements less than 1.0e-8 is "
-	  << static_cast<Real>(count(this_gas.inv_background < 1.0e-8))
-	/static_cast<Real>(this_gas.inv_background.size()) << "\n";
-
+      Matrix inv_background = inv(background);
+      LOG << "    fraction of elements less than " << MIN_ERROR_COVARIANCE << " is "
+	  << static_cast<Real>(count(fabs(inv_background) < MIN_ERROR_COVARIANCE))
+	/static_cast<Real>(inv_background.size()) << "\n";
+      inv_background.where(fabs(inv_background) < MIN_ERROR_COVARIANCE) = 0.0;
+      // Save as a sparse matrix
+      this_gas.inv_background = inv_background;
     }
   }
   if (rayleigh_prior_error > 0.0 && rayleigh_is_active_) {
@@ -594,22 +603,24 @@ CkdModel<true>::calc_background_cost_function(const Vector& delta_x, Vector grad
   Real cost_fn = 0.0;
   gradient = 0.0;
 
-  //#pragma omp parallel for schedule (dynamic)
   for (int igas = 0; igas < ngas(); ++igas) {
     const SingleGasData<true>& this_gas = single_gas_data_[igas];
     if (this_gas.is_active) {
-      int ix = this_gas.ix;
-      int nx = this_gas.inv_background.dimension(0);
-      Vector gradient_local(nx);
+      int nx = this_gas.inv_background.size(0);
       // g-point is fastest varying dimension so need to stride over it
       int nstride = ng_;
+      //#pragma omp parallel for schedule (static)
       for (int ig = 0; ig < ng_; ++ig) {
+	int ix = this_gas.ix + ig;
 	Vector delta_x_local = delta_x.soft_link()(stride(ix,ix+(nx-1)*nstride,nstride));
 	//	LOG << "??? " << this_gas.Molecule << " " << delta_x.size() << " " << ix << " " << nx << " " << nstride << " " << ig << " " << delta_x_local.size() << "\n";
-	gradient_local = this_gas.inv_background ** delta_x_local;
-	cost_fn += 0.5*dot_product(delta_x_local,gradient_local);
+	Vector gradient_local = this_gas.inv_background.soft_link() ** delta_x_local;
+	Real cost_fn_local = 0.5*dot_product(delta_x_local,gradient_local);
 	gradient.soft_link()(stride(ix,ix+(nx-1)*nstride,nstride)) += gradient_local;
-	++ix;
+	//#pragma omp critical
+	{
+	  cost_fn += cost_fn_local;
+	}
       }
     }
   }

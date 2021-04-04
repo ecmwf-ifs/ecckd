@@ -3,16 +3,25 @@
 #include "calc_cost_function_lw.h"
 #include "calc_cost_function_sw.h"
 #include "Error.h"
+#include "Timer.h"
 
 static const Real MIN_X = -1.0e20;
 
 struct MyData {
+  MyData() {
+    minimizer_id = timer.new_activity("minimizer");
+    background_id = timer.new_activity("a-priori");
+    rt_id = timer.new_activity("radiative transfer");
+    //    autodiff_id = timer.new_activity("automatic differentiation");
+  }
   CkdModel<true>* ckd_model;
   std::vector<LblFluxes>* lbl;
   Real flux_weight, flux_profile_weight, broadband_weight, prior_error;
   Real negative_od_penalty;
   Array3D* relative_ckd_flux_dn;
   Array3D* relative_ckd_flux_up;
+  Timer timer;
+  int minimizer_id, background_id, rt_id, autodiff_id;
 };
 
 void
@@ -75,7 +84,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 				Array3D* relative_ckd_flux_up)
 {
   static bool first_call = true;
-
+  //  data.timer.start(data.rt_id);
   if (first_call) {
     LOG << "  First calculation of cost function and gradient\n";
   }
@@ -162,6 +171,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
       }
     } 
   }
+  //  data.timer.start(data.autodiff_id);
   cost.set_gradient(1.0);
   ADEPT_ACTIVE_STACK->reverse();
   ckd_model.x.get_gradient(gradient);
@@ -170,7 +180,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 
   //  LOG << cost << " " << maxval(fabs(gradient)) << "\n";
   LOG << "  Cost per band = " << cost_fn_per_band << "\n";
-
+  //  data.timer.start(data.minimizer_id);
   return value(cost);
 }
 
@@ -194,6 +204,7 @@ calc_cost_function_and_gradient_lbfgs(void *vdata,
     }
   }
 
+  data.timer.start(data.rt_id);
   Vector gradient(data.ckd_model->nx());
   lbfgsfloatval_t J = calc_cost_function_and_gradient(*(data.ckd_model),
 						      *(data.lbl),
@@ -204,6 +215,7 @@ calc_cost_function_and_gradient_lbfgs(void *vdata,
 						      data.negative_od_penalty,
 						      data.relative_ckd_flux_dn,
 						      data.relative_ckd_flux_up);
+  data.timer.start(data.background_id);
   // Prior contribution
   Vector x_data(const_cast<Real *>(xdata), dimensions(x.size()));
   //#define OLD_PRIOR 1
@@ -228,6 +240,7 @@ calc_cost_function_and_gradient_lbfgs(void *vdata,
   J += J_prior;
   ///  std::cout << J << " " << J_prior << " infinity norm " << maxval(fabs(gradient)) << " " << maxval(fabs(gradient_prior)) << std::endl;
 
+  data.timer.start(data.minimizer_id);
   return J;
 }
 
@@ -298,6 +311,7 @@ solve_lbfgs(CkdModel<true>& ckd_model,
     LOG << "LINEAR\n";
   }
 
+  data.timer.start(data.minimizer_id);
   status = lbfgs(ckd_model.nx(), x.data(), &fx,
 		 calc_cost_function_and_gradient_lbfgs,
 		 progress_lbfgs, &data, &param);
