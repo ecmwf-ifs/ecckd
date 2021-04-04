@@ -546,6 +546,34 @@ main(int argc, const char* argv[])
     order_file.read(sorting_variable, "sorting_variable");
     nband = band_bound1.size();
 
+    // Read some band-specific configuration for this gas
+
+    // First the number of pieces into which the base g-point in each
+    // band should be split after applying the equipartition
+    // method. In the near-infrared this is necessary for water
+    // vapour.  A value of 1 means do nothing, an integer greater than
+    // 1 means split into exactly this number, while a fraction less
+    // than 1 means that the number of pieces should be 2 plus the
+    // rounded-down result of multiplying this fraction by the
+    // existing total number of g-points for this gas and band
+    Vector base_split_raw;
+    Vector base_split(nband);
+    base_split = 1.0;
+    if (config.read(base_split_raw, gas_str, "base_split")) {
+      int nsize = std::min(nband, base_split_raw.size());
+      base_split(range(0,nsize-1)) = base_split_raw(range(0,nsize-1));
+      LOG << "Base g-points will be split according to: " << base_split << "\n";
+    }
+
+    // The minimum number of g points to use in each band (default 1)
+    intVector min_g_points_raw;
+    intVector min_g_points(nband);
+    min_g_points = 1;
+    if (config.read(min_g_points_raw, gas_str, "min_g_points")) {
+      int nsize = std::min(nband, min_g_points_raw.size());
+      min_g_points(range(0,nsize-1)) = min_g_points_raw(range(0,nsize-1));
+    }
+
     // Set the albedo by band
     band_albedo.resize(nband);
     band_albedo = 0.0;
@@ -888,6 +916,19 @@ main(int argc, const char* argv[])
       std::vector<ep_real> bounds, error;
       EpStatus istatus = Eq.equipartition_e(heating_rate_tolerance(jband), 
 					    0.0, 1.0, ng, bounds, error);
+      if (ng < min_g_points(jband)) {
+	ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
+	std::cout << "      computational cost = " << Eq.total_comp_cost << "\n";
+	LOG << "  " << ng << " intervals is fewer than minimum of " << min_g_points(jband) << "\n";
+	ng = min_g_points(jband);
+	bounds.resize(ng+1);
+	error.resize(ng);
+	// Set initial bounds
+	for (int ibound = 0; ibound < ng+1; ++ibound) {
+	  bounds[ibound] = sqrt(static_cast<Real>(ibound) / static_cast<Real>(ng));
+	}
+	istatus = Eq.equipartition_n(ng, &bounds[0], &error[0]);	
+      }
 #else
       Vector bounds(ng+1), error(ng);
       bounds = sqrt(linspace(0.0, 1.0, ng+1));
@@ -896,6 +937,34 @@ main(int argc, const char* argv[])
 
       ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
       std::cout << "      computational cost = " << Eq.total_comp_cost << "\n";
+
+      if (base_split(jband) != 1.0) {
+	// Work out how many pieces to split the base interval into
+	int nsplit = 1;
+	if (base_split(jband) > 1.0) {
+	  nsplit = base_split(jband);
+	  if (nsplit == 1) {
+	    ERROR << "Positive values of base_split must be at least 2";
+	    THROW(PARAMETER_ERROR);
+	  }
+	}
+	else {
+	  // Always split into at least two
+	  nsplit = 2+static_cast<int>(base_split(jband)*ng);
+	}
+
+	LOG << "  Splitting base interval into " << nsplit << " pieces\n";
+	Real first_bound = bounds[1];
+	// First error is now incorrect
+	error[0] = -1.0;
+	for (int ibnd = 0; ibnd < nsplit-1; ++ibnd) {
+	  bounds.insert(bounds.begin()+ibnd+1, first_bound*(ibnd+1)/static_cast<Real>(nsplit));
+	  error.insert(error.begin()+ibnd, -1.0);
+	}
+	ng += nsplit-1;
+	ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
+      }
+
       Vector bnds(&bounds[0], dimensions(bounds.size()));
       Vector err(&error[0], dimensions(error.size()));
       std::cout << "      bounds = " << bnds << "\n";
