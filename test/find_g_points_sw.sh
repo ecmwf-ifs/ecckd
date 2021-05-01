@@ -13,7 +13,7 @@
 
 # Optional additional arguments
 #EXTRA_ARGS="averaging_method=logarithmic"
-EXTRA_ARGS="averaging_method=total-transmission"
+EXTRA_ARGS="averaging_method=total-transmission max_no_rayleigh_wavenumber=10000"
 
 # Create output directory, if needed
 mkdir -p ${WORK_SW_GPOINTS_DIR}
@@ -21,6 +21,17 @@ mkdir -p ${WORK_SW_GPOINTS_DIR}
 # Loop over each band structure and tolerance
 for BANDSTRUCT in $BAND_STRUCTURE
 do
+
+O3_MIN_G_POINTS=""
+H2O_BASE_SPLIT=""
+if [ "$BANDSTRUCT" = "rgb" -o "$BANDSTRUCT" = "gb" ]
+then
+    # Need at least 3 g-points for ozone in the UV band
+    O3_MIN_G_POINTS="min_g_points 1 1 1 1 3"
+    # Need to split the base g-point of water vapour for accuracy
+    H2O_BASE_SPLIT="base_split 0.34"
+fi
+
 
 # Create configuration file
 if [ "$APP" = climate0 ]
@@ -57,6 +68,7 @@ gases composite h2o o3
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
   min_scaling 0.1
   max_scaling 10.0
+  $H2O_BASE_SPLIT
 \end h2o
 
 \begin o3
@@ -66,6 +78,7 @@ gases composite h2o o3
             ckdmip_mmm_sw_spectra_h2o_minimum.h5"
   min_scaling 0.5
   max_scaling 2.0
+  $O3_MIN_G_POINTS
 \end o3
 
 \begin composite
@@ -93,7 +106,9 @@ iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.02
 #flux_weight 0.001 # Previous
-flux_weight 0.0002
+#flux_weight 0.0002
+#flux_weight 0.2
+flux_weight 0.1
 min_pressure ${MIN_PRESSURE}
 max_iterations 60
 
@@ -109,6 +124,9 @@ gases h2o o3 ch4 n2o co2 o2n2
 ckdmip_mmm_sw_spectra_o3_minimum.h5"
   min_scaling 0.1
   max_scaling 10.0
+#  min_scaling 0.025
+#  max_scaling 40.0
+  $H2O_BASE_SPLIT
 \end h2o
 
 \begin o3
@@ -118,6 +136,7 @@ ckdmip_mmm_sw_spectra_o3_minimum.h5"
 ckdmip_mmm_sw_spectra_h2o_minimum.h5"
   min_scaling 0.5
   max_scaling 2.0
+  $O3_MIN_G_POINTS
 \end o3
 
 \begin co2
@@ -205,6 +224,7 @@ gases composite h2o o3
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
   min_scaling 0.1
   max_scaling 10.0
+  $H2O_BASE_SPLIT
 \end h2o
 
 \begin o3
@@ -215,6 +235,7 @@ gases composite h2o o3
             ckdmip_mmm_sw_spectra_h2o_minimum.h5"
   min_scaling 0.5
   max_scaling 2.0
+  $O3_MIN_G_POINTS
 \end o3
 
 \begin composite
@@ -245,12 +266,15 @@ fi
 
 	${BANNER} Finding g-points: $MODEL_CODE
 
-	# Halve the tolerance for the UV band of the RGB band
+	# Reduce the tolerance for the UV band of the RGB band
 	# structure
 	TOL_BAND=$TOL
 	if [ "$BANDSTRUCT" = rgb ]
 	then
-	    TOL_BAND="$TOL $TOL $TOL $TOL $(echo $TOL/5.0 | bc -l)"
+	    TOL_BAND="$TOL $TOL $TOL $TOL $(echo $TOL/10.0 | bc -l)"
+	elif [ "$BANDSTRUCT" = gb ]
+	then
+	    TOL_BAND="$TOL $TOL $TOL $TOL $(echo $TOL/15.0 | bc -l)"
 	fi
 
 	${FIND_G_POINTS} \

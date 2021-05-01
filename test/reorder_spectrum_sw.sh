@@ -55,6 +55,11 @@ do
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    ${OPTIONS} \
 		    "wavenumber1=$WN1_SW_RGB" "wavenumber2=$WN2_SW_RGB"
+	    elif [ "$BANDSTRUCT" = gb ]
+	    then
+		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
+		    ${OPTIONS} \
+		    "wavenumber1=$WN1_SW_GB" "wavenumber2=$WN2_SW_GB"
 	    elif [ "$BANDSTRUCT" = fsck ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
@@ -75,4 +80,64 @@ do
 	fi
 
     done
+done
+
+
+# Reorder liquid-cloud reflectance spectrum
+
+MEDIUM=cloud
+OPTIONS="input=${CLOUD_SPECTRUM} wavenumber_input=${TRAINING_SW_SSI} isize=10"
+
+for BANDSTRUCT in ${BAND_STRUCTURE}
+do
+
+    OUTPUT=${WORK_SW_ORDER_DIR}/sw_order_${BANDSTRUCT}_${MEDIUM}.h5
+
+    if [ ! -f ${OUTPUT} ]
+    then
+	${BANNER} Reordering ${MEDIUM}, band structure ${BANDSTRUCT}
+	if [ "$BANDSTRUCT" = narrow ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		${OPTIONS} \
+		"wavenumber1=$WN1_SW_NARROW" "wavenumber2=$WN2_SW_NARROW"
+	elif [ "$BANDSTRUCT" = wide ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		${OPTIONS} \
+		"wavenumber1=$WN1_SW_WIDE" "wavenumber2=$WN2_SW_WIDE"
+	elif [ "$BANDSTRUCT" = double ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		${OPTIONS} \
+		"wavenumber1=$WN1_SW_DOUBLE" "wavenumber2=$WN2_SW_DOUBLE"
+	elif [ "$BANDSTRUCT" = rgb ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		${OPTIONS} \
+		"wavenumber1=$WN1_SW_RGB" "wavenumber2=$WN2_SW_RGB"
+	elif [ "$BANDSTRUCT" = gb ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		${OPTIONS} \
+		"wavenumber1=$WN1_SW_GB" "wavenumber2=$WN2_SW_GB"
+	elif [ "$BANDSTRUCT" = fsck ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		${OPTIONS}
+	else
+	    if [ "$WN1_SW_CUSTOM" ]
+	    then
+		${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		    ${OPTIONS} \
+		    "wavenumber1=$WN1_SW_CUSTOM" "wavenumber2=$WN2_SW_CUSTOM"
+	    else
+		${BANNER_ERROR} "Band structure\"$BANDSTRUCT\" not understood"
+		exit 1
+	    fi
+	fi
+    else
+	${BANNER_SKIP} Skipping reordering of ${MEDIUM} as file present: ${OUTPUT}
+    fi
+
 done

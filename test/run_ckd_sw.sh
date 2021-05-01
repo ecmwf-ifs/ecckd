@@ -6,9 +6,10 @@
 . config.h
 . check_configuration.h
 
-VERSIONS="raw ckd"
-VERSIONS=ckd
-#VERSIONS=raw2
+#VERSIONS="scaled raw"
+# raw"
+#VERSIONS=ckd
+#VERSIONS=raw
 FLUXESSTR=fluxes
 
 if [ "$APP" = nwp ]

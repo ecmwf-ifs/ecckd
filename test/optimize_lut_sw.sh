@@ -25,7 +25,10 @@ do
 COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.1 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=1500"
 
 # ECCKD 0.7
-COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.0 flux_weight=0.1 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=1000"
+COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.2 flux_weight=0.1 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
+COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.5 flux_weight=0.1 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
+# Too much broadband weight in GB, because the error is dominated by the first band
+COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
 
 case "$OPTIMIZE_MODE" in
 
@@ -82,6 +85,7 @@ case "$OPTIMIZE_MODE" in
 # New 21 May
 	#OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.075 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
         SPECIFIC_OPTIONS="convergence_criterion=0.01"
+	#"rayleigh_prior_error=1.0"
 	;;
 
     relative-ch4)
@@ -163,6 +167,14 @@ do
 	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-rgb|g')
 	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
 	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
+    elif [ "$BANDSTRUCT" = gb ]
+    then
+	# Assume we are training from the sw_fluxes-rgb LBL files
+	BANDMAPPING="band_mapping=0 0 0 1 1 2 3 4 4"
+	# Modify training files and directory
+	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-rgb|g')
+	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
+	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
     else
 	# narrow
 	BANDMAPPING="band_mapping=0 1 2 3 4 5 6 7 8 9 10 11 12"
@@ -191,9 +203,10 @@ EOF
 	    output=${OUTPUT} \
 	    model_id=sw_${APPLICATION}_${BANDSTRUCT}-tol${TOL} \
 	    $EXTRA_ARGS \
-	    config_optimize_lut_${OPTIMIZE_MODE}.cfg \
-	    |& tee $LOG
-	test "${PIPESTATUS[0]}" -eq 0
+	    config_optimize_lut_${OPTIMIZE_MODE}.cfg
+# \
+#	    |& tee $LOG
+#	test "${PIPESTATUS[0]}" -eq 0
     done
 done
 

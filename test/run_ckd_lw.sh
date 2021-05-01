@@ -107,7 +107,8 @@ do
 
 		# Compute spectral optical depths from CKD model
 		${BANNER_MINI} Computing optical depths for scenario $SCENARIO
-		$LW_CKD ckd_model=$CKD_MODEL input=${INPUT} output=${OD_FILE} write_od_only=1
+		$LW_CKD ckd_model=$CKD_MODEL input=${INPUT} output=${OD_FILE}
+# write_od_only=1
 
 		# Compute fluxes from optical depths
 		${BANNER_MINI} Running radiative transfer for scenario $SCENARIO
