@@ -57,7 +57,7 @@ main(int argc, const char* argv[])
     LOG << "Assuming shortwave spectral region (ssi provided)\n";
   }
   else {
-    LOG << "Assuming longwave spectral region (ssi not provided\n";
+    LOG << "Assuming longwave spectral region (ssi not provided)\n";
   }
 
   std::string molecule;

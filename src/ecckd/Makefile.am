@@ -32,13 +32,16 @@ libecckd_a_SOURCES = \
 	equipartition.h \
 	equipartition.cpp \
 	write_standard_attributes.h \
-	rayleigh_scattering.h
+	rayleigh_scattering.h \
+	Timer.h
 
 bin_PROGRAMS = reorder_spectrum find_g_points merge_spectra \
 	create_look_up_table run_ckd lw_spectra optimize_lut \
-	test_equipartition scale_lut
+	test_equipartition scale_lut reorder_cloud_spectrum
 
 reorder_spectrum_SOURCES = reorder_spectrum.cpp
+
+reorder_cloud_spectrum_SOURCES = reorder_cloud_spectrum.cpp
 
 find_g_points_SOURCES = find_g_points.cpp
 

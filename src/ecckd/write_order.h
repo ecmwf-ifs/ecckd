@@ -7,8 +7,8 @@ void
 write_order(std::string& file_name,                    ///< Name of NetCDF file to write
 	    int argc,                                  ///< Number of command-line args
 	    const char** argv,                         ///< Command-line arguments
-	    std::string& gas_name,                     ///< Formula for gas in lower case
-	    std::string& config_str,                   ///< Configuration as a single string
+	    const std::string& gas_name,               ///< Formula for gas in lower case
+	    const std::string& config_str,             ///< Configuration as a single string
 	    const adept::Vector& band_bound1,          ///< Lower wavenumber of bands (cm-1)
 	    const adept::Vector& band_bound2,          ///< Upper wavenumber of bands (cm-1)
 	    const adept::Vector& wavenumber_cm_1,      ///< Wavenumber (cm-1)

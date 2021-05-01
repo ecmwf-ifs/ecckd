@@ -10,8 +10,8 @@ void
 write_order(std::string& file_name,                    ///< Name of NetCDF file to write
 	    int argc,                                  ///< Number of command-line args
 	    const char** argv,                         ///< Command-line arguments
-	    std::string& molecule,                     ///< Formula for gas in lower case
-	    std::string& config_str,                   ///< Configuration as a single string
+	    const std::string& molecule,               ///< Formula for gas in lower case
+	    const std::string& config_str,             ///< Configuration as a single string
 	    const adept::Vector& band_bound1,          ///< Lower wavenumber of bands (cm-1)
 	    const adept::Vector& band_bound2,          ///< Upper wavenumber of bands (cm-1)
 	    const adept::Vector& wavenumber_cm_1,      ///< Wavenumber (cm-1)
@@ -70,16 +70,24 @@ write_order(std::string& file_name,                    ///< Name of NetCDF file 
 		     "It is related to the rank variable via rank(ordered_index(i))=i.", "ordered_index");
   */
 
-  file.define_variable("column_optical_depth", FLOAT, "wavenumber");
-  file.deflate_variable("column_optical_depth");
-  file.write_long_name("Column optical depth", "column_optical_depth");
+  if (!column_optical_depth.empty()) {
+    file.define_variable("column_optical_depth", FLOAT, "wavenumber");
+    file.deflate_variable("column_optical_depth");
+    file.write_long_name("Column optical depth", "column_optical_depth");
+  }
 
   file.define_variable("sorting_variable", FLOAT, "wavenumber");
   file.deflate_variable("sorting_variable");
   file.write_long_name("Variable used to sort spectrum", "sorting_variable");
-  file.write_comment("This variable is equal to log(surface pressure) minus log(pressure of peak heating/cooling),\n"
-		     "but for column optical depths less than a threshold, set to column optical depth minus the threshold.",
-		     "sorting_variable");
+  if (molecule == "cloud") {
+    file.write_comment("This variable is equal to the approximate cloud reflectance in the optically thick limit.",
+		       "sorting_variable");
+  }
+  else {
+    file.write_comment("This variable is equal to log(surface pressure) minus log(pressure of peak heating/cooling),\n"
+		       "but for column optical depths less than a threshold, set to column optical depth minus the threshold.",
+		       "sorting_variable");
+  }
 
   // Define global variables
 
@@ -111,7 +119,9 @@ write_order(std::string& file_name,                    ///< Name of NetCDF file 
   file.write(iband, "band_number");
   file.write(rank, "rank");
   //  file.write(ordered_index, "ordered_index");
-  file.write(column_optical_depth, "column_optical_depth");
+  if (!column_optical_depth.empty()) {
+    file.write(column_optical_depth, "column_optical_depth");
+  }
   file.write(peak_cooling_height, "sorting_variable");
 
   file.close();
