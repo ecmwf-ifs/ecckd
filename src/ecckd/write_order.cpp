@@ -80,7 +80,7 @@ write_order(std::string& file_name,                    ///< Name of NetCDF file 
   file.deflate_variable("sorting_variable");
   file.write_long_name("Variable used to sort spectrum", "sorting_variable");
   if (molecule == "cloud") {
-    file.write_comment("This variable is equal to the approximate cloud reflectance in the optically thick limit.",
+    file.write_comment("This variable is equal to the approximate cloud absorptance in the optically thick limit.",
 		       "sorting_variable");
   }
   else {

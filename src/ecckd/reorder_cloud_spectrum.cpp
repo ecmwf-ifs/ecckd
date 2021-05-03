@@ -94,18 +94,18 @@ main(int argc, const char* argv[])
     asymmetry = asymmetry_mat[isize];
   }
 
-  // Compute reflectance in the large optical depth limit and
+  // Compute absorptance in the large optical depth limit and
   // interpolate on to full wavenumber grid
-  Vector ref_inf;
+  Vector abs_inf;
   {
     // First delta-Eddington scaling
     Vector f = asymmetry * asymmetry;
     Vector asymmetry_de = 1.0 / (1.0 + asymmetry);
     Vector ssa_de = ssa * (1.0 - f) / (1.0 - ssa*f);
-    Vector ref_inf_c = sqrt((1.0 - ssa_de) / (1.0 - ssa_de*asymmetry_de));
-    ref_inf_c = (1.0 - ref_inf_c) / (1.0 + ref_inf_c);
+    Vector abs_inf_c = sqrt((1.0 - ssa_de) / (1.0 - ssa_de*asymmetry_de));
+    abs_inf_c = 1.0-(1.0 - abs_inf_c) / (1.0 + abs_inf_c);
 
-    ref_inf = interp(cloud_wavenumber_cm_1, ref_inf_c, wavenumber_cm_1);
+    abs_inf = interp(cloud_wavenumber_cm_1, abs_inf_c, wavenumber_cm_1);
   }
 
   Vector band_bound1, band_bound2;
@@ -137,7 +137,7 @@ main(int argc, const char* argv[])
   for (int jwav = 0; jwav < nwav; ++jwav) {
     g_index[jwav] = jwav;
   }
-  MyCompare my_compare(ref_inf);
+  MyCompare my_compare(abs_inf);
 
   // Bounds that clamp to the range of the data
   Vector band_bound_clamp1, band_bound_clamp2;
@@ -182,6 +182,6 @@ main(int argc, const char* argv[])
   write_order(output, argc, argv, std::string("cloud"), config_str,
 	      band_bound_clamp1, band_bound_clamp2,
 	      wavenumber_cm_1, d_wavenumber_cm_1,
-	      iband, rank, ordered_index, Vector(), ref_inf);
+	      iband, rank, ordered_index, Vector(), abs_inf);
 
 }
