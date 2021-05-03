@@ -11,6 +11,7 @@
 #include "single_gas_data.h"
 #include "equipartition.h"
 #include "write_standard_attributes.h"
+#include "cumsum.h"
 
 using namespace adept;
 
@@ -514,6 +515,117 @@ main(int argc, const char* argv[])
   // Wavenumber, cm-1
   Vector wavenumber_cm_1;
 
+  // If we consider clouds do that first
+  std::string cloud_str;
+  if (config.read(cloud_str, "cloud")) {
+    LOG << "*** FINDING G POINTS FOR " << cloud_str << "\n";
+    if (!do_sw) {
+      ERROR << "Don't yet know how to sort cloud properties in the longwave";
+      THROW(PARAMETER_ERROR);
+    }
+
+    // READ ORDERING
+    std::string reordering_input;
+    if (!config.read(reordering_input, cloud_str, "reordering_input")) {
+      ERROR << "No reordering_input found";
+      THROW(PARAMETER_ERROR);
+    }
+    LOG << "Reading " << reordering_input << "\n";
+    DataFile order_file(reordering_input);
+    Vector sorting_variable;
+    intVector irank, iband;
+    order_file.read(irank, "rank");
+    order_file.read(iband, "band_number");
+    order_file.read(band_bound1, "wavenumber1_band");
+    order_file.read(band_bound2, "wavenumber2_band");
+    order_file.read(sorting_variable, "sorting_variable");
+    nband = band_bound1.size();
+
+    // What is the maximum range of reflectance permitted for one g
+    // point?
+    Real max_reflectance_range = 0.26;
+    config.read(max_reflectance_range, cloud_str, "max_reflectance_range");
+
+    intVector n_g_points(nband);
+    int ng = 0;
+
+    std::vector<int> n_g_points_per_band;
+    // Lower and upper g
+    std::vector<int> rank1_per_g_point, rank2_per_g_point, band_num;
+    // Heating rate error, K d-1
+    std::vector<Real> error_per_g_point;
+    // Median of the sorting variable (pseudo height of max cooling)
+    // for a g point
+    std::vector<Real> median_sorting_var;
+
+    for (int jband = 0; jband < nband; ++jband) {
+      LOG << "Band " << jband << "\n";
+      intVector band_index = find(iband == jband);
+      int ibegin = band_index(0);
+      int iend   = band_index(end);
+      Real min_ref = minval(sorting_variable(range(ibegin,iend)));
+      Real max_ref = maxval(sorting_variable(range(ibegin,iend)));
+      int ng_band = static_cast<int>((max_ref-min_ref) / max_reflectance_range)+1;
+      n_g_points(jband) = ng_band;
+      ng += ng_band;
+
+      if (true) {
+	// Partition space into equal ranges of reflectance (note that
+	// this doesn't account for solar energy in each range)
+	Real dref = (max_ref-min_ref) / ng_band + 1.0e-8;
+	for (int jg = 0; jg < ng_band; ++jg) {
+	  intVector index = find(iband == jband
+				 && sorting_variable >= min_ref+jg*dref
+				 && sorting_variable <  min_ref+(jg+1)*dref);
+	  rank1_per_g_point.push_back(minval(irank(index)));
+	  rank2_per_g_point.push_back(maxval(irank(index)));
+	  error_per_g_point.push_back(dref);
+	  // Make sure that the sorting variables for clouds lie below
+	  // those for gases, hence the -2.0
+	  median_sorting_var.push_back(-2.0+min_ref+(jg+0.5)*dref);
+	  band_num.push_back(jband);
+	}
+      }
+      else {
+	// Partition into equal ranges of solar energy
+	intVector ireorder(band_index.size());
+	ireorder(irank(range(ibegin,iend))-ibegin) = range(ibegin,iend);
+	Vector cum_ssi(irank.size());
+	cum_ssi = -1.0;
+	cum_ssi(ireorder) = cumsum(Vector(ssi(ireorder)));
+	Real band_irradiance = sum(ssi(range(ibegin,iend)));
+	Real d_irradiance = band_irradiance*(1.0+1.0e-8)/ng_band;
+	for (int jg = 0; jg < ng_band; ++jg) {
+	  intVector index = find(iband == jband
+				 && cum_ssi >= jg*d_irradiance
+				 && cum_ssi <  (jg+1)*d_irradiance);
+	  rank1_per_g_point.push_back(minval(irank(index)));
+	  rank2_per_g_point.push_back(maxval(irank(index)));
+	  error_per_g_point.push_back(maxval(sorting_variable(index))
+				      -minval(sorting_variable(index)));
+	  // Make sure that the sorting variables for clouds lie below
+	  // those for gases, hence the -2.0
+	  median_sorting_var.push_back(-2.0+mean(sorting_variable(index)));
+	  band_num.push_back(jband);
+	}
+      }
+    }
+
+    intVector rank1(&rank1_per_g_point[0], dimensions(ng));
+    intVector rank2(&rank2_per_g_point[0], dimensions(ng));
+    Vector error(&error_per_g_point[0], dimensions(ng));
+    Vector median_sorting_variable(&median_sorting_var[0], dimensions(ng));
+    intVector band_number(&band_num[0], dimensions(ng));
+    
+    SingleGasData cloud_data(cloud_str, n_g_points, band_number,
+			     rank1, rank2, error, median_sorting_variable,
+			     irank);
+    cloud_data.print();
+      
+    single_gas_data.push_back(cloud_data);
+  }
+
+
   // Loop over gases
   while (config.read(gas_str, "gases", ngas)) {
     std::string Gas = gas_str;
@@ -532,7 +644,7 @@ main(int argc, const char* argv[])
     // READ ORDERING
     std::string reordering_input;
     if (!config.read(reordering_input, gas_str, "reordering_input")) {
-      ERROR << "No reordering_input found\n";
+      ERROR << "No reordering_input found";
       THROW(PARAMETER_ERROR);
     }
     LOG << "Reading " << reordering_input << "\n";
@@ -844,9 +956,9 @@ main(int argc, const char* argv[])
     // for a g point
     std::vector<Real> median_sorting_var;
 
-    // G point to which each wavenumber is assigned
-    intVector g_point(nwav);
-    g_point = -1;
+    // G point to which each wavenumber is assigned (unused)
+    //intVector g_point(nwav);
+    //g_point = -1;
 
     Matrix metric;
     if (averaging_method == "linear"
@@ -986,7 +1098,8 @@ main(int argc, const char* argv[])
 	}
 
 	//g_point(rank_band(range(ind1,ind2))) = ig;
-	g_point(irank(range(ind1,ind2))) = ig;
+	// This should probably be ireorder rather than irank, but it's not used anyway
+	//g_point(irank(range(ind1,ind2))) = ig;
       }
 
       if (debug_partition) {
@@ -1021,6 +1134,10 @@ main(int argc, const char* argv[])
     LOG << "\n";
   } // Loop over gases
 
+  // If cloud is present then it behaves as a pseudo-gas
+  if (config.read(cloud_str, "cloud")) {
+    ngas++;
+  }
 
   LOG << "*** COMPUTING SPECTRAL OVERLAP OF GASES\n";
   // "ng" is the total number of g points for all gases
