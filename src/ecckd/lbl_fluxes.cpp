@@ -35,7 +35,8 @@ repeat_array3D(Array3D& mat, int nrep)
 }
 
 void
-LblFluxes::read(const std::string& file_name, const intVector& band_mapping)
+LblFluxes::read(const std::string& file_name, const intVector& band_mapping,
+		const adept::intVector& g_point)
 {
   LOG << "Reading LBL fluxes from " << file_name << "\n";
 
@@ -163,6 +164,43 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping)
 	band_wavenumber2_ = new_band_wn2;
       }
     }
+
+    // Read high resolution fluxes at boundaries, if present
+    if (file.exist("spectral_flux_dn_direct_surf_sw") 
+	&& file.exist("spectral_flux_up_toa_sw")) {
+      if (g_point.empty()) {
+	WARNING << "Surface spectral fluxes ignored because g-point file not provided";
+	ENDWARNING;
+      }
+      else {
+	LOG << "  Mapping high-resolution boundary fluxes to g-points";
+	int ng = maxval(g_point)+1;
+	spectral_flux_dn_surf_.resize(ncol_new,ng);
+	spectral_flux_up_toa_.resize(ncol_new,ng);
+	
+	int icol_new = 0;
+	Vector spectral_flux_dn_surf, spectral_flux_up_toa;
+	for (int icol = 0; icol < ncol; ++icol) {
+	  LOG << ".";
+	  for (int isza = 0; isza < nsza; ++isza) {
+	    file.read(spectral_flux_up_toa, "spectral_flux_up_toa_sw", icol, isza);
+	    file.read(spectral_flux_dn_surf, "spectral_flux_dn_direct_surf_sw", icol, isza);
+	    for (int ig = 0; ig < ng; ++ig) {
+	      intVector index = find(g_point == ig);
+	      spectral_flux_dn_surf_(icol_new,ig) = sum(spectral_flux_dn_surf(index));
+	      spectral_flux_up_toa_(icol_new,ig)  = sum(spectral_flux_up_toa(index));
+	    }
+	    ++icol_new;
+	  }
+	}
+	LOG << "\n";
+      }
+    }
+
+
+
+
+
     ncol = ncol_new;
   }
   else {

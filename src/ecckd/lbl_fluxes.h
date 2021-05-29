@@ -9,8 +9,10 @@ struct LblFluxes {
 
   LblFluxes() { }
 
-  LblFluxes(const std::string& file_name, const adept::intVector& band_mapping = adept::intVector()) {
-    read(file_name, band_mapping);
+  LblFluxes(const std::string& file_name,
+	    const adept::intVector& band_mapping = adept::intVector(), ///< Mapping from g-point to band
+	    const adept::intVector& g_point = adept::intVector()) { ///< Mapping from wavenumber to g-point
+    read(file_name, band_mapping, g_point);
   }
 
   adept::Matrix pressure_hl_; ///< Pressure (Pa), dimensioned (column, half_level)
@@ -20,6 +22,8 @@ struct LblFluxes {
   adept::Matrix flux_dn_; ///< Downwelling flux (W m-2), dimensioned (column, half_level)
   adept::Array3D spectral_flux_up_; ///< Upwelling flux (W m-2), dimensioned (column, half_level, g_point/band)
   adept::Array3D spectral_flux_dn_; ///< Downwelling flux (W m-2), dimensioned (column, half_level, g_point/band)
+  adept::Matrix spectral_flux_dn_surf_; ///< Downwelling surface flux (W m-2) at g-points, dimensioned (column, g_point)
+  adept::Matrix spectral_flux_up_toa_; ///< Upwelling TOA flux (W m-2) at g-points, dimensioned (column, g_point)
   //  adept::Array3D band_flux_up_; ///< Upwelling flux (W m-2), dimensioned (column, half_level, band)
   //  adept::Array3D band_flux_dn_; ///< Downwelling flux (W m-2), dimensioned (column, half_level, band)
   adept::Matrix heating_rate_; /// Heating rate (K d-1), dimensioned (column, level)
@@ -41,7 +45,9 @@ struct LblFluxes {
 
   int nspec() { return spectral_flux_up_.size(2); }
 
-  void read(const std::string& file_name, const adept::intVector& band_mapping = adept::intVector());
+  void read(const std::string& file_name,
+	    const adept::intVector& band_mapping = adept::intVector(),
+	    const adept::intVector& g_point = adept::intVector());
 
   // For optimizing the coefficients of minor greenhouse gases, we
   // need to compute forcing relative to a reference, so need the

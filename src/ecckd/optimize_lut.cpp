@@ -72,6 +72,7 @@ main(int argc, const char* argv[])
   Real broadband_weight = 0.5;
   Real prior_error = 1.0;
   Real rayleigh_prior_error = 0.0;
+  Real spectral_boundary_weight = 0.1;
 
   Real temperature_corr = 0.5;
   Real pressure_corr = 0.5;
@@ -91,6 +92,7 @@ main(int argc, const char* argv[])
   config.read(flux_weight, "flux_weight");
   config.read(flux_profile_weight, "flux_profile_weight");
   config.read(broadband_weight, "broadband_weight");
+  config.read(spectral_boundary_weight, "spectral_boundary_weight");
   config.read(prior_error, "prior_error");
   if (config.read(rayleigh_prior_error, "rayleigh_prior_error")) {
     if (rayleigh_prior_error > 0.0) {
@@ -116,6 +118,27 @@ main(int argc, const char* argv[])
 
   CkdModel<true> ckd_model(input, gas_list);
   ckd_model.set_model_id(model_id);
+
+  // Optionally read location of g-points, since some training data
+  // might contain high resolution boundary fluxes that need to be
+  // mapped to g-points
+  Vector wavenumber_cm_1;
+  intVector g_point;
+  int ng = ckd_model.ng();
+  // First check if the g_points are stored in the raw CKD file - they
+  // should be if they were modified from those in the find_g_points
+  // program
+  if (!ckd_model.read_g_points(wavenumber_cm_1, g_point)) {
+    std::string gpoint_filename;
+    if (config.read(gpoint_filename, "gpointfile")) {
+      DataFile gpointfile(gpoint_filename);
+      gpointfile.read(g_point, "g_point");
+      if (ng != maxval(g_point)+1) {
+	ERROR << "Number of g-points in " << input << " does not match number in " << gpoint_filename;
+	THROW(PARAMETER_ERROR);
+      }
+    }
+  }
 
   //  ckd_model.cap_relative_linear_coeffts();
 
@@ -170,7 +193,7 @@ main(int argc, const char* argv[])
   int itrain = 0;
   while (config.read(training_file, "training_input", itrain)) {
 
-    LblFluxes fluxes(training_file, band_mapping);
+    LblFluxes fluxes(training_file, band_mapping, g_point);
     if (have_relative_to_fluxes) {
       LOG << "  Subtracting reference fluxes\n";
       fluxes.subtract(relative_to_fluxes);
@@ -216,7 +239,8 @@ main(int argc, const char* argv[])
   }
 
   int status = solve_lbfgs(ckd_model, training_data,
-			   flux_weight, flux_profile_weight, broadband_weight, prior_error,
+			   flux_weight, flux_profile_weight, broadband_weight,
+			   spectral_boundary_weight, prior_error,
 			   max_iterations, convergence_criterion,
 			   relative_ckd_flux_dn, relative_ckd_flux_up);
 

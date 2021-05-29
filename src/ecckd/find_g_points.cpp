@@ -569,7 +569,7 @@ main(int argc, const char* argv[])
       n_g_points(jband) = ng_band;
       ng += ng_band;
 
-      if (true) {
+      if (false) {
 	// Partition space into equal ranges of reflectance (note that
 	// this doesn't account for solar energy in each range)
 	Real dref = (max_ref-min_ref) / ng_band + 1.0e-8;
@@ -659,6 +659,11 @@ main(int argc, const char* argv[])
     nband = band_bound1.size();
 
     // Read some band-specific configuration for this gas
+
+    Vector base_wavenumber_boundary;
+    if (config.read(base_wavenumber_boundary, gas_str, "base_wavenumber_boundary")) {
+      LOG << "Base g-points will be split at wavenumbers " << base_wavenumber_boundary << "\n";
+    }
 
     // First the number of pieces into which the base g-point in each
     // band should be split after applying the equipartition
@@ -1050,7 +1055,15 @@ main(int argc, const char* argv[])
       ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
       std::cout << "      computational cost = " << Eq.total_comp_cost << "\n";
 
-      if (base_split(jband) != 1.0) {
+      // Do we need to disect the base g-point by wavenumber and/or
+      // absorption?
+      if (base_split(jband) != 1.0
+	  || (!base_wavenumber_boundary.empty()
+	      && any(base_wavenumber_boundary > band_bound1(jband)
+		     && base_wavenumber_boundary < band_bound2(jband)))) {
+	
+	
+
 	// Work out how many pieces to split the base interval into
 	int nsplit = 1;
 	if (base_split(jband) > 1.0) {

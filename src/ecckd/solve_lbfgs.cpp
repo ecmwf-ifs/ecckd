@@ -17,7 +17,7 @@ struct MyData {
   CkdModel<true>* ckd_model;
   std::vector<LblFluxes>* lbl;
   Real flux_weight, flux_profile_weight, broadband_weight, prior_error;
-  Real negative_od_penalty;
+  Real spectral_boundary_weight, negative_od_penalty;
   Array3D* relative_ckd_flux_dn;
   Array3D* relative_ckd_flux_up;
   Timer timer;
@@ -79,6 +79,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 				Real flux_weight, 
 				Real flux_profile_weight,
 				Real broadband_weight,
+				Real spectral_boundary_weight,
 				Real negative_od_penalty,
 				Array3D* relative_ckd_flux_dn,
 				Array3D* relative_ckd_flux_up)
@@ -157,6 +158,11 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 	//Real tsi_scaling = sum(lbl1.spectral_flux_dn_(iprof,0,__))
 	//  / (lbl1.mu0_(iprof) * sum(ckd_model.solar_irradiance()));
 	Real tsi_scaling = lbl1.tsi_ / sum(ckd_model.solar_irradiance());
+	Vector spectral_flux_dn_surf, spectral_flux_up_toa;
+	if (!lbl1.spectral_flux_dn_surf_.empty()) {
+	  spectral_flux_dn_surf >>= lbl1.spectral_flux_dn_surf_(iprof,__);
+	  spectral_flux_up_toa  >>= lbl1.spectral_flux_up_toa_(iprof,__);
+	}
 	cost += calc_cost_function_ckd_sw(lbl1.mu0_(iprof),
 					  lbl1.pressure_hl_(iprof,__),
 					  tsi_scaling * ckd_model.solar_irradiance(),
@@ -165,7 +171,10 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 					  lbl1.spectral_flux_dn_(iprof,__,__),
 					  lbl1.spectral_flux_up_(iprof,__,__),
 					  lbl1.spectral_heating_rate_(iprof,__,__),
+					  spectral_flux_dn_surf,
+					  spectral_flux_up_toa,
 					  flux_weight, flux_profile_weight, broadband_weight,
+					  spectral_boundary_weight,
 					  layer_weight, rel_ckd_flux_dn, rel_ckd_flux_up, 
 					  lbl1.iband_per_g, cost_fn_per_band);
       }
@@ -212,6 +221,7 @@ calc_cost_function_and_gradient_lbfgs(void *vdata,
 						      data.flux_weight, 
 						      data.flux_profile_weight,
 						      data.broadband_weight,
+						      data.spectral_boundary_weight,
 						      data.negative_od_penalty,
 						      data.relative_ckd_flux_dn,
 						      data.relative_ckd_flux_up);
@@ -269,6 +279,7 @@ solve_lbfgs(CkdModel<true>& ckd_model,
 	    Real flux_weight,
 	    Real flux_profile_weight,
 	    Real broadband_weight,
+	    Real spectral_boundary_weight,
 	    Real prior_error,
 	    int max_iterations,
 	    Real convergence_criterion,
@@ -296,6 +307,7 @@ solve_lbfgs(CkdModel<true>& ckd_model,
   data.flux_weight=flux_weight;
   data.flux_profile_weight=flux_profile_weight;
   data.broadband_weight=broadband_weight;
+  data.spectral_boundary_weight = spectral_boundary_weight;
   data.prior_error = prior_error;
   data.relative_ckd_flux_dn = relative_ckd_flux_dn;
   data.relative_ckd_flux_up = relative_ckd_flux_up;

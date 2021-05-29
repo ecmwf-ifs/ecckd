@@ -108,9 +108,12 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
 			  const adept::Matrix& flux_dn,           ///< True downwelling flux (W m-2)
 			  const adept::Matrix& flux_up,           ///< True upwelling flux (W m-2)
 			  const adept::Matrix& hr,                ///< True heating rate (K s-1)
+			  const adept::Vector& spectral_flux_dn_surf, ///< g-point surface downward flux (W m-2)
+			  const adept::Vector& spectral_flux_up_toa,  ///< g-point TOA upward flux (W m-2)
 			  adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
 			  adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
 			  adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
+			  adept::Real spectral_boundary_weight,   ///< Weight of spectral boundary fluxes
 			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
 			  adept::Matrix* relative_ckd_flux_dn,    ///< Subtract relative-to flux dn, if not NULL
 			  adept::Matrix* relative_ckd_flux_up,    ///< Subtract relative-to flux up, if not NULL
@@ -214,7 +217,7 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
     warning_issued = true;
   }
 
-  Real cost_fn_save = value(cost_fn);
+  //  Real cost_fn_save = value(cost_fn);
 
   if (broadband_weight > 0.0) {
     // Broadband contribution to cost function
@@ -241,6 +244,12 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
 	cost_fn += broadband_weight*sum(interface_weight*(flux_up_error*flux_up_error));
       }
     }
+  }
+
+  if (spectral_boundary_weight > 0.0 && !spectral_flux_dn_surf.empty()) {
+    cost_fn += spectral_boundary_weight
+      * sum(  (flux_dn_fwd_orig(end,__)-spectral_flux_dn_surf)
+	    * (flux_dn_fwd_orig(end,__)-spectral_flux_dn_surf));
   }
 
   return cost_fn;
