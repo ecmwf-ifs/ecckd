@@ -33,7 +33,6 @@ libecckd_a_SOURCES = \
 	equipartition.cpp \
 	write_standard_attributes.h \
 	rayleigh_scattering.h \
-	Timer.h \
 	cumsum.h
 
 bin_PROGRAMS = reorder_spectrum find_g_points merge_spectra \

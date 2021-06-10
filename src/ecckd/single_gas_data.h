@@ -1,3 +1,17 @@
+// single_gas_data.h - Define SingleGasData used by find_g_points
+//
+// Copyright (C) 2020- ECMWF.
+//
+// This software is licensed under the terms of the Apache Licence Version 2.0
+// which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+//
+// In applying this licence, ECMWF does not waive the privileges and immunities
+// granted to it by virtue of its status as an intergovernmental organisation
+// nor does it submit to any jurisdiction.
+//
+// Author:  Robin Hogan
+// Email:   r.j.hogan@ecmwf.int
+
 // This file defines the SingleGasData type used by
 // find_g_points_lw.cpp; unfortunately, ckd_model.h defines a
 // different type of the same name.

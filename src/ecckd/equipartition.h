@@ -1,7 +1,16 @@
-/// @file      equipartition.h
-/// @brief     Declares the class Equipartition
-/// @author    Robin J. Hogan
-/// @copyright 2020 European Centre for Medium Range Weather Forecasts
+// equipartition.h - Class implementing an algorithm for evenly partitioning a 1D space
+//
+// Copyright (C) 2020- ECMWF.
+//
+// This software is licensed under the terms of the Apache Licence Version 2.0
+// which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+//
+// In applying this licence, ECMWF does not waive the privileges and immunities
+// granted to it by virtue of its status as an intergovernmental organisation
+// nor does it submit to any jurisdiction.
+//
+// Author:  Robin Hogan
+// Email:   r.j.hogan@ecmwf.int
 
 /// The Equipartition class implements and algorithm for partitioning
 /// a 1D space into intervals such that the "error" in each interval
