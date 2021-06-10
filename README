@@ -1,12 +1,4 @@
-Normal procedure in longwave:
+The ECMWF Correlated K-Distribution (ecCKD) tool
 
-1. Create hybrid file of well-mixed gases for median atmosphere,
-e.g. using CKDMIP's "ckdmip_tool --merge-only"
-
-2. Use src/ecckd/reorder_spectrum_lw via test/reorder_spectrum_lw.sh
-to create reordered spectra for the median profile of H2O, O3 and the
-hybrid gas
-
-3. Use src/ecckd/find_g_points_lw via
-
-   test/find_g_points_lw.sh MODEL_CODE=test
+Documentation is provided in doc/ecckd_documentation.pdf (you may need
+to type "make" in this directory to create it).

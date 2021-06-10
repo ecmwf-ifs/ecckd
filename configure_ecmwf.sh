@@ -3,8 +3,11 @@
 set -ex
 
 # Compile options
-#CXXFLAGS="-Wall -g -O3 -march=native -std=c++11 -DADEPT_FAST_EXPONENTIAL"
+
+# Default (optimized) settings
 CXXFLAGS="-Wall -g -O2 -march=native -std=c++11 -DADEPT_FAST_EXPONENTIAL"
+
+# Debug settings
 #CXXFLAGS="-Wall -g -O0 -march=native -std=c++11 -DADEPT_BOUNDS_CHECKING -DADEPT_INIT_REAL_SNAN"
 
 # Location of Adept automatic differentiation library
@@ -23,4 +26,3 @@ INSTALL_DIR=/var/tmp/$HOME/fsck
 
 # Call configure script
 ./configure --prefix "$INSTALL_DIR" "CXXFLAGS=$CXXFLAGS" $ADEPT_FLAGS $NETCDF_FLAGS "LDFLAGS=$LDFLAGS" $@
-

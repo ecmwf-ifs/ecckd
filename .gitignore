@@ -25,3 +25,7 @@ ltmain.sh
 stamp-h1
 missing
 test/version.h
+!doc/Makefile
+doc/*.aux
+doc/*.log
+doc/*.out
