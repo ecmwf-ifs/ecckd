@@ -6,12 +6,18 @@
 . config.h
 . check_configuration.h
 
-#VERSIONS="scaled raw"
-# raw"
-#VERSIONS=ckd
-#VERSIONS=raw
+# If the version of the model to run is not stated, do just the final
+# one
+if [ -z "$VERSIONS" ]
+then
+    VERSIONS=ckd
+fi
+
+# The only RT option in the shortwave is two-stream, denoted by
+# "fluxes"
 FLUXESSTR=fluxes
 
+# Which scenarios need to be simulated
 if [ "$APP" = nwp ]
 then
     SCENARIOS=present

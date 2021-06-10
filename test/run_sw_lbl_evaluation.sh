@@ -23,7 +23,7 @@ CONFIG="config_sw_lbl_evaluation.nam"
 PROGRAM=$CKDMIP_SW
 
 BANDCODE=fluxes
-BANDCODE=fluxes-rgb
+#BANDCODE=fluxes-rgb
 
 OUTPREFIX="ckdmip_${SET}_sw_${BANDCODE}"
 SUFFIX=h5
@@ -37,18 +37,19 @@ wavenumber_name = "wavenumber",
 pressure_name = "pressure_hl",
 temperature_name = "temperature_hl",
 do_write_spectral_fluxes = false,
+do_write_spectral_boundary_fluxes = true,
 do_write_optical_depth   = false,
 surf_albedo = 0.15,
 use_mu0_dimension = true,
 cos_solar_zenith_angle(1:5) = 0.1, 0.3, 0.5, 0.7, 0.9,
 nspectralstride = $STRIDE,
 nblocksize = 1000,
-!band_wavenumber1(1:13) = 250, 2600, 3250, 4000, 4650, 5150, 6150, 8050, 12850, 16000, 22650, 29000, 38000,
-!band_wavenumber2(1:13) = 2600, 3250, 4000, 4650, 5150, 6150, 8050, 12850, 16000, 22650, 29000, 38000, 50000,
+band_wavenumber1(1:13) = 250, 2600, 3250, 4000, 4650, 5150, 6150, 8050, 12850, 16000, 22650, 29000, 38000,
+band_wavenumber2(1:13) = 2600, 3250, 4000, 4650, 5150, 6150, 8050, 12850, 16000, 22650, 29000, 38000, 50000,
 !band_wavenumber1(1:9) = 250, 2500, 4000, 8000, 14286, 16667, 20000, 25000, 31746,
 !band_wavenumber2(1:9) = 2500, 4000, 8000, 14286, 16667, 20000, 25000, 31746, 50000,
-band_wavenumber1(1:9) = 250, 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750,
-band_wavenumber2(1:9) = 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750, 50000,
+!band_wavenumber1(1:9) = 250, 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750,
+!band_wavenumber2(1:9) = 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750, 50000,
 iverbose = 3
 /
 EOF

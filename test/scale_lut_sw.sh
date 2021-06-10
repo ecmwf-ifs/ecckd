@@ -94,7 +94,7 @@ do
 	OUTPUT=${OUTDIR}/${ECCKD_PREFIX}_sw_${OUTCODE}_${MODEL_CODE}.nc
 	LOG=${OUTDIR}/${ECCKD_PREFIX}_sw_${OUTCODE}_${MODEL_CODE}.log
 
-	debug $SCALE_LUT \
+	$SCALE_LUT \
 	    input=${INPUT} \
 	    output=${OUTPUT} \
 	    gpointfile=${GPOINTFILE} \

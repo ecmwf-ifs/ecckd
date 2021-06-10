@@ -6,8 +6,14 @@
 . config.h
 . check_configuration.h
 
-#VERSIONS="raw raw2 raw3 raw4 ckd"
-VERSIONS=ckd
+# If the version of the model to run is not stated, do just the final
+# one
+if [ -z "$VERSIONS" ]
+then
+    VERSIONS=ckd
+fi
+
+# Number of angles per hemisphere
 NANGLE=4
 
 if [ "$NANGLE" = 0 ]
@@ -17,6 +23,7 @@ else
     FLUXESSTR=fluxes-${NANGLE}angle
 fi
 
+# Which scenarios need to be simulated
 if [ "$APP" = nwp ]
 then
     SCENARIOS=present
