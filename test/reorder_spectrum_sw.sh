@@ -71,7 +71,7 @@ do
 		    ${OPTIONS} \
 		    "wavenumber1=$WN1_SW_CUSTOM" "wavenumber2=$WN2_SW_CUSTOM"
 		else
-		    ${BANNER_ERROR} "Band structure\"$BANDSTRUCT\" not understood"
+		    ${BANNER_ERROR} "Band structure \"$BANDSTRUCT\" not understood"
 		    exit 1
 		fi
 	    fi

@@ -120,7 +120,7 @@ ECCKD_PREFIX=ecckd-$ECCKD_VERSION
 
 CKDMIP_RESULTS_DIR=${CKDMIP_DATA_DIR}/results/${ECCKD_PREFIX}
 
-# Should the shortwave composites include Rayleight scattering for
+# Should the shortwave composites include Rayleigh scattering for
 # ordering the spectra?
 COMPOSITE_SW_INCLUDES_RAYLEIGH=yes
 
