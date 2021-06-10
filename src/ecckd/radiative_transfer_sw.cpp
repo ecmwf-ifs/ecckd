@@ -31,7 +31,7 @@ radiative_transfer_direct_sw(adept::Real cos_sza,             ///< Cosine of the
   using namespace adept;
 
   int nlay = optical_depth.size(0);
-  int nwav = optical_depth.size(1);
+  //int nwav = optical_depth.size(1);
 
   Real minus_sec_sza = -1.0 / cos_sza;
 
@@ -56,7 +56,7 @@ radiative_transfer_norayleigh_sw(adept::Real cos_sza,      ///< Cosine of the so
   using namespace adept;
 
   int nlay = optical_depth.size(0);
-  int nwav = optical_depth.size(1);
+  //int nwav = optical_depth.size(1);
 
   Real minus_sec_sza = -1.0 / cos_sza;
 

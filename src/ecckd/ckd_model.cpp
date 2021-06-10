@@ -560,7 +560,8 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
 	  << static_cast<Real>(count(fabs(inv_background) < MIN_ERROR_COVARIANCE))
 	/static_cast<Real>(inv_background.size()) << "\n";
       inv_background.where(fabs(inv_background) < MIN_ERROR_COVARIANCE) = 0.0;
-      // Save as a sparse matrix
+      // Save as a sparse matrix (if supported in later versions of
+      // Adept) or copy to a symmetric matrix
       this_gas.inv_background = inv_background;
     }
     else {
@@ -620,7 +621,7 @@ CkdModel<true>::calc_background_cost_function(const Vector& delta_x, Vector grad
   for (int igas = 0; igas < ngas(); ++igas) {
     const SingleGasData<true>& this_gas = single_gas_data_[igas];
     if (this_gas.is_active) {
-      int nx = this_gas.inv_background.size(0);
+      int nx = this_gas.inv_background.dimension(0);
       // g-point is fastest varying dimension so need to stride over it
       int nstride = ng_;
       //#pragma omp parallel for schedule (static)

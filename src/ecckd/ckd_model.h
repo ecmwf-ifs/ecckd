@@ -67,8 +67,8 @@ struct SingleGasData {
   Vector vmr;
 
   // Inverse of the background error covariance matrix for one g point
-  SparseMatrix inv_background;
-  //SymmMatrix inv_background;
+  //SparseMatrix inv_background;
+  SymmMatrix inv_background;
 
   // Index of the first element of the full state variable x in the
   // present gas
