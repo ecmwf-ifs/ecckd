@@ -202,7 +202,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
   first_call = false;
 
   //  LOG << cost << " " << maxval(fabs(gradient)) << "\n";
-  LOG << "  Cost per band = " << cost_fn_per_band << "\n";
+  //  LOG << "  Cost per band = " << cost_fn_per_band << "\n";
   //  data.timer.start(data.minimizer_id);
   return value(cost);
 }
