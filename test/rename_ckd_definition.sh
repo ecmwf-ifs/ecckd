@@ -1,7 +1,6 @@
 #!/bin/bash
-. config.h
 
-set -ex
+. config.h
 
 VERSIONS="ckd"
 APPLICATION=climate

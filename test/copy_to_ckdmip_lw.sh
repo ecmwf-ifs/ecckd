@@ -8,17 +8,26 @@ then
     module load netcdf4
 fi
 
-VERSIONS="ckd"
-APPLICATION=climate
-#APPLICATION=global-nwp
-#APPLICATION=limited-area-nwp
-BAND_STRUCTURE="fsck wide narrow"
-TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
-BAND_STRUCTURE="fsck"
-TOLERANCE="0.02"
-
 mkdir -p ${CKDMIP_RESULTS_DIR}/lw_spectral-definition/
 mkdir -p ${CKDMIP_RESULTS_DIR}/lw_optical-depth/
+mkdir -p ${CKDMIP_RESULTS_DIR}/lw_fluxes/
+
+# If the version of the model to run is not stated, do just the final
+# one
+if [ -z "$VERSIONS" ]
+then
+    VERSIONS=ckd
+fi
+
+# Number of angles per hemisphere
+NANGLE=4
+
+if [ "$NANGLE" = 0 ]
+then
+    FLUXESSTR=fluxes
+else
+    FLUXESSTR=fluxes-${NANGLE}angle
+fi
 
 # Loop over each band structure, tolerance, version (raw or final) and
 # scenario
@@ -28,12 +37,27 @@ do
     do
 	for VER in $VERSIONS
 	do
+
+	    if [ ! "$VER" = ckd ]
+	    then
+		VER_SUFFIX=-$VER
+	    else
+		unset VER_SUFFIX
+	    fi
+
 	    MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
 
 	    echo From directory ${WORK_LW_CKD_DIR}
 	    cd ${WORK_LW_CKD_DIR}
 
 	    CKD_FILE=${ECCKD_PREFIX}_lw_ckd-definition_${MODEL_CODE}.nc
+
+	    if [ ! -r "$CKD_FILE" ]
+	    then
+		echo ... not found, trying ${WORK_LW_RAW_CKD_DIR}
+		cd ${WORK_LW_RAW_CKD_DIR}
+		CKD_FILE=${ECCKD_PREFIX}_lw_${VER}-ckd-definition_${MODEL_CODE}.nc
+	    fi
 
 	    # Get number of g points
 	    NG=$(ncdump -h $CKD_FILE | head -10 | grep g_point | awk '{print $3}')
@@ -45,14 +69,24 @@ do
 	    echo "  Copying $CKD_FILE -> $NEW_CKD_FILE"
 	    cp -f $CKD_FILE $NEW_CKD_FILE
 
-	    echo "From directory ${WORK_LW_CKD_OD_DIR}"
-	    cd ${WORK_LW_CKD_OD_DIR}
-
-	    for FILE in ${ECCKD_PREFIX}_${EVALUATION_CODE}_lw_${MODEL_CODE}_optical-depth_*.nc
+	    for FILE_TYPE in optical-depth fluxes
 	    do
-		NEW_FILE=$(echo $FILE | sed "s|${MODEL_CODE}|${NEW_MODEL_CODE}|")
-		echo "  Copying $FILE -> ${CKDMIP_RESULTS_DIR}/lw_optical-depth/$NEW_FILE"
-		cp -f $FILE ${CKDMIP_RESULTS_DIR}/lw_optical-depth/$NEW_FILE
+		if [ "$FILE_TYPE" = optical-depth ]
+		then
+		    echo "From directory ${WORK_LW_CKD_OD_DIR}"
+		    cd ${WORK_LW_CKD_OD_DIR}
+		else
+		    echo "From directory ${WORK_LW_FLUX_DIR}"
+		    cd ${WORK_LW_FLUX_DIR}
+		fi
+
+		for FILE in ${ECCKD_PREFIX}_${EVALUATION_CODE}_lw_${MODEL_CODE}${VER_SUFFIX}_${FILE_TYPE}*.nc
+		do
+		    NEW_FILE=$(echo $FILE | sed "s|${MODEL_CODE}|${NEW_MODEL_CODE}|")
+		    echo "  Copying $FILE -> ${CKDMIP_RESULTS_DIR}/lw_${FILE_TYPE}/$NEW_FILE"
+		    cp -f $FILE ${CKDMIP_RESULTS_DIR}/lw_${FILE_TYPE}/$NEW_FILE
+		done
+
 	    done
 
 	done

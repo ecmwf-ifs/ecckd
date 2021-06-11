@@ -6,6 +6,8 @@
 mkdir -p ${WORK_LW_ORDER_DIR}
 
 GAS_LIST="composite h2o_median o3_median co2_present ch4_present n2o_present o2n2_constant"
+# In the microwave we only consider oxygen and water vapour
+#GAS_LIST="o2_constant h2o_median"
 
 # Loop through the median/present concentrations of each gas and
 # reorder
@@ -40,9 +42,20 @@ do
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    "wavenumber1=$WN1_LW_WIDE" "wavenumber2=$WN2_LW_WIDE"
-	    else
+	    elif [ "$BANDSTRUCT" = fsck ]
+	    then
 		# Assuming FSCK
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT
+	    else
+		if [ "$WN1_LW_CUSTOM" ]
+		then
+		    ${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
+		    ${OPTIONS} \
+		    "wavenumber1=$WN1_LW_CUSTOM" "wavenumber2=$WN2_LW_CUSTOM"
+		else
+		    ${BANNER_ERROR} "Band structure \"$BANDSTRUCT\" not understood"
+		    exit 1
+		fi
 	    fi
 	else
 	    ${BANNER_SKIP} Skipping reordering of ${GAS} as file present: ${OUTPUT}

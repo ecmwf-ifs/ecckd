@@ -7,8 +7,6 @@
 # as environment variables, or should be set in a script provided as
 # the first argument to this script that is sourced at the start.
 
-set -x
-
 # Source the configuration and checking header scripts
 . config.h
 . check_configuration.h

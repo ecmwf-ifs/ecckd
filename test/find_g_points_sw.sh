@@ -12,7 +12,6 @@
 . check_configuration.h
 
 # Optional additional arguments
-#EXTRA_ARGS="averaging_method=logarithmic"
 EXTRA_ARGS="averaging_method=total-transmission max_no_rayleigh_wavenumber=10000"
 
 # Create output directory, if needed
@@ -29,7 +28,8 @@ then
     # Need at least 3 g-points for ozone in the UV band
     O3_MIN_G_POINTS="min_g_points 1 1 1 1 3"
     # Need to split the base g-point of water vapour for accuracy
-    H2O_BASE_SPLIT="base_split 0.34"
+    #    H2O_BASE_SPLIT="base_split 0.34"
+    H2O_BASE_SPLIT="base_split 4"
 fi
 
 
@@ -49,8 +49,7 @@ append_path "${MMM_SW_SPECTRA_DIR}:${WORK_SW_SPECTRA_DIR}:${WORK_SW_ORDER_DIR}"
 ssi $MMM_SW_SSI
 iprofile 0
 averaging_method "total-transmission"
-#tolerance_tolerance 0.01 
-tolerance_tolerance 0.02
+tolerance_tolerance 0.01 
 #flux_weight 0.02
 flux_weight 0.0002
 min_pressure ${MIN_PRESSURE}
@@ -104,7 +103,7 @@ append_path "${MMM_SW_SPECTRA_DIR}:${WORK_SW_SPECTRA_DIR}:${WORK_SW_ORDER_DIR}"
 ssi $MMM_SW_SSI
 iprofile 0
 averaging_method "transmission"
-tolerance_tolerance 0.02
+tolerance_tolerance 0.01
 #flux_weight 0.001 # Previous
 #flux_weight 0.0002
 #flux_weight 0.2
@@ -113,6 +112,12 @@ min_pressure ${MIN_PRESSURE}
 max_iterations 60
 
 gases h2o o3 ch4 n2o co2 o2n2
+
+#cloud liquidcloud
+\begin liquidcloud
+  reordering_input sw_order_${BANDSTRUCT}_cloud.h5
+  max_reflectance_range 0.34
+\end liquidcloud
 
 \begin h2o
   # Water vapour in median present-day concentrations
@@ -124,8 +129,6 @@ gases h2o o3 ch4 n2o co2 o2n2
 ckdmip_mmm_sw_spectra_o3_minimum.h5"
   min_scaling 0.1
   max_scaling 10.0
-#  min_scaling 0.025
-#  max_scaling 40.0
   $H2O_BASE_SPLIT
 \end h2o
 
@@ -204,7 +207,7 @@ append_path "${MMM_SW_SPECTRA_DIR}:${WORK_SW_SPECTRA_DIR}:${WORK_SW_ORDER_DIR}"
 ssi $MMM_SW_SSI
 iprofile 0
 averaging_method "transmission"
-tolerance_tolerance 0.02
+tolerance_tolerance 0.01
 #flux_weight 0.005
 #flux_weight 0.001 ### Previous
 flux_weight 0.0002
@@ -282,8 +285,6 @@ fi
 	    output=${WORK_SW_GPOINTS_DIR}/${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.h5 \
 	    $EXTRA_ARGS config_find_g_points_sw_${APP}.cfg \
 	    |& tee ${WORK_SW_GPOINTS_DIR}/${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.log
-	# 2> debug_partition.m \
-	# | tee ${WORK_SW_GPOINTS_DIR}/${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.log
 	test "${PIPESTATUS[0]}" -eq 0
     done
 done

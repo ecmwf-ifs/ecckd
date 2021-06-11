@@ -7,8 +7,6 @@
 . config.h
 . check_configuration.h
 
-set -ex
-
 SET=mmm
 LBLINDIR=$MMM_SW_SPECTRA_DIR
 LBLDIR=$WORK_SW_LBL_FLUX_DIR

@@ -27,7 +27,7 @@ TOLERANCE="0.6 0.4 0.2 0.15 0.1 0.05 0.025"
 
 # Create just one CKD models
 BAND_STRUCTURE="wide"
-TOLERANCE="0.1"
+TOLERANCE="0.2"
 
 # Experimental "red-green-blue" band structure
 #BAND_STRUCTURE="rgb"

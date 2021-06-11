@@ -55,3 +55,7 @@ export BAND_STRUCTURE
 # "raw", "raw2" etc are also possible)
 #export VERSIONS="ckd"
 ./run_ckd_lw.sh
+
+# 7. Copy to the CKDMIP directory, changing file names from stating
+# tolerance to stating the total number of g points
+#./copy_to_ckdmip_lw.sh

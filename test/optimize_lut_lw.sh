@@ -6,8 +6,6 @@
 . config.h
 . check_configuration.h
 
-#set -ex
-
 if [ -z "$1" ]
 then
     OPTIMIZE_MODE_LIST=$APP

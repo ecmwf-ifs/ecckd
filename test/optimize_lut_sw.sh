@@ -16,19 +16,13 @@ fi
 for OPTIMIZE_MODE in $OPTIMIZE_MODE_LIST
 do
 
-#OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.05 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
-#OPTIONS="prior_error=8.0 broadband_weight=0.0 flux_weight=0.01 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.02"
-#OPTIONS="prior_error=8.0 broadband_weight=0.2 flux_weight=0.02 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
-#OPTIONS="prior_error=8.0 broadband_weight=0.2 flux_weight=0.03 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
-
 # ECCKD 0.6
 COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.1 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=1500"
 
 # ECCKD 0.7
-COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.2 flux_weight=0.1 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
-COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.5 flux_weight=0.1 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
 # Too much broadband weight in GB, because the error is dominated by the first band
-COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
+#COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 spectral_boundary_weight=0.1"
+COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 spectral_boundary_weight=0.0"
 
 case "$OPTIMIZE_MODE" in
 
@@ -194,6 +188,7 @@ EOF
 	MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
 	${BANNER} Optimizing CKD model: $MODEL_CODE
 
+	GPOINTFILE=${WORK_SW_GPOINTS_DIR}/${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.h5
 	INPUT=${INDIR}/${ECCKD_PREFIX}_sw_${INCODE}_${MODEL_CODE}.nc
 	OUTPUT=${OUTDIR}/${ECCKD_PREFIX}_sw_${OUTCODE}_${MODEL_CODE}.nc
 	LOG=${OUTDIR}/${ECCKD_PREFIX}_sw_${OUTCODE}_${MODEL_CODE}.log
@@ -201,12 +196,12 @@ EOF
 	$OPTIMIZE_LUT \
 	    input=${INPUT} \
 	    output=${OUTPUT} \
+	    gpointfile=${GPOINTFILE} \
 	    model_id=sw_${APPLICATION}_${BANDSTRUCT}-tol${TOL} \
 	    $EXTRA_ARGS \
-	    config_optimize_lut_${OPTIMIZE_MODE}.cfg
-# \
-#	    |& tee $LOG
-#	test "${PIPESTATUS[0]}" -eq 0
+	    config_optimize_lut_${OPTIMIZE_MODE}.cfg \
+	    |& tee $LOG
+	test "${PIPESTATUS[0]}" -eq 0
     done
 done
 
