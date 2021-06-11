@@ -66,8 +66,8 @@
 \author{Robin J. Hogan\\ \emph{European Centre for Medium Range
     Weather Forecasts, Reading, UK}}
 
-\date{Document version 0.x (June 2021) applicable to 
-  \ecckd\ version 0.x\thanks{This document is copyright
+\date{Document version 0.8 (June 2021) applicable to 
+  \ecckd\ version 0.8\thanks{This document is copyright
     \copyright\ 2021-- ECMWF. If you have any queries about
     \ecckd\ that are not answered by this document
 %
@@ -265,8 +265,6 @@ you will need to edit and run the
 \code{work/sw/run\_sw\_lbl\_evaluation.sh} scripts in the CKDMIP
 software package. Please note that this typically takes 1--2 days.
 
-FIX SCRIPTS
-
 \subsection{Locating executables and datasets}
 Assuming you will be using the scripts in the \code{test} directory
 (or your own variants of them), you will need to edit the script
@@ -317,8 +315,6 @@ generate files in the \code{\$WORK\_DIR/sw\_lbl\_fluxes} and
 \code{\$WORK\_DIR/lw\_lbl\_fluxes} directories. The scenarios
 generated have the tag \code{rel-*}, where \code{*} represents the
 concentration of CO$_2$ in ppmv.
-
-FIX SCRIPTS
 
 \subsection{Using the master scripts}
 \label{sec:master}
@@ -476,7 +472,7 @@ hypercube-partition method of \cite{Hogan2010}.
 Setting & LW default & SW default & Description\\
 \hline
 averaging\_method & transmission & total-transmission & Method for averaging absorption coefficients to for candidate g points (other methods being `linear', `square-root' and `logarithmic' \\
-tolerance\_tolerance FIX & 0.01 & 0.02 & Fractional difference permitted between penalty functions for each g point \\
+tolerance\_tolerance & 0.01 & 0.01 & Fractional difference permitted between penalty functions for each g point \\
 flux\_weight & 0.0 & 0.1 & Weight of fluxes relative to heating-rates in penalty function \\
 max\_iterations & 60 & 60 & Maximum number of iterations when attempting to partition each band evenly into g points\\
 iprofile & 0 & 0 & 0-based index of the profile to use from the \emph{MMM} dataset, 0 indicating the median profile\\
@@ -666,7 +662,7 @@ Each of the executables are configured in the same general way, making
 use of the \code{readconfig} library provided in the \code{src/tools}
 directory. The executables are all called in the same general way:
 \begin{lstlisting}
- executable config.cfg [key1=value1 [key2=value2 ...]]
+ executable [key1=value1 [key2=value2 ...]] config.cfg
 \end{lstlisting}
 where \code{config.cfg} contains a list of key-value pairs. Additional
 key-value pairs may be provided on the command-line as shown, and
@@ -713,6 +709,12 @@ gases composite h2o o3
             ckdmip_mmm_lw_spectra_o3_minimum.h5"
 \end composite
 \end{lstlisting}
+Options could then be overridden on the command-line with
+\begin{lstlisting}
+ ./find_g_points gases="h2o o3" o3.input=alternative_o3_spectra.h5 config.cfg
+\end{lstlisting}
+Note that keys in sections in the configuration file are specified as
+\code{SECTION.KEY} when given on the command-line.
 
 \section{License and copyright}
 \label{sec:license}
