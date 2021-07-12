@@ -155,6 +155,11 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
       }
 
       if (!lbl1.is_sw()) {
+	Vector spectral_flux_dn_surf, spectral_flux_up_toa;
+	if (!lbl1.spectral_flux_dn_surf_.empty()) {
+	  spectral_flux_dn_surf >>= lbl1.spectral_flux_dn_surf_(iprof,__);
+	  spectral_flux_up_toa  >>= lbl1.spectral_flux_up_toa_(iprof,__);
+	}
 	cost += calc_cost_function_ckd_lw(lbl1.pressure_hl_(iprof,__),
 					  lbl1.planck_hl_(iprof,__,__),
 					  lbl1.surf_emissivity_(iprof,__),
@@ -163,7 +168,10 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 					  lbl1.spectral_flux_dn_(iprof,__,__),
 					  lbl1.spectral_flux_up_(iprof,__,__),
 					  lbl1.spectral_heating_rate_(iprof,__,__),
+					  spectral_flux_dn_surf,
+					  spectral_flux_up_toa,
 					  flux_weight, flux_profile_weight, broadband_weight,
+					  spectral_boundary_weight,
 					  layer_weight, rel_ckd_flux_dn, rel_ckd_flux_up, 
 					  lbl1.iband_per_g);
       }
@@ -325,7 +333,7 @@ solve_lbfgs(CkdModel<true>& ckd_model,
   data.prior_error = prior_error;
   data.relative_ckd_flux_dn = relative_ckd_flux_dn;
   data.relative_ckd_flux_up = relative_ckd_flux_up;
-  data.negative_od_penalty = 1.0e5;
+  data.negative_od_penalty = 1.0e4;
 
   LOG << "Optimizing coefficients with LBFGS algorithm: max iterations = "
       << max_iterations << ", convergence criterion = " << convergence_criterion << "\n";

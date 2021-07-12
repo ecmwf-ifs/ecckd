@@ -46,9 +46,12 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
 			  const adept::Matrix& flux_dn,           ///< True downwelling flux (W m-2)
 			  const adept::Matrix& flux_up,           ///< True upwelling flux (W m-2)
 			  const adept::Matrix& hr,                ///< True heating rate (K s-1)
+			  const adept::Vector& spectral_flux_dn_surf, ///< g-point surface downward flux (W m-2)
+			  const adept::Vector& spectral_flux_up_toa,  ///< g-point TOA upward flux (W m-2)
 			  adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
 			  adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
 			  adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
+			  adept::Real spectral_boundary_weight,   ///< Weight of spectral boundary fluxes
 			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
 			  adept::Matrix* relative_ckd_flux_dn,    ///< Subtract relative-to flux dn, if not NULL
 			  adept::Matrix* relative_ckd_flux_up,    ///< Subtract relative-to flux up, if not NULL

@@ -121,9 +121,12 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
 			  const adept::Matrix& flux_dn,           ///< True downwelling flux (W m-2)
 			  const adept::Matrix& flux_up,           ///< True upwelling flux (W m-2)
 			  const adept::Matrix& hr,                ///< True heating rate (K s-1)
+			  const adept::Vector& spectral_flux_dn_surf, ///< g-point surface downward flux (W m-2)
+			  const adept::Vector& spectral_flux_up_toa,  ///< g-point TOA upward flux (W m-2)
 			  adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
 			  adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
 			  adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
+			  adept::Real spectral_boundary_weight,   ///< Weight of spectral boundary fluxes
 			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
 			  adept::Matrix* relative_ckd_flux_dn,    ///< Subtract relative-to flux dn, if not NULL
 			  adept::Matrix* relative_ckd_flux_up,    ///< Subtract relative-to flux up, if not NULL
@@ -175,8 +178,14 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
     flux_up_fwd.resize(nlay+1,nband);
     for (int iband = 0; iband < nband; ++iband) {
       intVector index = find(band_mapping == iband);
-      flux_dn_fwd(__,iband) = sum(flux_dn_fwd_orig(__,index),1);
-      flux_up_fwd(__,iband) = sum(flux_up_fwd_orig(__,index),1);
+      // Perhaps there's a bug in Adept, but the following doesn't work
+      //flux_dn_fwd(__,iband) = sum(flux_dn_fwd_orig(__,index),1);
+      //flux_up_fwd(__,iband) = sum(flux_up_fwd_orig(__,index),1);
+      aMatrix tmp;
+      tmp = flux_dn_fwd_orig(__,index);
+      flux_dn_fwd(__,iband) = sum(tmp,1);
+      tmp = flux_up_fwd_orig(__,index);
+      flux_up_fwd(__,iband) = sum(tmp,1);
     }
   }
 
@@ -216,5 +225,14 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
     cost_fn += broadband_weight*sum(interface_weight*(flux_dn_error*flux_dn_error
 						      +flux_up_error*flux_up_error));
   }
+
+  if (spectral_boundary_weight > 0.0 && !spectral_flux_dn_surf.empty() && !spectral_flux_up_toa.empty()) {
+    cost_fn += spectral_boundary_weight
+      * sum(  (flux_dn_fwd_orig(end,__)-spectral_flux_dn_surf)
+	     *(flux_dn_fwd_orig(end,__)-spectral_flux_dn_surf)
+	    + (flux_up_fwd_orig(0  ,__)-spectral_flux_up_toa )
+	     *(flux_up_fwd_orig(0  ,__)-spectral_flux_up_toa ));
+  }
+
   return cost_fn;
 }

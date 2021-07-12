@@ -183,7 +183,7 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping,
     if (file.exist("spectral_flux_dn_direct_surf_sw") 
 	&& file.exist("spectral_flux_up_toa_sw")) {
       if (g_point.empty()) {
-	WARNING << "Surface spectral fluxes ignored because g-point file not provided";
+	WARNING << "Surface/TOA spectral fluxes ignored because g-point file not provided";
 	ENDWARNING;
       }
       else {
@@ -210,10 +210,6 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping,
 	LOG << "\n";
       }
     }
-
-
-
-
 
     ncol = ncol_new;
   }
@@ -263,6 +259,35 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping,
       have_spectral_fluxes = true;
       have_band_fluxes = true;
     }
+    
+    // Read high resolution fluxes at boundaries, if present
+    if (file.exist("spectral_flux_dn_surf_lw") 
+	&& file.exist("spectral_flux_up_toa_lw")) {
+      if (g_point.empty()) {
+	WARNING << "Surface/TOA spectral fluxes ignored because g-point file not provided";
+	ENDWARNING;
+      }
+      else {
+	LOG << "  Mapping high-resolution boundary fluxes to g-points";
+	int ng = maxval(g_point)+1;
+	spectral_flux_dn_surf_.resize(ncol,ng);
+	spectral_flux_up_toa_.resize(ncol,ng);
+	
+	Vector spectral_flux_dn_surf, spectral_flux_up_toa;
+	for (int icol = 0; icol < ncol; ++icol) {
+	  LOG << ".";
+	  file.read(spectral_flux_up_toa, "spectral_flux_up_toa_lw", icol);
+	  file.read(spectral_flux_dn_surf, "spectral_flux_dn_surf_lw", icol);
+	  for (int ig = 0; ig < ng; ++ig) {
+	    intVector index = find(g_point == ig);
+	    spectral_flux_dn_surf_(icol,ig) = sum(spectral_flux_dn_surf(index));
+	    spectral_flux_up_toa_(icol,ig)  = sum(spectral_flux_up_toa(index));
+	  }
+	}
+	LOG << "\n";
+      }
+    }
+
   }
 
   std::string molecules_str, molecule;
