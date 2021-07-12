@@ -1,33 +1,46 @@
 # ---------------------------------------------------------------------------
-# COPYRIGHT    : Alessio Bozzo - ECMWF
-# ----------------------------------------------------------------------------
-# PROJECT      : DORSY
 # FILE         : adept.m4
-# VERSION      : $Revision: $
-# DATE         : $Date: $
-# COMPONENT    : ACM-CAP
-# TYPE         : m4 file
-# IDENTIFIER   : $Id: $
+# COPYRIGHT    : 2018- ECMWF
+# AUTHOR       : Alessio Bozzo
+# LICENSE      : Apache License Version 2.0
 # ----------------------------------------------------------------------------
 #
-# This file contains a macro processor (m4 file) for configure.ac
+# This software is licensed under the terms of the Apache Licence
+# Version 2.0 which can be obtained at
+# http://www.apache.org/licenses/LICENSE-2.0. In applying this
+# licence, ECMWF does not waive the privileges and immunities granted
+# to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
 #
 # ----------------------------------------------------------------------------
 #
-# LICENSE
+# This file contains a macro processor (m4 file) to enable autotools
+# to locate the Adept C++ library (version 2.0 or greater).  The file
+# should be placed in the m4 directory of your package. If you have
+# aclocal.m4 in your top-level directory then it will be found
+# automatically; otherwise you will need the following in your
+# configure.ac file:
+#
+#   m4_include([m4/adept.m4])
+#
+# Usage is then as follows in the configure.ac file
+#
+#   AX_CHECK_ADEPT([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
+#
+# for example:
+#
+#   AX_CHECK_ADEPT([have_adept=yes], [have_adept=no])
+#
+# This creates variables ADEPT_LDFLAGS and ADEPT_CPPFLAGS, and adds
+# them to LDFLAGS and CPPFLAGS.
+#
+# The macro looks for the Adept library in system directories, but the
+# user can specify another location by passing an argument to the
+# configure script as follows:
+#
+#   ./configure --with-adept=/home/me/apps/adept-2.1
+#
 # ----------------------------------------------------------------------------
-#
-# You may obtain a copy of the License distributed with this s/w package, 
-# software distributed under the License is distributed on an “AS IS” BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
-# the License for the specific language governing permissions and limitations 
-# under the License.
-#
-# ----------------------------------------------------------------------------
-
-# AX_CHECK_ADEPT([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-#
-# Upon success, sets the variable ADEPT_LDFLAGS.
 
 dnl defines a custom macro
 AC_DEFUN([AX_CHECK_ADEPT], [
@@ -41,10 +54,10 @@ AC_DEFUN([AX_CHECK_ADEPT], [
       
       AS_IF([test x$adept_prefix != x],
             [AS_IF([test -d "$adept_prefix/lib"],
-                  [ADEPT_LDFLAGS="-L$adept_prefix/lib -Wl,-rpath,$adept_prefix/lib"
+                  [ADEPT_LDFLAGS="-L$adept_prefix/lib -Wl,-rpath,$adept_prefix/lib -ladept"
                   ADEPT_CPPFLAGS="-I$adept_prefix/include"],
 		  [test -d "$adept_prefix/lib64"],
-                  [ADEPT_LDFLAGS="-L$adept_prefix/lib64 -Wl,-rpath,$adept_prefix/lib64"
+                  [ADEPT_LDFLAGS="-L$adept_prefix/lib64 -Wl,-rpath,$adept_prefix/lib64 -ladept"
                   ADEPT_CPPFLAGS="-I$adept_prefix/include"],
                   [AC_MSG_ERROR([
   -----------------------------------------------------------------------------

@@ -28,8 +28,6 @@ AC_SUBST(AM_CFLAGS,"$OPENMP_CXXFLAGS")
 AC_SUBST(AM_CPPFLAGS,"-I../include")
 
 # Check for Adept library, using m4/adept.m4
-LIBS="$LIBS -ladept $OPENMP_CXXFLAGS"
-have_adept=yes
 AX_CHECK_ADEPT([have_adept=yes], [have_adept=no])
 
 # Check for NetCDF library, using m4/netcdf.m4
