@@ -318,10 +318,27 @@ fi
 
 	${BANNER} Finding g-points: $MODEL_CODE
 
+	# When the number of g points is larger than around 30, the
+	# FSCK band structure requires at least 3 methane-specific g
+	# points or the methane forcing is not very accurate
+	CH4_MIN_G_POINTS=
+	if [ "$BANDSTRUCT" = fsck -a $(echo "$TOL < 0.018" | bc -l) = 1 ]
+	then
+	    CH4_MIN_G_POINTS="ch4.min_g_points=3"
+	fi
+
+	# Split the water vapour base g point if number of g points
+	# larger than around 22
+	H2O_BASE_SPLIT=
+	if [ "$BANDSTRUCT" = fsck -a $(echo "$TOL < 0.035" | bc -l) = 1 ]
+	then
+	    H2O_BASE_SPLIT="h2o.base_split=2"
+	fi
+
 	${FIND_G_POINTS} \
 	    heating_rate_tolerance=${TOL} \
 	    output=${WORK_LW_GPOINTS_DIR}/${ECCKD_PREFIX}_lw_gpoints_${MODEL_CODE}.h5 \
-	    $EXTRA_ARGS config_find_g_points_lw_${APP}.cfg \
+	    $EXTRA_ARGS $H2O_BASE_SPLIT $CH4_MIN_G_POINTS config_find_g_points_lw_${APP}.cfg \
 	    |& tee ${WORK_LW_GPOINTS_DIR}/${ECCKD_PREFIX}_lw_gpoints_${MODEL_CODE}.log
 	test "${PIPESTATUS[0]}" -eq 0
     done

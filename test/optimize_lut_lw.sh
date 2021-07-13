@@ -16,7 +16,9 @@ fi
 for OPTIMIZE_MODE in $OPTIMIZE_MODE_LIST
 do
 
-OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.05 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
+#OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.05 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
+
+COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 spectral_boundary_weight=0.1"
 
 case "$OPTIMIZE_MODE" in
 
@@ -29,6 +31,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_CKD_DIR}
 	INCODE=raw-ckd-definition
 	OUTCODE=ckd-definition
+	SPECIFIC_OPTIONS="flux_weight=0.2"
 	;;
 
     zero-minor1)
@@ -44,6 +47,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_RAW_CKD_DIR}
 	INCODE=raw-ckd-definition
 	OUTCODE=raw2-ckd-definition
+	SPECIFIC_OPTIONS="flux_weight=0.2"
 	;;
 
     zero-minor2)
@@ -65,7 +69,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_CKD_DIR}
 	INCODE=raw2-ckd-definition
 	OUTCODE=ckd-definition
-	OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.2 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.2"
 	;;
     
     climate | all-in-one)
@@ -83,6 +87,7 @@ case "$OPTIMIZE_MODE" in
                   ckdmip_evaluation1_lw_fluxes_n2o-190.h5  ckdmip_evaluation1_lw_fluxes_n2o-270.h5
                   ckdmip_evaluation1_lw_fluxes_n2o-405.h5  ckdmip_evaluation1_lw_fluxes_n2o-540.h5
                   ckdmip_evaluation1_lw_fluxes_cfc11-0.h5  ckdmip_evaluation1_lw_fluxes_cfc11-2000.h5"
+	SPECIFIC_OPTIONS="flux_weight=0.2"
 	;;
 
     all1)
@@ -100,7 +105,7 @@ case "$OPTIMIZE_MODE" in
                   ckdmip_evaluation1_lw_fluxes_n2o-190.h5  ckdmip_evaluation1_lw_fluxes_n2o-270.h5
                   ckdmip_evaluation1_lw_fluxes_n2o-405.h5  ckdmip_evaluation1_lw_fluxes_n2o-540.h5
                   ckdmip_evaluation1_lw_fluxes_cfc11-0.h5  ckdmip_evaluation1_lw_fluxes_cfc11-2000.h5"
-	OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.2 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
+	SPECIFIC_OPTIONS="convergence_criterion=0.02 flux_weight=0.2"
 	;;
 
     relative-base)
@@ -136,8 +141,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_RAW_CKD_DIR}
 	INCODE=raw2-ckd-definition
 	OUTCODE=raw3-ckd-definition
-	OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.2 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
-
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.5"
 	;;
 
     relative-minor)
@@ -155,7 +159,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_CKD_DIR}
 	INCODE=raw3-ckd-definition
 	OUTCODE=ckd-definition
-	OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.2 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.5"
 	;;
 
     relative-n2o)
@@ -169,7 +173,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_RAW_CKD_DIR}
 	INCODE=raw3-ckd-definition
 	OUTCODE=raw4-ckd-definition
-	OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.2 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.5"
 	;;
 
     relative-cfc11)
@@ -185,7 +189,21 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_CKD_DIR}
 	INCODE=raw4-ckd-definition
 	OUTCODE=ckd-definition
-	OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.2 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.2"
+	;;
+
+    relative-cfc)
+	# Fourth pass
+        TRAINING="ckdmip_evaluation1_lw_fluxes_present.h5
+                  ckdmip_evaluation1_lw_fluxes_cfc11-0.h5    ckdmip_evaluation1_lw_fluxes_cfc11-2000.h5
+	          ckdmip_evaluation1_lw_fluxes_cfc12-0.h5    ckdmip_evaluation1_lw_fluxes_cfc12-550.h5"
+	EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_evaluation1_lw_fluxes_rel-415.h5"
+	GASLIST="cfc11 cfc12"
+	INDIR=${WORK_LW_RAW_CKD_DIR}
+	OUTDIR=${WORK_LW_CKD_DIR}
+	INCODE=raw4-ckd-definition
+	OUTCODE=ckd-definition
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.2"
 	;;
 
     *)
@@ -215,7 +233,7 @@ append_path ${TRAINING_LW_FLUXES_DIR}:${WORK_LW_LBL_FLUX_DIR}
 gases $GASLIST
 training_input "$TRAINING"
 $(echo $BANDMAPPING | tr "=" " ")
-$(echo $OPTIONS | tr "= " " \n")
+$(echo $COMMON_OPTIONS $SPECIFIC_OPTIONS | tr "= " " \n")
 EOF
 
     for TOL in $TOLERANCE
@@ -223,6 +241,7 @@ EOF
 	MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-tol${TOL}${MODEL_CODE_SUFFIX}
 	${BANNER} Optimizing CKD model: $MODEL_CODE
 
+	GPOINTFILE=${WORK_LW_GPOINTS_DIR}/${ECCKD_PREFIX}_lw_gpoints_${MODEL_CODE}.h5
 	INPUT=${INDIR}/${ECCKD_PREFIX}_lw_${INCODE}_${MODEL_CODE}.nc
 	OUTPUT=${OUTDIR}/${ECCKD_PREFIX}_lw_${OUTCODE}_${MODEL_CODE}.nc
 	LOG=${OUTDIR}/${ECCKD_PREFIX}_lw_${OUTCODE}_${MODEL_CODE}.log
@@ -230,6 +249,7 @@ EOF
 	$OPTIMIZE_LUT \
 	    input=${INPUT} \
 	    output=${OUTPUT} \
+	    gpointfile=${GPOINTFILE} \
 	    model_id=lw_${APPLICATION}_${BANDSTRUCT}-tol${TOL} \
 	    $EXTRA_ARGS \
 	    config_optimize_lut_${OPTIMIZE_MODE}.cfg \

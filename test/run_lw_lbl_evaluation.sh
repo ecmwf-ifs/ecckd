@@ -39,6 +39,7 @@ nspectralstride = $STRIDE,
 nangle          = $NANGLE,
 do_write_planck = .false.,
 do_write_spectral_fluxes = .false.,
+!do_write_spectral_boundary_fluxes = true,
 do_write_optical_depth = .false.,
 band_wavenumber1(1:13) = 0, 350, 500, 630, 700, 820, 980, 1080, 1180, 1390, 1480, 1800, 2080,
 band_wavenumber2(1:13) = 350, 500, 630, 700, 820, 980, 1080, 1180, 1390, 1480, 1800, 2080, 3260,
@@ -57,7 +58,9 @@ mkdir -p $OUTDIR
 
 #SCENARIOS="5gas-180 5gas-280 5gas-415 5gas-560 5gas-1120 5gas-2240"
 SCENARIOS="rel-180 rel-280 rel-415 rel-560 rel-1120 rel-2240"
-SCENARIOS="rel-280 rel-415 rel-560 rel-1120 rel-2240"
+
+# This scenario may be run separately with do_write_spectral_boundary_fluxes=true:
+#SCENARIOS="rel-415"
 
 for SCENARIO in $SCENARIOS
 do

@@ -14,20 +14,19 @@ if [ "$APPLICATION" = climate ]
 then
     # The best strategy for climate CKD models is to optimize first
     # H2O, CO2, O3 and O2+N2, then in subsequent optimization steps to
-    # do the three next minor gases.  CFC12 is already good enough
-    # without optimization.
-    OPTIMIZE_MODE_LIST="relative-base relative-ch4 relative-n2o relative-cfc11"
+    # do the three next minor gases.
+    OPTIMIZE_MODE_LIST="relative-base relative-ch4 relative-n2o relative-cfc"
 else
     unset OPTIMIZE_MODE_LIST
 fi
 
 # Create 18 CKD models
-BAND_STRUCTURE="fsck wide narrow"
-TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
+#BAND_STRUCTURE="fsck wide narrow"
+#TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
 
-# Create just one CKD model
+# Create three FSCK models with 16, 20, 24, 28 and 32 g-points
 BAND_STRUCTURE=fsck
-TOLERANCE=0.02
+TOLERANCE="0.061 0.043 0.03 0.02 0.0161"
 
 # Make variables available to scripts find_g_points_lw.sh onwards
 export TOLERANCE
