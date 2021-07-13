@@ -516,7 +516,6 @@ CkdModel<IsActive>::write(const std::string& file_name,
 
 }
 
-
 /// Create error covariance matrices
 template<>
 void
@@ -654,7 +653,7 @@ CkdModel<true>::calc_background_cost_function(const Vector& delta_x, Vector grad
 /// lead to a negative optical depth if their concentration is zero
 template<>
 void
-CkdModel<true>::cap_relative_linear_coeffts()
+CkdModel<true>::cap_relative_linear_coeffts(Real ref_frac_trigger)
 {
   // First find index of background gas
   int ibggas = -1;
@@ -674,7 +673,6 @@ CkdModel<true>::cap_relative_linear_coeffts()
       LOG << "Unable to cap the coefficients of the relative-linear gases because no background composite gas found\n";
     }
     else {
-      static const Real ref_frac_trigger = 0.8;
       for (int igas = 0; igas < ngas(); ++igas) {
 	SingleGasData<true>& this_gas = single_gas_data_[igas];
 	if (this_gas.is_active

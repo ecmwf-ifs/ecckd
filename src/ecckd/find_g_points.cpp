@@ -747,7 +747,7 @@ main(int argc, const char* argv[])
     // Volume mixing ratios of each gas (mol mol-1)
     Matrix vmr_fl;
 
-    bool have_background = false;
+    //    bool have_background = false;
 
     if (config.exist(gas_str + ".background_input")) {
       LOG << "Generating background optical depth\n";
@@ -756,7 +756,7 @@ main(int argc, const char* argv[])
 			   pressure_hl, temperature_hl,
 			   wavenumber_cm_1, d_wavenumber_cm_1,
 			   bg_optical_depth, bg_molecules, vmr_fl);
-      have_background = true;
+      //      have_background = true;
 
       LOG << "  Reordering\n";
       bg_optical_depth = eval(bg_optical_depth(__,ireorder));

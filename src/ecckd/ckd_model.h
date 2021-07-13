@@ -240,7 +240,7 @@ public:
 
   /// Ensure that gases with a "relative-linear" representation cannot
   /// lead to a negative optical depth if their concentration is zero
-  void cap_relative_linear_coeffts();
+  void cap_relative_linear_coeffts(Real rel_frac_trigger = 0.8);
 
   /// Return the background contribution to cost function, J, and also
   /// the gradient dJ/dx, where delta_x is the difference between the

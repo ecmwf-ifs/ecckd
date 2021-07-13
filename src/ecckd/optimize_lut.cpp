@@ -154,7 +154,7 @@ main(int argc, const char* argv[])
     }
   }
 
-  //  ckd_model.cap_relative_linear_coeffts();
+  ckd_model.cap_relative_linear_coeffts(0.8);
 
   ckd_model.create_error_covariances(prior_error, pressure_corr, temperature_corr, conc_corr,
 				     rayleigh_prior_error);
@@ -263,7 +263,7 @@ main(int argc, const char* argv[])
   std::string config_str;
   config.read(config_str);  
 
-  //  ckd_model.cap_relative_linear_coeffts();
+  //  ckd_model.cap_relative_linear_coeffts(1.0);
   ckd_model.write(output, argc, argv, config_str);
 
   return 0;
