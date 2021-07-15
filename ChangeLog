@@ -1,2 +1,9 @@
+version 0.9
+	- Improved optimization of relative-linear representations (CH4
+	and N2O), included optimization of CFC11
+	- LW scripts produce models with g-point counts divisible by 4
+	- Fixed bug in find_g_points shortwave where SSI was used
+	without having been reordered
+
 version 0.8 (June 2021)
 	- Added copyright statements to source files

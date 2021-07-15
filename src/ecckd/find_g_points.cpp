@@ -300,10 +300,20 @@ public:
 		<< " outside valid range 0-" << npoints-1 << std::endl;
       throw(PROCESSING_ERROR);
     }
-    else if (ibound2 < ibound1) {
+    else if (bound2 < bound1) {
+      std::cout << "*** ERROR: requested bounds out of order: " 
+		<< bound1 << "-" << bound2 << std::endl;
+      throw(PROCESSING_ERROR);
+    }
+    else if (ibound2+1 < ibound1) {
       std::cout << "*** ERROR: requested indices out of order: " 
 		<< ibound1 << "-" << ibound2 << std::endl;
       throw(PROCESSING_ERROR);
+    }
+    else if (ibound2 < ibound1) {
+      // We can get here if the bounds are extremely close: correct
+      // the upper bound
+      ibound2 = ibound1;
     }
 
     //total_comp_cost += ibound2-ibound1+1;
@@ -527,7 +537,8 @@ main(int argc, const char* argv[])
 
   int nwav = 0; // Number of wavenumbers
   // Wavenumber, cm-1
-  Vector wavenumber_cm_1;
+  Vector wavenumber_cm_1;      // May be reordered
+  Vector wavenumber_orig_cm_1; // Original
 
   // If we consider clouds do that first
   std::string cloud_str;
@@ -732,6 +743,8 @@ main(int argc, const char* argv[])
     ireorder(irank) = range(0,irank.size()-1);
 
     sorting_variable = eval(sorting_variable(ireorder));
+    Vector ssi_reorder;
+    ssi_reorder = ssi(ireorder);
 
     // BACKGROUND
   
@@ -757,6 +770,7 @@ main(int argc, const char* argv[])
 			   wavenumber_cm_1, d_wavenumber_cm_1,
 			   bg_optical_depth, bg_molecules, vmr_fl);
       //      have_background = true;
+      wavenumber_orig_cm_1 = wavenumber_cm_1;
 
       LOG << "  Reordering\n";
       bg_optical_depth = eval(bg_optical_depth(__,ireorder));
@@ -865,7 +879,7 @@ main(int argc, const char* argv[])
       // heating rates do not include the upwelling flux contribution
 
       Matrix total_optical_depth = bg_optical_depth + optical_depth;
-      radiative_transfer_direct_sw(cos_sza, ssi,
+      radiative_transfer_direct_sw(cos_sza, ssi_reorder,
 				   total_optical_depth, flux_dn);
 
       if (averaging_method == "total-transmission") {
@@ -878,20 +892,20 @@ main(int argc, const char* argv[])
 	  flux_up_low.resize(nlay+1,nwav);
 	  flux_up_high.resize(nlay+1,nwav);
 	  total_optical_depth = bg_optical_depth + min_scaling * optical_depth;
-	  radiative_transfer_norayleigh_sw(cos_sza, ssi,
+	  radiative_transfer_norayleigh_sw(cos_sza, ssi_reorder,
 					   total_optical_depth, albedo,
 					   flux_dn_low, flux_up_low);
 	  total_optical_depth = bg_optical_depth + max_scaling * optical_depth;
-	  radiative_transfer_norayleigh_sw(cos_sza, ssi,
+	  radiative_transfer_norayleigh_sw(cos_sza, ssi_reorder,
 					   total_optical_depth, albedo,
 					   flux_dn_high, flux_up_high);
 	}
 	else {
 	  total_optical_depth = bg_optical_depth + min_scaling * optical_depth;
-	  radiative_transfer_direct_sw(cos_sza, ssi,
+	  radiative_transfer_direct_sw(cos_sza, ssi_reorder,
 				       total_optical_depth, flux_dn_low);
 	  total_optical_depth = bg_optical_depth + max_scaling * optical_depth;
-	  radiative_transfer_direct_sw(cos_sza, ssi,
+	  radiative_transfer_direct_sw(cos_sza, ssi_reorder,
 				       total_optical_depth, flux_dn_high);
 	}
       }
@@ -1029,7 +1043,7 @@ main(int argc, const char* argv[])
       }
       else {
 	Eq.init_sw(averaging_method, flux_weight, layer_weight,
-		   cos_sza, pressure_hl, ssi, band_albedo(jband),
+		   cos_sza, pressure_hl, ssi_reorder, band_albedo(jband),
 		   flux_dn_surf, flux_up_toa,
 		   bg_optical_depth, metric, hr, ibegin, iend);
 	if (averaging_method == "total-transmission") {
@@ -1076,23 +1090,101 @@ main(int argc, const char* argv[])
 	      && any(base_wavenumber_boundary > band_bound1(jband)
 		     && base_wavenumber_boundary < band_bound2(jband)))) {
 	
-	
-
-	// Work out how many pieces to split the base interval into
-	int nsplit = 1;
+	// Number of partitions in absorption space
+	int nabssplit = 1;
+	// Work out how many absorption partitions needed
 	if (base_split(jband) > 1.0) {
-	  nsplit = base_split(jband);
-	  if (nsplit == 1) {
+	  nabssplit = base_split(jband);
+	  if (nabssplit == 1) {
 	    ERROR << "Positive values of base_split must be at least 2";
 	    THROW(PARAMETER_ERROR);
 	  }
 	}
 	else {
 	  // Always split into at least two
-	  nsplit = 2+static_cast<int>(base_split(jband)*ng);
+	  nabssplit = 2+static_cast<int>(base_split(jband)*ng);
 	}
 
-	LOG << "  Splitting base interval into " << nsplit << " pieces\n";
+	// Work out number of wavenumber partitions needed
+	int nwavsplit = 1 + count(base_wavenumber_boundary > band_bound1(jband)
+				  && base_wavenumber_boundary < band_bound2(jband));
+	Vector wn_bound(nwavsplit+1);
+	wn_bound(0) = band_bound1(jband);
+	wn_bound(end) = band_bound2(jband)+1.0; // Add a small tolerance so that "<" gets everything
+	if (nwavsplit > 1) {
+	  intVector index = find(base_wavenumber_boundary > band_bound1(jband)
+				 && base_wavenumber_boundary < band_bound2(jband));
+	  wn_bound(range(1,end-1)) = base_wavenumber_boundary(index);
+	}
+
+	int nsplit = nwavsplit * nabssplit;
+
+	LOG << "  Splitting base interval into " << nsplit << " pieces: "
+	    << nwavsplit << " by wavenumber * " << nabssplit << " by absorption\n";
+	intVector iwav1(nwavsplit);
+	intVector iwav2(nwavsplit);
+	iwav1(0)   = ibegin;
+	iwav2(end) = iend;
+
+	if (nwavsplit > 1) {
+	  // First we modify the rank of each wavenumber to insert
+	  // sub-bands
+	  int ind1 = Eq.lower_index(bounds[0])+ibegin;
+	  int ind2 = Eq.upper_index(bounds[1])+ibegin;
+	  int ntot = ind2-ind1+1;
+	  iwav1(0) = 0; // Number of wavenumbers treated so far
+	  intVector irank_new;
+	  irank_new = irank;
+	  for (int iwavsplit = 0; iwavsplit < nwavsplit; ++iwavsplit) {
+	    // Find all *reordered* wavenumbers in the specified
+	    // bounds, noting that we don't need a lower limit on
+	    // irank because this is implicit from considering only
+	    // the base g point
+	    if (iwavsplit > 0) {
+	      iwav1(iwavsplit) = iwav2(iwavsplit-1)+1;
+	    }
+	    intVector index = find(wavenumber_cm_1 >= wn_bound(iwavsplit)
+				   && wavenumber_cm_1 < wn_bound(iwavsplit+1)
+				   && irank(ireorder) <= ind2);
+	    iwav2(iwavsplit) = iwav1(iwavsplit) + index.size() - 1;
+	    irank_new(ireorder(index)) = range(iwav1(iwavsplit),iwav2(iwavsplit));
+	    LOG << "    Creating " << wn_bound(iwavsplit) << "-" << wn_bound(iwavsplit+1)
+		<< " cm-1 sub-band: " << index.size() << " spectral points\n";
+	  }
+	  if (iwav2(end) != ind2) {
+	    ERROR << "Failed to account for all wavenumbers in split";
+	    THROW(PARAMETER_ERROR);
+	  }
+	  irank = irank_new;
+	  // Re-reorder some arrays
+	  ireorder(irank)  = range(0,irank.size()-1);
+	  sorting_variable = eval(sorting_variable(ireorder));
+	  ssi_reorder      = ssi(ireorder);
+	}
+
+	// New bounds must lie in range bound[0]=0 and bound[1]
+	Real upper_bound = bounds[1];
+	Real lower_bound_local = bounds[0];
+	// First error is now incorrect
+	error[0] = -1.0;
+	int ibnd = 0;
+	for (int iwavsplit = 0; iwavsplit < nwavsplit; ++iwavsplit) {
+	  Real upper_bound_local = upper_bound * iwav2(iwavsplit)/static_cast<Real>(iwav2(end));
+	  for (int iabssplit = 0; iabssplit < nabssplit; ++iabssplit) {
+	    // Do the insertion for all but the final interval (which
+	    // already has the correct upper bound)
+	    if (iabssplit < nabssplit-1 || iwavsplit < nwavsplit-1) {
+	      bounds.insert(bounds.begin()+ibnd+1, lower_bound_local
+			    + (upper_bound_local-lower_bound_local)*(iabssplit+1)/static_cast<Real>(nabssplit));
+	      error.insert(error.begin()+ibnd, -1.0);
+	      ++ibnd;
+	    }
+	  }
+	  lower_bound_local = upper_bound_local;
+	}
+	ng += nsplit-1;
+
+	/*
 	Real first_bound = bounds[1];
 	// First error is now incorrect
 	error[0] = -1.0;
@@ -1101,6 +1193,7 @@ main(int argc, const char* argv[])
 	  error.insert(error.begin()+ibnd, -1.0);
 	}
 	ng += nsplit-1;
+	*/
 	ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
       }
 
@@ -1108,6 +1201,12 @@ main(int argc, const char* argv[])
       Vector err(&error[0], dimensions(error.size()));
       std::cout << "      bounds = " << bnds << "\n";
       std::cout << "      error  = " << err << "\n";
+
+      if (any(bnds(range(1,end))-bnds(range(0,end-1)) <= 0.0)) {
+	ERROR << "Bounds are not monotonically increasing";
+	THROW(PARAMETER_ERROR);
+      }
+      
       n_g_points_per_band.push_back(ng);
       for (int ig = 0; ig < ng; ++ig) {
 	int ind1 = Eq.lower_index(bounds[ig])+ibegin;
@@ -1121,7 +1220,7 @@ main(int argc, const char* argv[])
 	  median_sorting_var.push_back(calc_median_sorting_variable(sorting_variable, surf_planck, ind1, ind2));
 	}
 	else {
-	  median_sorting_var.push_back(calc_median_sorting_variable(sorting_variable, ssi, ind1, ind2));
+	  median_sorting_var.push_back(calc_median_sorting_variable(sorting_variable, ssi_reorder, ind1, ind2));
 	}
 
 	//g_point(rank_band(range(ind1,ind2))) = ig;
@@ -1364,7 +1463,7 @@ main(int argc, const char* argv[])
   }
 
   if (nwav > 0) {
-    file.write(wavenumber_cm_1, "wavenumber");
+    file.write(wavenumber_orig_cm_1, "wavenumber");
     file.write(g_point, "g_point");
     for (int igas = 0; igas < ngas; ++igas) {
       const SingleGasData& this_gas = single_gas_data[igas];

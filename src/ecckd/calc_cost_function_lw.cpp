@@ -178,14 +178,8 @@ calc_cost_function_ckd_lw(const adept::Vector& pressure_hl,       ///< Pressure 
     flux_up_fwd.resize(nlay+1,nband);
     for (int iband = 0; iband < nband; ++iband) {
       intVector index = find(band_mapping == iband);
-      // Perhaps there's a bug in Adept, but the following doesn't work
-      //flux_dn_fwd(__,iband) = sum(flux_dn_fwd_orig(__,index),1);
-      //flux_up_fwd(__,iband) = sum(flux_up_fwd_orig(__,index),1);
-      aMatrix tmp;
-      tmp = flux_dn_fwd_orig(__,index);
-      flux_dn_fwd(__,iband) = sum(tmp,1);
-      tmp = flux_up_fwd_orig(__,index);
-      flux_up_fwd(__,iband) = sum(tmp,1);
+      flux_dn_fwd(__,iband) = sum(flux_dn_fwd_orig(__,index),1);
+      flux_up_fwd(__,iband) = sum(flux_up_fwd_orig(__,index),1);
     }
   }
 
