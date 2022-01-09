@@ -123,6 +123,13 @@ case "$OPTIMIZE_MODE" in
 	TRAINING="ckdmip_evaluation1_lw_fluxes_rel-180.h5  ckdmip_evaluation1_lw_fluxes_rel-280.h5
                   ckdmip_evaluation1_lw_fluxes_rel-415.h5  ckdmip_evaluation1_lw_fluxes_rel-560.h5
                   ckdmip_evaluation1_lw_fluxes_rel-1120.h5 ckdmip_evaluation1_lw_fluxes_rel-2240.h5"
+	# Optionally add one present-day-like scenario from
+	# Evaluation-2 to increase the scope of the training data
+	if [ "$TRAINING_BOTH" = yes ]
+	then
+	    TRAINING="$TRAINING ckdmip_evaluation2_lw_fluxes_rel-415.h5"
+	fi
+
 	GASLIST="composite h2o o3 co2"
 	INDIR=${WORK_LW_RAW_CKD_DIR}
 	OUTDIR=${WORK_LW_RAW_CKD_DIR}
@@ -138,10 +145,16 @@ case "$OPTIMIZE_MODE" in
 	GASLIST="ch4"
 	EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_evaluation1_lw_fluxes_rel-415.h5"
 	INDIR=${WORK_LW_RAW_CKD_DIR}
+
 	OUTDIR=${WORK_LW_RAW_CKD_DIR}
 	INCODE=raw2-ckd-definition
 	OUTCODE=raw3-ckd-definition
-	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.5"
+	# Convergence appears to be better in some cases when the
+	# penaty for negative optical depths is low (default is 1e4.
+	# Note that operationally the optical depth would always be
+	# capped to be no lower than 0.
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.5 negative_od_penalty=1.0e1"
+	#SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.5"
 	;;
 
     relative-minor)
@@ -255,6 +268,7 @@ EOF
 	    config_optimize_lut_${OPTIMIZE_MODE}.cfg \
 	    |& tee $LOG
 	test "${PIPESTATUS[0]}" -eq 0
+
     done
 done
 

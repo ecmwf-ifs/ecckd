@@ -22,14 +22,14 @@ for BANDSTRUCT in $BAND_STRUCTURE
 do
 
 O3_MIN_G_POINTS=""
-H2O_BASE_SPLIT=""
+CO2_MIN_G_POINTS=""
+H2O_SPLIT=""
+
 if [ "$BANDSTRUCT" = "rgb" -o "$BANDSTRUCT" = "gb" ]
 then
     # Need at least 3 g-points for ozone in the UV band
     O3_MIN_G_POINTS="min_g_points 1 1 1 1 3"
-    # Need to split the base g-point of water vapour for accuracy
-    #    H2O_BASE_SPLIT="base_split 0.34"
-    H2O_BASE_SPLIT="base_split 4"
+    CO2_MIN_G_POINTS="min_g_points 4 1 1 1 1"
 fi
 
 
@@ -67,7 +67,6 @@ gases composite h2o o3
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
   min_scaling 0.1
   max_scaling 10.0
-  $H2O_BASE_SPLIT
 \end h2o
 
 \begin o3
@@ -104,10 +103,10 @@ ssi $MMM_SW_SSI
 iprofile 0
 averaging_method "transmission"
 tolerance_tolerance 0.01
-#flux_weight 0.001 # Previous
+flux_weight 0.001 # Previous
 #flux_weight 0.0002
 #flux_weight 0.2
-flux_weight 0.1
+#flux_weight 0.1
 min_pressure ${MIN_PRESSURE}
 max_iterations 60
 
@@ -129,7 +128,6 @@ gases h2o o3 ch4 n2o co2 o2n2
 ckdmip_mmm_sw_spectra_o3_minimum.h5"
   min_scaling 0.1
   max_scaling 10.0
-  $H2O_BASE_SPLIT
 \end h2o
 
 \begin o3
@@ -153,6 +151,7 @@ ckdmip_mmm_sw_spectra_o2n2_constant.h5"
   background_conc -1 -1 350e-9 190e-9 -1
   min_scaling 0.43
   max_scaling 5.4
+  $CO2_MIN_G_POINTS
 \end co2
 
 \begin ch4
@@ -227,7 +226,6 @@ gases composite h2o o3
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
   min_scaling 0.1
   max_scaling 10.0
-  $H2O_BASE_SPLIT
 \end h2o
 
 \begin o3
@@ -272,18 +270,56 @@ fi
 	# Reduce the tolerance for the UV band of the RGB band
 	# structure
 	TOL_BAND=$TOL
+	# if [ "$BANDSTRUCT" = rgb ]
+	# then
+	#     TOL_BAND="$TOL $TOL $TOL $TOL $(echo $TOL/10.0 | bc -l)"
+	# elif [ "$BANDSTRUCT" = gb ]
+	# then
+	#     TOL_BAND="$TOL $TOL $TOL $TOL $(echo $TOL/15.0 | bc -l)"
+	# fi
+
+	# We need at least two N2O-specific g points to get reasonable
+	# N2O forcing, but this is not really very important so we
+	# only force the extra g point when the total number of g
+	# points is larger than around 28
+	N2O_MIN_G_POINTS=
+	if [ "$BANDSTRUCT" = rgb -a $(echo "$TOL < 0.05" | bc -l) = 1 ]
+	then
+	    N2O_MIN_G_POINTS="n2o.min_g_points=2"
+	fi
+
+	# Optionally split the near-IR water vapour spectrum into 2 or
+	# 3 subbands, using bash arrays to allow for correct expansion
+	# of h2o.subband_wavenumber_boundary if it contains a space
+	unset H2O_SPLIT
 	if [ "$BANDSTRUCT" = rgb ]
 	then
-	    TOL_BAND="$TOL $TOL $TOL $TOL $(echo $TOL/10.0 | bc -l)"
-	elif [ "$BANDSTRUCT" = gb ]
+	    if [ $(echo "$TOL < 0.1" | bc -l) = 1 ]
+	    then
+		#H2O_SPLIT=(h2o.g_split=0.65 "h2o.subband_wavenumber_boundary=7150 10500")
+		#H2O_SPLIT=(h2o.g_split=0.75 "h2o.subband_wavenumber_boundary=5350 7150 8700 10650")
+		H2O_SPLIT=(h2o.g_split=0.7 "h2o.subband_wavenumber_boundary=5350 7150 8700 10650" co2.min_g_points=6 "h2o.max_g_points=256 1")
+		#H2O_SPLIT=(h2o.g_split=0.7 "h2o.subband_wavenumber_boundary=7150 8700 10650" co2.min_g_points=6)
+	    else
+		H2O_SPLIT=(h2o.g_split=0.65 h2o.subband_wavenumber_boundary=7150)
+	    fi
+	fi
+
+	# O2N2 composite includes Rayleigh, but is reluctant to split
+	# for some reason even when Rayleigh is strong.  This is
+	# mainly needed in the visible bands where there is little
+	# ozone.
+	O2N2_MIN_G_POINTS="o2n2.min_g_points=1"
+	if [ "$BANDSTRUCT" = narrow -a $(echo "$TOL < 0.05" | bc -l) = 1 ]
 	then
-	    TOL_BAND="$TOL $TOL $TOL $TOL $(echo $TOL/15.0 | bc -l)"
+	    O2N2_MIN_G_POINTS="o2n2.min_g_points=1 1 1 1 1 1 1 1 1 2 3 1 1"
 	fi
 
 	${FIND_G_POINTS} \
 	    "heating_rate_tolerance=${TOL_BAND}" \
 	    output=${WORK_SW_GPOINTS_DIR}/${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.h5 \
-	    $EXTRA_ARGS config_find_g_points_sw_${APP}.cfg \
+	    $EXTRA_ARGS $N2O_MIN_G_POINTS "${H2O_SPLIT[@]}" "$O2N2_MIN_G_POINTS" \
+	    config_find_g_points_sw_${APP}.cfg \
 	    |& tee ${WORK_SW_GPOINTS_DIR}/${ECCKD_PREFIX}_sw_gpoints_${MODEL_CODE}.log
 	test "${PIPESTATUS[0]}" -eq 0
     done

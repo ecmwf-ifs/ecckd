@@ -23,6 +23,19 @@ COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.1 flux_profil
 # Too much broadband weight in GB, because the error is dominated by the first band
 #COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 spectral_boundary_weight=0.1"
 COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 spectral_boundary_weight=0.0"
+# Tried with "double" and "rgb"
+COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
+
+COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
+# Tried max_no_rayleigh_wavenumber=15000 but TOA fluxes were improved
+# at the expense of surface fluxes, and it was a disaster for CH4 and
+# N2O
+
+# Testing values of spectral_boundary_weight of 0, 0.05 and 0.1
+# clearly show that 0 is best for broadband fluxes because the
+# permitted trade of errors between g points. The nonzero values lead
+# to slightly better fluxes per g point, but for cloud radiative
+# effect there is nothing to distinguish the three values.
 
 case "$OPTIMIZE_MODE" in
 
@@ -52,7 +65,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_SW_RAW_CKD_DIR}
 	INCODE=raw-ckd-definition
 	OUTCODE=raw2-ckd-definition
-        SPECIFIC_OPTIONS="convergence_criterion=0.01"
+        SPECIFIC_OPTIONS="convergence_criterion=0.01 spectral_boundary_weight=0.0"
 	;;
 
     relative-base)
@@ -70,6 +83,12 @@ case "$OPTIMIZE_MODE" in
 	TRAINING="ckdmip_evaluation1_sw_fluxes_rel-180.h5  ckdmip_evaluation1_sw_fluxes_rel-280.h5
                   ckdmip_evaluation1_sw_fluxes_rel-415.h5  ckdmip_evaluation1_sw_fluxes_rel-560.h5
                   ckdmip_evaluation1_sw_fluxes_rel-1120.h5 ckdmip_evaluation1_sw_fluxes_rel-2240.h5"
+	# Optionally add one present-day-like scenario from
+	# Evaluation-2 to increase the scope of the training data
+	if [ "$TRAINING_BOTH" = yes ]
+	then
+	    TRAINING="$TRAINING ckdmip_evaluation2_sw_fluxes_rel-415.h5"
+	fi
 	GASLIST="composite h2o o3 co2"
 	INDIR=${WORK_SW_RAW_CKD_DIR}
 	OUTDIR=${WORK_SW_RAW_CKD_DIR}
@@ -78,7 +97,8 @@ case "$OPTIMIZE_MODE" in
 	OUTCODE=raw2-ckd-definition
 # New 21 May
 	#OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.075 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
-        SPECIFIC_OPTIONS="convergence_criterion=0.01"
+        #SPECIFIC_OPTIONS="convergence_criterion=0.01 spectral_boundary_weight=0.05"
+        SPECIFIC_OPTIONS="convergence_criterion=0.01 spectral_boundary_weight=0.0"
 	#"rayleigh_prior_error=1.0"
 	;;
 
@@ -152,7 +172,8 @@ do
 	BANDMAPPING="band_mapping=0 0 0 0 0 0 0 0 0 0 0 0 0"
     elif [ "$BANDSTRUCT" = double ]
     then
-	BANDMAPPING="band_mapping=0 0 0 0 0 0 0 0 1 1 1 1 1"
+	#BANDMAPPING="band_mapping=0 0 0 0 0 0 0 0 1 1 1 1 1"
+	BANDMAPPING="band_mapping=0 0 0 0 0 0 0 0 0 1 1 1 1"
     elif [ "$BANDSTRUCT" = rgb ]
     then
 	# Assume we are training from the sw_fluxes-rgb LBL files

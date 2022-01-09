@@ -24,9 +24,13 @@ fi
 #BAND_STRUCTURE="fsck wide narrow"
 #TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
 
-# Create three FSCK models with 16, 20, 24, 28 and 32 g-points
+# Create FSCK models with 16, 20, 24, 28 and 32 g-points
 BAND_STRUCTURE=fsck
 TOLERANCE="0.061 0.043 0.03 0.02 0.0161"
+
+# Create a reference CKD model with 64 points
+#BAND_STRUCTURE=narrow
+#TOLERANCE=0.013
 
 # Make variables available to scripts find_g_points_lw.sh onwards
 export TOLERANCE
