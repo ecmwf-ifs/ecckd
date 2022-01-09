@@ -674,13 +674,13 @@ main(int argc, const char* argv[])
     }
     LOG << "Reading " << reordering_input << "\n";
     DataFile order_file(reordering_input);
-    Vector sorting_variable;
+    Vector sorting_variable, sorting_variable_orig;
     intVector irank, iband;
     order_file.read(irank, "rank");
     order_file.read(iband, "band_number");
     order_file.read(band_bound1, "wavenumber1_band");
     order_file.read(band_bound2, "wavenumber2_band");
-    order_file.read(sorting_variable, "sorting_variable");
+    order_file.read(sorting_variable_orig, "sorting_variable");
     nband = band_bound1.size();
 
     // Read some band-specific configuration for this gas
@@ -690,21 +690,47 @@ main(int argc, const char* argv[])
       LOG << "Base g-points will be split at wavenumbers " << base_wavenumber_boundary << "\n";
     }
 
-    // First the number of pieces into which the base g-point in each
-    // band should be split after applying the equipartition
-    // method. In the near-infrared this is necessary for water
-    // vapour.  A value of 1 means do nothing, an integer greater than
-    // 1 means split into exactly this number, while a fraction less
-    // than 1 means that the number of pieces should be 2 plus the
-    // rounded-down result of multiplying this fraction by the
-    // existing total number of g-points for this gas and band
+    // If g_split is greater than zero for any band then g space for
+    // that band is split at that value: values with a larger g (more
+    // optically thick) are partitioned as normal, while those with a
+    // smaller g are partitioned in sub-bands defined by wavenumbers
+    // in subband_wavenumber_boundary
+    Vector g_split_raw;
+    Vector g_split(nband);
+    bool have_g_split = false;
+    Vector subband_wavenumber_boundary;
+    g_split = -1.0;
+    if (config.read(g_split_raw, gas_str, "g_split")) {
+      have_g_split = true;
+      int nsize = std::min(nband, g_split_raw.size());
+      g_split(range(0,nsize-1)) = g_split_raw(range(0,nsize-1));
+      if (!config.read(subband_wavenumber_boundary, gas_str, 
+		       "subband_wavenumber_boundary")) {
+	ERROR << "g_split must be accompanied by subband_wavenumber_boundary";
+	THROW(PARAMETER_ERROR);
+      }
+      LOG << "Bands will be split at g values according to: " << g_split << "\n";
+    }
+
+    // Alternatively, specify the number of pieces into which the base
+    // g-point in each band should be split after applying the
+    // equipartition method. In the near-infrared this is necessary
+    // for water vapour.  A value of 1 means do nothing, an integer
+    // greater than 1 means split into exactly this number, while a
+    // fraction less than 1 means that the number of pieces should be
+    // 2 plus the rounded-down result of multiplying this fraction by
+    // the existing total number of g-points for this gas and band
     Vector base_split_raw;
     Vector base_split(nband);
     base_split = 1.0;
     if (config.read(base_split_raw, gas_str, "base_split")) {
+      if (have_g_split) {
+	ERROR << "Cannot use both g_split and base_split";
+	THROW(PARAMETER_ERROR);
+      }
       int nsize = std::min(nband, base_split_raw.size());
       base_split(range(0,nsize-1)) = base_split_raw(range(0,nsize-1));
-      LOG << "Base g-points will be split according to: " << base_split << "\n";
+      LOG << "Base g-points of each band will be split according to: " << base_split << "\n";
     }
 
     // The minimum number of g points to use in each band (default 1)
@@ -714,6 +740,15 @@ main(int argc, const char* argv[])
     if (config.read(min_g_points_raw, gas_str, "min_g_points")) {
       int nsize = std::min(nband, min_g_points_raw.size());
       min_g_points(range(0,nsize-1)) = min_g_points_raw(range(0,nsize-1));
+    }
+
+    // The maximum number of g points to use in each band (default 256)
+    intVector max_g_points_raw;
+    intVector max_g_points(nband);
+    max_g_points = 256;
+    if (config.read(max_g_points_raw, gas_str, "max_g_points")) {
+      int nsize = std::min(nband, max_g_points_raw.size());
+      max_g_points(range(0,nsize-1)) = max_g_points_raw(range(0,nsize-1));
     }
 
     // Set the albedo by band
@@ -742,9 +777,95 @@ main(int argc, const char* argv[])
     intVector ireorder(irank.size());
     ireorder(irank) = range(0,irank.size()-1);
 
-    sorting_variable = eval(sorting_variable(ireorder));
+    sorting_variable = eval(sorting_variable_orig(ireorder));
     Vector ssi_reorder;
-    ssi_reorder = ssi(ireorder);
+    if (do_sw) {
+      ssi_reorder = ssi(ireorder);
+    }
+
+    // Do we need to create subbands?
+
+    // Number of subbands in each band
+    intVector nsubband(nband);
+    nsubband = 0;
+    // Upper index of each band
+    intVector iupperindex(nband);
+    iupperindex = -1;
+    // Indices to start and end of subband
+    intMatrix isubband1, isubband2;
+    if (have_g_split) {
+      isubband1.resize(nband,subband_wavenumber_boundary.size()+1);
+      isubband1 = -1;
+      isubband2 = isubband1;
+      // We need reordered wavenumber a little earlier than expected
+      order_file.read(wavenumber_orig_cm_1, "wavenumber");
+      wavenumber_cm_1 = eval(wavenumber_orig_cm_1(ireorder));
+      for (int jband = 0; jband < nband; ++jband) {
+	if (g_split(jband) > 0.0
+	    && any(subband_wavenumber_boundary > band_bound1(jband)
+		   && subband_wavenumber_boundary < band_bound2(jband))) {
+	  intVector ibandloc = find(iband == jband);
+	  // Find ranks of: least optically thick point in band
+	  // (irank1), most optically thick (irank3) and highest point
+	  // in g-space where band will be divided (irank2)
+	  int irank1 = ibandloc(0);
+	  int irank3 = ibandloc(end);
+	  int irank2 = irank3;
+	  iupperindex(jband) = irank3;
+	  if (g_split(jband) < 1.0) {
+	    irank2 = ibandloc(0) + g_split(jband)*(irank3-irank1);
+	  }
+
+	  // Work out number of subbands needed
+	  int nsub = 1
+	    + count(subband_wavenumber_boundary > band_bound1(jband)
+		    && subband_wavenumber_boundary < band_bound2(jband));
+	  nsubband(jband) = nsub;
+	  Vector wn_bound(nsub+1);
+	  wn_bound(0) = band_bound1(jband);
+	  wn_bound(end) = band_bound2(jband)+1.0; // Add a small tolerance so that "<" gets everything
+	  if (nsub > 1) {
+	    intVector index = find(subband_wavenumber_boundary > band_bound1(jband)
+				   && subband_wavenumber_boundary < band_bound2(jband));
+	    wn_bound(range(1,end-1)) = subband_wavenumber_boundary(index);
+	  }
+	  
+	  LOG << "  Splitting optically thin part of band " << jband
+	      << " into into " << nsub << " sub-bands\n";
+	  intVector irank_new;
+	  irank_new = irank;
+	  isubband1(jband,0) = irank1;
+	  for (int isub = 0; isub < nsub; ++isub) {
+	    // Find all *reordered* wavenumbers in the specified
+	    // bounds
+	    if (isub > 0) {
+	      isubband1(jband,isub) = isubband2(jband,isub-1)+1;
+	    }
+	    intVector index = find(wavenumber_cm_1 >= wn_bound(isub)
+				   && wavenumber_cm_1 < wn_bound(isub+1)
+				   && irank(ireorder) >= irank1
+				   && irank(ireorder) <= irank2);
+	    isubband2(jband,isub) = isubband1(jband,isub) + index.size() - 1;
+	    irank_new(ireorder(index)) = range(isubband1(jband,isub),
+					       isubband2(jband,isub));
+	    LOG << "    Creating " << wn_bound(isub) << "-" << wn_bound(isub+1)
+		<< " cm-1 sub-band: " << index.size() << " spectral points\n";
+	  }
+	  if (isubband2(jband,nsub-1) != irank2) {
+	    ERROR << "Failed to account for all wavenumbers in split";
+	    THROW(PARAMETER_ERROR);
+	  }
+	  irank = irank_new;
+	  // Re-reorder some arrays
+	  ireorder(irank)  = range(0,irank.size()-1);
+	  sorting_variable = eval(sorting_variable_orig(ireorder));
+	  wavenumber_cm_1  = eval(wavenumber_orig_cm_1(ireorder));
+	  if (do_sw) {
+	    ssi_reorder    = ssi(ireorder);
+	  }
+	}
+      }      
+    }
 
     // BACKGROUND
   
@@ -1031,9 +1152,9 @@ main(int argc, const char* argv[])
       intVector band_index = find(iband == jband);
       int ibegin = band_index(0);
       int iend   = band_index(end);
-      //      intVector rank_band = irank(band_index);
-      //std::cout << "ibegin = " << ibegin << "  iend = " << iend << std::endl;
+
       CkdEquipartition Eq;
+      EpStatus istatus;
 
       if (!do_sw) {
 	Eq.init_lw(averaging_method, flux_weight, layer_weight,
@@ -1059,25 +1180,71 @@ main(int argc, const char* argv[])
 #define PARTITION_BY_ERROR 1
 #ifdef PARTITION_BY_ERROR
       std::vector<ep_real> bounds, error;
-      EpStatus istatus = Eq.equipartition_e(heating_rate_tolerance(jband), 
-					    0.0, 1.0, ng, bounds, error);
-      if (ng < min_g_points(jband)) {
-	ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
-	std::cout << "      computational cost = " << Eq.total_comp_cost << "\n";
-	LOG << "  " << ng << " intervals is fewer than minimum of " << min_g_points(jband) << "\n";
-	ng = min_g_points(jband);
-	bounds.resize(ng+1);
-	error.resize(ng);
-	// Set initial bounds
-	for (int ibound = 0; ibound < ng+1; ++ibound) {
-	  bounds[ibound] = sqrt(static_cast<Real>(ibound) / static_cast<Real>(ng));
+      if (nsubband(jband) > 1) {
+	ng = 0;
+	for (int jsub = 0; jsub < nsubband(jband); ++jsub) {
+	  std::vector<ep_real> subbounds, suberror;
+	  int nsubg = 4;
+	  ep_real g_start = (isubband1(jband,jsub)-isubband1(jband,0))
+	    / static_cast<ep_real>(iupperindex(jband)-isubband1(jband,0));
+	  ep_real g_end = (isubband2(jband,jsub)-isubband1(jband,0))
+	    / static_cast<ep_real>(iupperindex(jband)-isubband1(jband,0));
+	  LOG << "  Subband " << jsub << ": g range " << g_start << "-" << g_end << "\n";
+	  istatus = Eq.equipartition_e(heating_rate_tolerance(jband), 
+				       g_start, g_end, nsubg, subbounds, suberror);
+	  bounds.insert(bounds.begin()+ng, subbounds.begin(), subbounds.end());
+	  error.insert(error.end(), suberror.begin(), suberror.end());
+	  ng += nsubg; 
 	}
-	istatus = Eq.equipartition_n(ng, &bounds[0], &error[0]);	
+	if (g_split(jband) < 1.0) {
+	  std::vector<ep_real> subbounds, suberror;
+	  int nsubg = 4;
+	  ep_real g_start = (isubband2(jband,nsubband(jband)-1)-isubband1(jband,0))
+	    / static_cast<ep_real>(iupperindex(jband)-isubband1(jband,0));
+	  ep_real g_end = 1.0;
+	  LOG << "  Final overrarching subband: g range " << g_start << "-" << g_end << "\n";
+	  istatus = Eq.equipartition_e(heating_rate_tolerance(jband), 
+				       g_start, g_end, nsubg, subbounds, suberror);
+	  bounds.insert(bounds.begin()+ng, subbounds.begin(), subbounds.end());
+	  error.insert(error.end(), suberror.begin(), suberror.end());
+	  ng += nsubg; 
+	}
+	bounds.resize(ng+1);
+      }
+      else {
+	istatus = Eq.equipartition_e(heating_rate_tolerance(jband), 
+				     0.0, 1.0, ng, bounds, error);
+	if (ng < min_g_points(jband)) {
+	  ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
+	  std::cout << "      computational cost = " << Eq.total_comp_cost << "\n";
+	  LOG << "  " << ng << " intervals is fewer than minimum of " << min_g_points(jband) << "\n";
+	  ng = min_g_points(jband);
+	  bounds.resize(ng+1);
+	  error.resize(ng);
+	  // Set initial bounds
+	  for (int ibound = 0; ibound < ng+1; ++ibound) {
+	    bounds[ibound] = sqrt(static_cast<Real>(ibound) / static_cast<Real>(ng));
+	  }
+	  istatus = Eq.equipartition_n(ng, &bounds[0], &error[0]);	
+	}
+	else if (ng > max_g_points(jband)) {
+	  ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
+	  std::cout << "      computational cost = " << Eq.total_comp_cost << "\n";
+	  LOG << "  " << ng << " intervals is more than maximum of " << max_g_points(jband) << "\n";
+	  ng = max_g_points(jband);
+	  bounds.resize(ng+1);
+	  error.resize(ng);
+	  // Set initial bounds
+	  for (int ibound = 0; ibound < ng+1; ++ibound) {
+	    bounds[ibound] = sqrt(static_cast<Real>(ibound) / static_cast<Real>(ng));
+	  }
+	  istatus = Eq.equipartition_n(ng, &bounds[0], &error[0]);	
+	}
       }
 #else
       Vector bounds(ng+1), error(ng);
       bounds = sqrt(linspace(0.0, 1.0, ng+1));
-      EpStatus istatus = Eq.equipartition_n(ng, &bounds[0], &error[0]);
+      istatus = Eq.equipartition_n(ng, &bounds[0], &error[0]);
 #endif
 
       ep_print_result(istatus, 1, ng, &bounds[0], &error[0]);
@@ -1159,7 +1326,10 @@ main(int argc, const char* argv[])
 	  // Re-reorder some arrays
 	  ireorder(irank)  = range(0,irank.size()-1);
 	  sorting_variable = eval(sorting_variable(ireorder));
-	  ssi_reorder      = ssi(ireorder);
+	  wavenumber_cm_1  = eval(wavenumber_cm_1(ireorder));
+	  if (do_sw) {
+	    ssi_reorder    = ssi(ireorder);
+	  }
 	}
 
 	// New bounds must lie in range bound[0]=0 and bound[1]

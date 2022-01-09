@@ -197,8 +197,8 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping,
 	for (int icol = 0; icol < ncol; ++icol) {
 	  LOG << ".";
 	  for (int isza = 0; isza < nsza; ++isza) {
-	    file.read(spectral_flux_up_toa, "spectral_flux_up_toa_sw", icol, isza);
-	    file.read(spectral_flux_dn_surf, "spectral_flux_dn_direct_surf_sw", icol, isza);
+	    file.read(spectral_flux_up_toa, "spectral_flux_up_toa_sw", icol, index_sza(isza));
+	    file.read(spectral_flux_dn_surf, "spectral_flux_dn_direct_surf_sw", icol, index_sza(isza));
 	    for (int ig = 0; ig < ng; ++ig) {
 	      intVector index = find(g_point == ig);
 	      spectral_flux_dn_surf_(icol_new,ig) = sum(spectral_flux_dn_surf(index));

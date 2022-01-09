@@ -37,7 +37,6 @@ calc_cost_function_sw(adept::Real cos_sza,
   static const Real hr_weight = 3600.0*24.0;
 
   int nlay = pressure_hl.size()-1;
-  int nwav = ssi.size();
 
   Vector hr_true;
   Real flux_dn_surf_true;
