@@ -1,9 +1,12 @@
-version 0.9
+version 1.0 (January 2022)
 	- Improved optimization of relative-linear representations (CH4
 	and N2O), included optimization of CFC11
 	- LW scripts produce models with g-point counts divisible by 4
 	- Fixed bug in find_g_points shortwave where SSI was used
 	without having been reordered
+	- Introduced use of sub-bands for the near-infrared
+	- Added capability to use Adept's minimizers in optimize_lut.cpp,
+	requiring Adept version >= 2.1
 
 version 0.8 (June 2021)
 	- Added copyright statements to source files
