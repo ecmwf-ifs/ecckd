@@ -1,5 +1,17 @@
 #!/bin/bash
-# Reorder the spectra of H2O, O3 and the composite of well-mixed gases
+#
+# (C) Copyright 2019- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+#
+# This script reorders the shortwave spectra of H2O, O3 and the
+# composite of well-mixed gases. It is called from do_all_sw.sh and
+# should not be run directly.
 
 . config.h
 

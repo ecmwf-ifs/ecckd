@@ -1,5 +1,14 @@
 #!/bin/bash
-
+#
+# (C) Copyright 2019- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+#
 # To train CKD models for climate, we first optimize four gases: H2O,
 # O3, CO2 and the composite of O2 and N2.  This is done by comparing
 # to LBL calculations with the other gases set to zero.

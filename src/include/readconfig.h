@@ -1,5 +1,12 @@
 /* readconfig.h -- Functions to read configuration information from a file
-   Copyright (C) 2003-2005 Robin Hogan <r.j.hogan@reading.ac.uk> */
+
+   Copyright (C) 2003-2005 The University of Reading
+   Author: Robin Hogan <r.j.hogan@reading.ac.uk>
+
+   This software is licensed under the terms of the Apache Licence
+   Version 2.0 which can be obtained at
+   http://www.apache.org/licenses/LICENSE-2.0.
+*/
 
 #ifndef _READCONFIG_H
 #define _READCONFIG_H 1

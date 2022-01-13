@@ -1,11 +1,10 @@
 /* Timer.h - Utility class for timing different parts of a program
 
   Copyright (C) 2012-2014 The University of Reading
+  Author: Robin Hogan <r.j.hogan@reading.ac.uk>
 
-  Copying and distribution of this file, with or without modification,
-  are permitted in any medium without royalty provided the copyright
-  notice and this notice are preserved.  This file is offered as-is,
-  without any warranty.
+  This software is licensed under the terms of the Apache Licence Version 2.0
+  which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 */
 
 #ifndef Timer_H
