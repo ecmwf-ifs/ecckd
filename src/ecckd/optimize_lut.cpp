@@ -16,6 +16,7 @@
 #include "ckd_model.h"
 #include "lbl_fluxes.h"
 #include "solve_lbfgs.h"
+#include "solve_adept.h"
 #include "floating_point_exceptions.h"
 #include "DataFile.h"
 #include "file_manager.h"
@@ -86,7 +87,7 @@ main(int argc, const char* argv[])
   Real broadband_weight = 0.5;
   Real prior_error = 1.0;
   Real rayleigh_prior_error = 0.0;
-  Real spectral_boundary_weight = 0.1;
+  Real spectral_boundary_weight = 0.0;
 
   Real temperature_corr = 0.5;
   Real pressure_corr = 0.5;
@@ -123,6 +124,9 @@ main(int argc, const char* argv[])
 
   int max_iterations = 3000;
   config.read(max_iterations, "max_iterations");
+
+  Real negative_od_penalty = 1.0e4;
+  config.read(negative_od_penalty, "negative_od_penalty");
 
   if (config.exist("band_mapping")) {
     config.read(band_mapping, "band_mapping");
@@ -252,13 +256,26 @@ main(int argc, const char* argv[])
     THROW(PARAMETER_ERROR);
   }
 
+#define USE_LBFGS_LIBRARY 1
+#ifdef USE_LBFGS_LIBRARY
   int status = solve_lbfgs(ckd_model, training_data,
 			   flux_weight, flux_profile_weight, broadband_weight,
 			   spectral_boundary_weight, prior_error,
 			   max_iterations, convergence_criterion,
+			   negative_od_penalty,
 			   relative_ckd_flux_dn, relative_ckd_flux_up);
 
   LOG << "Convergence status: " << lbfgs_status_string(status) << "\n";
+#else
+  adept::MinimizerStatus status = solve_adept(ckd_model, training_data,
+			   flux_weight, flux_profile_weight, broadband_weight,
+			   spectral_boundary_weight, prior_error,
+			   max_iterations, convergence_criterion,
+			   negative_od_penalty,
+			   relative_ckd_flux_dn, relative_ckd_flux_up);
+
+  LOG << "Convergence status: " << adept::minimizer_status_string(status) << "\n";
+#endif
 
   std::string config_str;
   config.read(config_str);  

@@ -27,6 +27,8 @@ libecckd_a_SOURCES = \
 	lbl_fluxes.cpp \
 	solve_lbfgs.h \
 	solve_lbfgs.cpp \
+	solve_adept.h \
+	solve_adept.cpp \
 	single_gas_data.h \
 	single_gas_data.cpp \
 	equipartition.h \

@@ -15,7 +15,7 @@
 # ----------------------------------------------------------------------------
 #
 # This file contains a macro processor (m4 file) to enable autotools
-# to locate the Adept C++ library (version 2.0 or greater).  The file
+# to locate the Adept C++ library (version 2.1 or greater).  The file
 # should be placed in the m4 directory of your package. If you have
 # aclocal.m4 in your top-level directory then it will be found
 # automatically; otherwise you will need the following in your
@@ -74,13 +74,13 @@ AC_DEFUN([AX_CHECK_ADEPT], [
       CPPFLAGS="$ADEPT_CPPFLAGS $CPPFLAGS"
       ax_have_adept=yes
       dnl checks for ADEPT
-      AC_MSG_CHECKING([for Adept >= 2.0.4: including adept_arrays.h and linking via -ladept])
+      AC_MSG_CHECKING([for Adept >= 2.1: including adept_arrays.h and linking via -ladept])
       AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <adept_arrays.h>
       #include <string>
-      #if ADEPT_VERSION < 20004
-      #error "Adept version >= 2.0.4 required"
+      #if ADEPT_VERSION < 20100
+      #error "Adept version >= 2.1 required"
       #endif],[std::string test = adept::compiler_version()])],AC_MSG_RESULT([yes]),AC_MSG_RESULT([no])
-      AC_MSG_ERROR([Unable to find Adept library version >= 2.0.4]))
+      AC_MSG_ERROR([Unable to find Adept library version >= 2.1]))
 
       AS_IF([test "x$ax_have_adept" = xyes],
             dnl outputing Adept Library
