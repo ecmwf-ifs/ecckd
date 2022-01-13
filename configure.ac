@@ -40,7 +40,6 @@ AM_COND_IF([HAVE_NETCDF], AC_SUBST([NETCDF_DIR], [$netcdf_prefix]))
 AC_CONFIG_FILES([Makefile
                  src/tools/Makefile
                  src/ecckd/Makefile
-		 src/lbfgs/Makefile
 		 test/version.h])
 
 # Provide a summary to the user

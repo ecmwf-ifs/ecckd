@@ -25,8 +25,6 @@ libecckd_a_SOURCES = \
 	average_optical_depth.cpp \
 	lbl_fluxes.h \
 	lbl_fluxes.cpp \
-	solve_lbfgs.h \
-	solve_lbfgs.cpp \
 	solve_adept.h \
 	solve_adept.cpp \
 	single_gas_data.h \
@@ -61,4 +59,4 @@ test_equipartition_SOURCES = test_equipartition.cpp
 
 scale_lut_SOURCES = scale_lut.cpp
 
-LDADD = ./libecckd.a ../tools/libtools.a ../lbfgs/liblbfgs.a
+LDADD = ./libecckd.a ../tools/libtools.a
