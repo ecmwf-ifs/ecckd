@@ -14,6 +14,7 @@ unset OMP_NUM_THREADS
 SET=evaluation1
 
 INDIR=$TRAINING_SW_SPECTRA_DIR
+
 OUTDIR=$WORK_SW_LBL_FLUX_DIR
 
 INPREFIX=$INDIR/ckdmip_${SET}_sw_spectra_
@@ -37,7 +38,7 @@ wavenumber_name = "wavenumber",
 pressure_name = "pressure_hl",
 temperature_name = "temperature_hl",
 do_write_spectral_fluxes = false,
-do_write_spectral_boundary_fluxes = true,
+!do_write_spectral_boundary_fluxes = true,
 do_write_optical_depth   = false,
 surf_albedo = 0.15,
 use_mu0_dimension = true,
@@ -57,6 +58,9 @@ EOF
 mkdir -p $OUTDIR
 
 SCENARIOS="rel-180 rel-280 rel-415 rel-560 rel-1120 rel-2240"
+
+# This scenario may be run separately with do_write_spectral_boundary_fluxes=true:
+#SCENARIOS="rel-415"
 
 for SCENARIO in $SCENARIOS
 do
