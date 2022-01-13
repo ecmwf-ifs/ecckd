@@ -256,7 +256,6 @@ main(int argc, const char* argv[])
     THROW(PARAMETER_ERROR);
   }
 
-#define USE_LBFGS_LIBRARY 1
 #ifdef USE_LBFGS_LIBRARY
   int status = solve_lbfgs(ckd_model, training_data,
 			   flux_weight, flux_profile_weight, broadband_weight,
