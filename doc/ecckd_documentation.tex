@@ -66,8 +66,8 @@
 \author{Robin J. Hogan\\ \emph{European Centre for Medium Range
     Weather Forecasts, Reading, UK}}
 
-\date{Document version 0.8 (June 2021) applicable to 
-  \ecckd\ version 0.8\thanks{This document is copyright
+\date{Document version 1.1 (January 2022) applicable to 
+  \ecckd\ version 1.1\thanks{This document is copyright
     \copyright\ 2021-- ECMWF. If you have any queries about
     \ecckd\ that are not answered by this document
 %
@@ -87,7 +87,7 @@ which gases to represent, the concentration and pressure ranges to
 cover, and how much accuracy is required (at the expense of
 efficiency). It has, however, only been tested on terrestrial
 atmospheres.  The resulting gas optics models are encoded in a
-\emph{spectral-definition} file in self-describing netCDF format,
+\emph{ckd-definition} file in self-describing netCDF format,
 which can be read by the ecRad radiation scheme
 \citep{Hogan&2018}. The idea of flexibly defining a gas-optics model
 entirely by a single file originates with \cite{Edwards&1996}
@@ -339,16 +339,16 @@ sequence. The variables are as follows:
 \item[\code{BAND\_STRUCTURE}] -- This variable consists of a
   space-separated list of strings describing the band structures that
   will be simulated.  In the longwave these may be \code{fsck}
-  \citep[the full-spectrum correlated $k$ method described
+  \citep[the full-spectrum correlated-$k$ method, FSCK, described
     by][]{Hogan2010}, \code{wide} or \code{narrow} \citep[the band
     structures proposed by][]{Hogan&2020}. In the shortwave the
-  \code{wide} and \code{narrow} structures are available, but it is an
-  ongoing research topic to obtain good performance from band
-  structures that treat the entire near-infrared in a single band.
-  New band structures can be defined, but it requires defining a
-  unique name for the structure and then editing numerous of the
-  scripts so that the correct behaviour is then invoked. Furthermore,
-  fluxes in each of the new bands need to be recomputed for the
+  \code{wide} and \code{narrow} structures are available, plus
+  \code{rgb} which uses FSCK in a large near-infrared band, three
+  visible bands for red green and blue, and one ultraviolet band.  New
+  band structures can be defined, but it requires defining a unique
+  name for the structure and then editing numerous of the scripts so
+  that the correct behaviour is then invoked. Furthermore, fluxes in
+  each of the new bands need to be recomputed for the
   \emph{Evaluation-1} dataset in each scenario by editing and running
   the scripts described in section \ref{sec:datasets} and
   \ref{sec:additional}. Note that rerunning the scripts may not be
@@ -625,11 +625,10 @@ convergence\_criterion & 0.0005--0.02 & Norm of the gradient of the penalty func
 \end{table}
 
 Internally, a quasi-Newton algorithm is used to minimize a penalty
-function by adjusting all the look-up-table coefficients.  The code
-for the minimizer is in the \code{src/lbfgs} directory, although note
-that a future version may use the minimizers provided by the Adept
-package (since version 2.1). The main options governing the behaviour of
-the optimization are provided in Table \ref{tab:optimize}.
+function by adjusting all the look-up-table coefficients, provided by
+the Adept package (since version 2.1). The main options governing the
+behaviour of the optimization are provided in Table
+\ref{tab:optimize}.
 
 \subsection{Radiative transfer calculations using generated gas-optics models}
 \label{sec:rt}
@@ -729,10 +728,6 @@ available in the \code{LICENSE} file in the \ecckd\ package.  In
 applying this licence, ECMWF does not waive the privileges and
 immunities granted to it by virtue of its status as an
 intergovernmental organisation nor does it submit to any jurisdiction.
-
-The LBFGS library in the \code{src/lbfgs} directory is released under
-the MIT license and the copyright is jointly held by Joge Nocedal and
-Naoaki Okazaki (see \code{src/lbfgs/COPYING}).
 
 \begin{thebibliography}{00}
 %    
