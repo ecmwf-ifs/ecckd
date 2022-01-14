@@ -1,18 +1,14 @@
 SCRIPTS
 
+Store LBL flux calculation at 50 cm-1 in SW and 10 cm-1 in LW and use
+to train any CKD model
+
+Produce "high accuracy" CKD models with 64 points
+
 CODE
 
- - find g points stops if lowest cost function is not in the last 10 iterations
- - CH4 tolerance can be set separately
-
- - Check band_number is correct in CKD definition file
-
- - Shortwave optimize
-
+find_g_points may be faster if minimizing (max(E)-min(E))/E_tol rather
+than (max(E)-min(E))/mean(E)
 
 ECRAD
 
- - ecckd gas optics module
- - Liquid and ice cloud properties
- - Aerosol properties
- - Optimize Tripleclouds (longwave esp)
