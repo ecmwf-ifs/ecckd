@@ -36,7 +36,7 @@ pre-requisites such as the NetCDF library, the
 differentiation, array and optimization library, and the
 [CKDMIP](https://confluence.ecmwf.int/display/CKDMIP) software. You
 will also need to download the CKDMIP spectral absorption database,
-which is up to 1 TB in size. The password for the FTP site is
+which is around 700 GB in size. The password for the FTP site is
 available on request from Robin Hogan.
 
 For a full description of how to compile and run ecCKD, please consult
