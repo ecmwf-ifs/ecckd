@@ -1,12 +1,8 @@
 # The ECMWF gas optics tool: ecCKD
 
-This document was last updated 19 January 2022
-
 Author: Robin Hogan <r.j.hogan@ecmwf.int>
 
-For more complete information about compilation and usage of ecCKD,
- please see the documentation on the [ecCKD web
- site](https://confluence.ecmwf.int/x/xwu0dw).
+This document was last updated 19 January 2022
 
 ## INTRODUCTION
 
@@ -34,9 +30,18 @@ The subdirectories are as follows:
 
 ## COMPILING AND RUNNNING ECCKD
 
+The ecCKD package uses the autotools build system but has several
+pre-requisites such as the NetCDF library, the
+[Adept](http://www.met.reading.ac.uk/clouds/adept) combined automatic
+differentiation, array and optimization library, and the
+[CKDMIP](https://confluence.ecmwf.int/display/CKDMIP) software. You
+will also need to download the CKDMIP spectral absorption database,
+which is up to 1 TB in size. The password for the FTP site is
+available on request from Robin Hogan.
+
 For a full description of how to compile and run ecCKD, please consult
 the User Guide on the [ecCKD web
-site](https://confluence.ecmwf.int/x/xwu0dw).  On a Unix/Linux system
+site](https://confluence.ecmwf.int/x/XwU0Dw).  On a Unix/Linux system
 with Latex installed you should be able to recreate the documentation
 by typing `make documentation` in the `doc` directory.
 
