@@ -57,10 +57,11 @@ granted to it by virtue of its status as an intergovernmental organisation
 nor does it submit to any jurisdiction.
 Copyright statements are given in the file NOTICE.
 
-Several files in the `src/include` and `src/tools` directories also
-contain source files whos copyright is either solely or jointly held
-with the University of Reading, but all files are released under the
-terms of the same Apache License.
+Note that while the core code in `src/ecckd` is owned entirely by
+ECMWF, the copyright of several support files in the `src/include` and
+`src/tools` directories is either solely or jointly held with the
+University of Reading, as stated in the copyright statements at the
+top of each file.
 
 ## CONTACT
 
