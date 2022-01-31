@@ -1,9 +1,12 @@
 /// @file      DataFileEngine.h
 /// @brief     Declares the class DataFileEngine
 /// @author    Robin J. Hogan
-/// @copyright 2016 European Centre for Medium Range Weather Forecasts
-/// @license   Apache License Version 2 or ESA Software Community License Type 1
-///            (see the NOTICE.md file for details)
+/// @copyright (C) Copyright 2016- ECMWF
+/// @license   This software is licensed under the terms of the Apache Licence Version 2.0
+///            which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+///            In applying this licence, ECMWF does not waive the privileges and immunities
+///            granted to it by virtue of its status as an intergovernmental organisation
+///            nor does it submit to any jurisdiction.
 
 #ifndef DataFileEngine_H
 #define DataFileEngine_H
