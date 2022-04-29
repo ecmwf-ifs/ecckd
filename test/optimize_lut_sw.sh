@@ -48,6 +48,13 @@ COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profil
 # to slightly better fluxes per g point, but for cloud radiative
 # effect there is nothing to distinguish the three values.
 
+# Test for ecCKD-1.2/fine - slight improvement with the first but the
+# second mucks up CH4/N2O forcing - need to have adaptive errors
+# according to the range of absorptions being covered by a single g
+# point:
+#COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.5 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 spectral_boundary_weight=0.05"
+#COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.2 flux_weight=0.5 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 spectral_boundary_weight=0.05"
+
 case "$OPTIMIZE_MODE" in
 
     nwp)
@@ -201,6 +208,22 @@ do
 	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-rgb|g')
 	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
 	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-rgb_/g')
+    elif [ "$BANDSTRUCT" = fine ]
+    then
+	# Assume we are training from the sw_fluxes-fine LBL files
+	BANDMAPPING="band_mapping=0 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24"
+	# Modify training files and directory
+	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-fine|g')
+	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
+	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
+    elif [ "$BANDSTRUCT" = window ]
+    then
+	# Assume we are training from the sw_fluxes-fine LBL files
+	BANDMAPPING="band_mapping=0 0 1 2 3 4 5 5 5 6 6 7 7 8 8 9 10 11 12 13 14 15 16 17 18 18"
+	# Modify training files and directory
+	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-fine|g')
+	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
+	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
     else
 	# narrow
 	BANDMAPPING="band_mapping=0 1 2 3 4 5 6 7 8 9 10 11 12"

@@ -35,12 +35,27 @@ do
 O3_MIN_G_POINTS=""
 CO2_MIN_G_POINTS=""
 H2O_SPLIT=""
+CH4_MIN_G_POINTS=""
+N2O_MIN_G_POINTS=""
 
+# Note that min_g_points lists the minimum number of g points per
+# band, where any further bands are assumed to have a minimum of 1
 if [ "$BANDSTRUCT" = "rgb" -o "$BANDSTRUCT" = "gb" ]
 then
     # Need at least 3 g-points for ozone in the UV band
     O3_MIN_G_POINTS="min_g_points 1 1 1 1 3"
     CO2_MIN_G_POINTS="min_g_points 4 1 1 1 1"
+elif [ "$BANDSTRUCT" = "fine" ]
+then
+    CH4_MIN_G_POINTS="min_g_points 2"
+    N2O_MIN_G_POINTS="min_g_points 3"
+    O3_MIN_G_POINTS="min_g_points 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 4"
+elif [ "$BANDSTRUCT" = "window" ]
+then
+    CH4_MIN_G_POINTS="min_g_points 2"
+    N2O_MIN_G_POINTS="min_g_points 2"
+    #O3_MIN_G_POINTS=""
+    O3_MIN_G_POINTS="min_g_points 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 4"
 fi
 
 
@@ -176,6 +191,7 @@ ckdmip_mmm_sw_spectra_o2n2_constant.h5"
   background_conc -1 -1 180e-6 190e-9 -1
   min_scaling 1.8
   max_scaling 0.18
+  $CH4_MIN_G_POINTS
 \end ch4
 
 \begin n2o
@@ -189,6 +205,7 @@ ckdmip_mmm_sw_spectra_o2n2_constant.h5"
   background_conc -1 -1 180e-6 350e-9 -1
   min_scaling 1.6
   max_scaling 0.57
+  $N2O_MIN_G_POINTS
 \end n2o
 
 \begin o2n2

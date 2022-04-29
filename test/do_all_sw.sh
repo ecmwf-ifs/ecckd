@@ -43,12 +43,19 @@ BAND_STRUCTURE="rgb"
 # 16, 32 g-points
 TOLERANCE="0.16 0.047"
 
+# "fine" band structure for reference calculations
+#BAND_STRUCTURE="fine"
+#TOLERANCE=0.0302
+
 #BAND_STRUCTURE="double"
 #TOLERANCE="0.065"
 
 # "Reference" model with 64 points
 #BAND_STRUCTURE=narrow
 #TOLERANCE=0.019
+
+#BAND_STRUCTURE=window
+#TOLERANCE=0.020
 
 # Make variables available to scripts find_g_points_sw.sh onwards
 export TOLERANCE
