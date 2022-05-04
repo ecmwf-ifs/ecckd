@@ -300,6 +300,10 @@ main(int argc, const char* argv[])
 	    pressure_fl = 0.5 * (pressure_hl(range(0,end-1)) + pressure_hl(range(1,end)));
 	    this_gas.molar_abs.resize(ncol,nlay,ng);
 	    this_gas.molar_abs = 0.0;
+	    this_gas.min_molar_abs.resize(ncol,nlay,ng);
+	    this_gas.min_molar_abs = 0.0;
+	    this_gas.max_molar_abs.resize(ncol,nlay,ng);
+	    this_gas.max_molar_abs = 0.0;
 	    temperature_fl.resize(ncol,nlay);
 	    this_gas.composite_molecules = molecules;
 	    this_gas.composite_vmr = vmr_fl;
@@ -318,14 +322,18 @@ main(int argc, const char* argv[])
 
 	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
 					     g_point, optical_depth, planck_fl, averaging_method,
-					     this_gas.molar_abs(icol,__,__));
+					     this_gas.molar_abs(icol,__,__),
+					     this_gas.min_molar_abs(icol,__,__),
+					     this_gas.max_molar_abs(icol,__,__));
 	  }
 	  else {
 	    LOG << "  Solar-spectrum-weighted averaging optical depths for each g point\n";
 	    Matrix ssi_matrix = spread<0>(ssi,pressure_fl.size());
 	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
 					     g_point, optical_depth, ssi_matrix, averaging_method,
-					     this_gas.molar_abs(icol,__,__));
+					     this_gas.molar_abs(icol,__,__),
+					     this_gas.min_molar_abs(icol,__,__),
+					     this_gas.max_molar_abs(icol,__,__));
 	  }
 
 	  ++icol;
@@ -368,6 +376,10 @@ main(int argc, const char* argv[])
 	    pressure_fl = 0.5 * (pressure_hl(range(0,end-1)) + pressure_hl(range(1,end)));
 	    this_gas.molar_abs.resize(ncol,nlay,ng);
 	    this_gas.molar_abs = 0.0;
+	    this_gas.min_molar_abs.resize(ncol,nlay,ng);
+	    this_gas.min_molar_abs = 0.0;
+	    this_gas.max_molar_abs.resize(ncol,nlay,ng);
+	    this_gas.max_molar_abs = 0.0;
 	    temperature_fl.resize(ncol,nlay);
 	  }
 
@@ -384,14 +396,18 @@ main(int argc, const char* argv[])
 
 	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
 					     g_point, optical_depth, planck_fl, averaging_method,
-					     this_gas.molar_abs(icol,__,__));
+					     this_gas.molar_abs(icol,__,__),
+					     this_gas.min_molar_abs(icol,__,__),
+					     this_gas.max_molar_abs(icol,__,__));
 	  }
 	  else {
 	    LOG << "  Solar-spectrum-weighted averaging optical depths for each g point\n";
 	    Matrix ssi_matrix = spread<0>(ssi,pressure_fl.size());
 	    average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
 					     g_point, optical_depth, ssi_matrix, averaging_method,
-					     this_gas.molar_abs(icol,__,__));
+					     this_gas.molar_abs(icol,__,__),
+					     this_gas.min_molar_abs(icol,__,__),
+					     this_gas.max_molar_abs(icol,__,__));
 	  }
 
 	  ++icol;
@@ -432,6 +448,10 @@ main(int argc, const char* argv[])
 	      pressure_fl = 0.5 * (pressure_hl(range(0,end-1)) + pressure_hl(range(1,end)));
 	      this_gas.molar_abs_conc.resize(nconc,ncol,nlay,ng);
 	      this_gas.molar_abs_conc = 0.0;
+	      this_gas.min_molar_abs_conc.resize(nconc,ncol,nlay,ng);
+	      this_gas.min_molar_abs_conc = 0.0;
+	      this_gas.max_molar_abs_conc.resize(nconc,ncol,nlay,ng);
+	      this_gas.max_molar_abs_conc = 0.0;
 	      this_gas.vmr.resize(nconc);
 	      temperature_fl.resize(ncol,nlay);
 	    }
@@ -450,14 +470,18 @@ main(int argc, const char* argv[])
 
 	      average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
 					       g_point, optical_depth, planck_fl, averaging_method,
-					       this_gas.molar_abs_conc(iconc,icol,__,__));
+					       this_gas.molar_abs_conc(iconc,icol,__,__),
+					       this_gas.min_molar_abs_conc(iconc,icol,__,__),
+					       this_gas.max_molar_abs_conc(iconc,icol,__,__));
 	    }
 	    else {
 	      LOG << "  Solar-spectrum-weighted averaging optical depths for each g point\n";
 	      Matrix ssi_matrix = spread<0>(ssi,pressure_fl.size());
 	      average_optical_depth_to_g_point(ng, reference_surface_vmr, pressure_fl, pressure_hl,
 					       g_point, optical_depth, ssi_matrix, averaging_method,
-					       this_gas.molar_abs_conc(iconc,icol,__,__));
+					       this_gas.molar_abs_conc(iconc,icol,__,__),
+					       this_gas.min_molar_abs_conc(iconc,icol,__,__),
+					       this_gas.max_molar_abs_conc(iconc,icol,__,__));
 	    }
 
 	    ++icol;

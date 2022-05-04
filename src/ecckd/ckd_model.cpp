@@ -89,7 +89,7 @@ CkdModel<IsActive>::read(const std::string& file_name,
   {
     std::stringstream molecules_s(molecules_str);
     while (std::getline(molecules_s, molecule, ' ')) {
-      intVector ndims = file.size(molecule + "_molar_absorption_coeff");
+      intVector ndims = file.size(molecule + "_" + K_NAME);
       if (is_active_(std::string(molecule), active_gas_list)) {
 	nx += product(ndims);
       }
@@ -106,6 +106,9 @@ CkdModel<IsActive>::read(const std::string& file_name,
   }
   int ix = 0; // Current index to state vector x
 
+  bool is_first = true;
+  bool have_min_max = false;
+
   // Read in molar absorption coefficients
   std::stringstream molecules_s(molecules_str);
   while (std::getline(molecules_s, molecule, ' ')) {
@@ -114,6 +117,19 @@ CkdModel<IsActive>::read(const std::string& file_name,
     SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
 
     LOG << "  Reading absorption properties of " << this_gas.Molecule << "\n";
+
+    // First check if we have min/max values
+    if (is_first) {
+      if (file.exist(molecule + "_" + K_NAME + "_min")) {
+	have_min_max = true;
+	if (IsActive) {
+	  x_min.resize(nx);
+	  x_max.resize(nx);
+	}
+      }
+      is_first = false;
+    }
+
     if (file.exist(molecule + "_mole_fraction")
 	&& file.size(molecule + "_mole_fraction").size() == 1) {
       this_gas.conc_dependence = LUT;
@@ -126,16 +142,36 @@ CkdModel<IsActive>::read(const std::string& file_name,
 	this_gas.molar_abs_conc.clear();
 	this_gas.molar_abs_conc >>= x(range(ix,ix+nconc*nt_*np_*ng_-1)).reshape(dimensions(nconc,nt_,np_,ng_));
 	LOG << "    ACTIVE: preparing to optimize array of size " << this_gas.molar_abs_conc.dimensions() << "\n";
+	if (have_min_max) {
+	  this_gas.min_molar_abs_conc >>= x_min(range(ix,ix+nconc*nt_*np_*ng_-1)).reshape(dimensions(nconc,nt_,np_,ng_));
+	  this_gas.max_molar_abs_conc >>= x_max(range(ix,ix+nconc*nt_*np_*ng_-1)).reshape(dimensions(nconc,nt_,np_,ng_));
+	}
 	this_gas.ix = ix;
 	ix += nconc*nt_*np_*ng_;
       }
       else {
 	this_gas.molar_abs_conc.resize(nconc,nt_,np_,ng_);
+	if (have_min_max) {
+	  this_gas.min_molar_abs_conc.resize(nconc,nt_,np_,ng_);
+	  this_gas.max_molar_abs_conc.resize(nconc,nt_,np_,ng_);
+	}
       }
+      Array3 tmp;
       for (int iconc = 0; iconc < nconc; ++iconc) {
-	Array3 tmp;
-	file.read(tmp, molecule + "_molar_absorption_coeff", iconc);
+	file.read(tmp, molecule + "_" + K_NAME, iconc);
 	this_gas.molar_abs_conc(iconc,__,__,__) = tmp;
+      }
+      // If present, read the minimum and maximum possible values of
+      // the absorption coefficient
+      if (have_min_max) {
+	for (int iconc = 0; iconc < nconc; ++iconc) {
+	  file.read(tmp, molecule + "_" + K_NAME + "_min", iconc);
+	  this_gas.min_molar_abs_conc(iconc,__,__,__) = tmp;
+	}
+	for (int iconc = 0; iconc < nconc; ++iconc) {
+	  file.read(tmp, molecule + "_" + K_NAME + "_max", iconc);
+	  this_gas.max_molar_abs_conc(iconc,__,__,__) = tmp;
+	}
       }
     }
     else {
@@ -162,23 +198,34 @@ CkdModel<IsActive>::read(const std::string& file_name,
 	THROW(1);
       }
       Array3 tmp;
-      file.read(tmp, molecule + "_molar_absorption_coeff");
+      file.read(tmp, molecule + "_" + K_NAME);
 
       this_gas.molar_abs.clear();
       if (is_active_(this_gas.molecule, active_gas_list)) {
 	this_gas.is_active = true;
 	this_gas.molar_abs >>= x(range(ix,ix+nt_*np_*ng_-1)).reshape(dimensions(nt_,np_,ng_));
 	LOG << "    ACTIVE: preparing to optimize array of size " << this_gas.molar_abs.dimensions() << "\n";
+	if (have_min_max) {
+	  this_gas.min_molar_abs >>= x_min(range(ix,ix+nt_*np_*ng_-1)).reshape(dimensions(nt_,np_,ng_));
+	  this_gas.max_molar_abs >>= x_max(range(ix,ix+nt_*np_*ng_-1)).reshape(dimensions(nt_,np_,ng_));
+	}
 	this_gas.ix = ix;
 	ix += nt_*np_*ng_;
       }
       this_gas.molar_abs = tmp;
 
-      /*
-      if (molecule == "co2") {
-	LOG << "abs_co2 = " << this_gas.molar_abs(__,__,end) << "\n";
+      // If present, read the minimum and maximum possible values of
+      // the absorption coefficient
+      if (have_min_max) {
+	file.read(tmp, molecule + "_" + K_NAME + "_min");
+	this_gas.min_molar_abs = tmp;
+	file.read(tmp, molecule + "_" + K_NAME + "_max");
+	this_gas.max_molar_abs = tmp;
       }
-      */
+      else {
+	this_gas.min_molar_abs.clear();
+	this_gas.max_molar_abs.clear();
+      }
 
     }
     ++igas;
@@ -346,12 +393,19 @@ CkdModel<IsActive>::write(const std::string& file_name,
     switch(this_gas.conc_dependence) {
     case NONE:
       {
-	file.define_variable(varname,
-			     FLOAT, "temperature", "pressure", "g_point");
+	file.define_variable(varname, FLOAT, "temperature", "pressure", "g_point");
 	file.write_long_name("Molar absorption coefficient of background gases", varname);
 	file.write_units("m2 mol-1", varname);
 	file.write_comment("This is the absorption cross section of background gases per mole of dry air.",
 			   varname);
+	if (do_save_min_max_ && !this_gas.min_molar_abs.empty()) {
+	  file.define_variable(varname + "_min", FLOAT, "temperature", "pressure", "g_point");
+	  file.write_long_name("Minimum molar absorption coefficient of background gases", varname + "_min");
+	  file.write_units("m2 mol-1", varname + "_min");
+	  file.define_variable(varname + "_max", FLOAT, "temperature", "pressure", "g_point");
+	  file.write_long_name("Maximum molar absorption coefficient of background gases", varname + "_max");
+	  file.write_units("m2 mol-1", varname + "_max");
+	}
 	file.define_dimension(molecule + "_gas", this_gas.composite_vmr.size(0));
 	file.define_variable(molecule + "_mole_fraction", FLOAT, molecule + "_gas", "pressure");
 	file.write_long_name("Mole fractions of the gases that make up " + Molecule, 
@@ -380,6 +434,18 @@ CkdModel<IsActive>::write(const std::string& file_name,
 	file.write_long_name("Molar absorption coefficient of " + Molecule,
 			     molecule + "_" + K_NAME);
 	file.write_units("m2 mol-1", molecule + "_" + K_NAME);
+	if (do_save_min_max_ && !this_gas.min_molar_abs.empty()) {
+	  file.define_variable(varname + "_min", FLOAT,
+			       "temperature", "pressure", "g_point");
+	  file.write_long_name("Minimum molar absorption coefficient of " + Molecule,
+			       varname + "_min");
+	  file.write_units("m2 mol-1", varname + "_min");
+	  file.define_variable(varname + "_max", FLOAT,
+			       "temperature", "pressure", "g_point");
+	  file.write_long_name("Maximum molar absorption coefficient of " + Molecule,
+			       varname + "_max");
+	  file.write_units("m2 mol-1", varname + "_max");
+	}
       }
       break;
     case LUT:
@@ -395,6 +461,18 @@ CkdModel<IsActive>::write(const std::string& file_name,
 	file.write_long_name("Molar absorption coefficient of " + Molecule,
 			     molecule + "_" + K_NAME);
 	file.write_units("m2 mol-1", molecule + "_" + K_NAME);
+	if (do_save_min_max_ && !this_gas.min_molar_abs_conc.empty()) {
+	  file.define_variable(molecule + "_" + K_NAME + "_min", FLOAT,
+			       molecule + "_mole_fraction", "temperature", "pressure", "g_point");
+	  file.write_long_name("Minimum molar absorption coefficient of " + Molecule,
+			       molecule + "_" + K_NAME + "_min");
+	  file.write_units("m2 mol-1", molecule + "_" + K_NAME + "_min");
+	  file.define_variable(molecule + "_" + K_NAME + "_max", FLOAT,
+			       molecule + "_mole_fraction", "temperature", "pressure", "g_point");
+	  file.write_long_name("Maximum molar absorption coefficient of " + Molecule,
+			       molecule + "_" + K_NAME + "_max");
+	  file.write_units("m2 mol-1", molecule + "_" + K_NAME + "_max");
+	}
       }
       break;
     }
@@ -485,6 +563,10 @@ CkdModel<IsActive>::write(const std::string& file_name,
 	file.write(0, molecule + "_conc_dependence_code");
 	file.write(this_gas.composite_vmr, molecule + "_mole_fraction");
 	file.write((this_gas.molar_abs).inactive_link(), molecule + "_" + K_NAME);
+	if (do_save_min_max_ && !this_gas.min_molar_abs.empty()) {
+	  file.write((this_gas.min_molar_abs).inactive_link(), molecule + "_" + K_NAME + "_min");
+	  file.write((this_gas.max_molar_abs).inactive_link(), molecule + "_" + K_NAME + "_max");
+	}
       }
       break;
     case RELATIVE_LINEAR:
@@ -492,12 +574,20 @@ CkdModel<IsActive>::write(const std::string& file_name,
 	file.write(3, molecule + "_conc_dependence_code");
 	file.write(this_gas.reference_vmr, molecule + "_reference_mole_fraction");
 	file.write((this_gas.molar_abs).inactive_link(), molecule + "_" + K_NAME);
+	if (do_save_min_max_ && !this_gas.min_molar_abs.empty()) {
+	  file.write((this_gas.min_molar_abs).inactive_link(), molecule + "_" + K_NAME + "_min");
+	  file.write((this_gas.max_molar_abs).inactive_link(), molecule + "_" + K_NAME + "_max");
+	}
       }
       break;
     case LINEAR:
       {
 	file.write(1, molecule + "_conc_dependence_code");
 	file.write((this_gas.molar_abs).inactive_link(), molecule + "_" + K_NAME);
+	if (do_save_min_max_ && !this_gas.min_molar_abs.empty()) {
+	  file.write((this_gas.min_molar_abs).inactive_link(), molecule + "_" + K_NAME + "_min");
+	  file.write((this_gas.max_molar_abs).inactive_link(), molecule + "_" + K_NAME + "_max");
+	}
       }
       break;
     case LUT:
@@ -507,6 +597,12 @@ CkdModel<IsActive>::write(const std::string& file_name,
 	for (int iconc = 0; iconc < this_gas.vmr.size(); ++iconc) {
 	  file.write((this_gas.molar_abs_conc(iconc,__,__,__)).inactive_link(),
 		     molecule + "_" + K_NAME, iconc);
+	  if (do_save_min_max_ && !this_gas.min_molar_abs_conc.empty()) {
+	    file.write((this_gas.min_molar_abs_conc(iconc,__,__,__)).inactive_link(),
+		       molecule + "_" + K_NAME + "_min", iconc);
+	    file.write((this_gas.max_molar_abs_conc(iconc,__,__,__)).inactive_link(),
+		       molecule + "_" + K_NAME + "_max", iconc);
+	  }
 	}
       }
     }
@@ -519,7 +615,9 @@ CkdModel<IsActive>::write(const std::string& file_name,
 /// Create error covariance matrices
 template<>
 void
-CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
+CkdModel<true>::create_error_covariances(Real prior_error, Real min_prior_error, 
+					 Real max_prior_error, Real prior_error_scaling,
+					 Real pressure_corr,
 					 Real temperature_corr, Real conc_corr,
 					 Real rayleigh_prior_error)
 {
@@ -527,11 +625,37 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
   // Exploit sparsity and treat numbers less than this as zero
   static const Real MIN_ERROR_COVARIANCE = 1.0e-6;
 
+  if (prior_error > 0.0) {
+    LOG << "Creating a-priori error covariance matrices with fixed error of " << prior_error << "\n";
+  }
+  else {
+    LOG << "Creating a-priori error covariance matrices, estimating errors from minimum and maximum molar absorptions for each g-point\n";
+    if (min_prior_error > 0.0) {
+      LOG << "  Lower bound on prior error: " << min_prior_error << "\n";
+    }
+    if (max_prior_error > 0.0) {
+      LOG << "  Upper bound on prior error: " << max_prior_error << "\n";
+    }
+    if (prior_error_scaling > 0.0) {
+      LOG << "  Scaling prior error by " << prior_error_scaling << "\n";
+    }
+  }
+
   for (int igas = 0; igas < ngas(); ++igas) {
     SingleGasData<true>& this_gas = single_gas_data_[igas];
     if (!this_gas.is_active) {
       continue;
     }
+
+    this_gas.background_error.resize(ng_);
+    if (prior_error > 0.0) {
+      this_gas.background_error = prior_error;
+    }
+    else {
+      // Default error
+      this_gas.background_error = 1.0;
+    }
+
     if (this_gas.conc_dependence == LINEAR
 	|| this_gas.conc_dependence == NONE
 	|| this_gas.conc_dependence == RELATIVE_LINEAR) {
@@ -551,7 +675,7 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
 
       SymmMatrix background(nx,nx);
 
-      background = (err*err)*pow(temperature_corr,1.0*abs(spread<0>(t_index_vec,nx)-spread<1>(t_index_vec,nx)));
+      background = pow(temperature_corr,1.0*abs(spread<0>(t_index_vec,nx)-spread<1>(t_index_vec,nx)));
       background *= pow(pressure_corr,1.0*abs(spread<0>(p_index_vec,nx)-spread<1>(p_index_vec,nx)));
 
       Matrix inv_background = inv(background);
@@ -561,7 +685,41 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
       inv_background.where(fabs(inv_background) < MIN_ERROR_COVARIANCE) = 0.0;
       // Save as a sparse matrix (if supported in later versions of
       // Adept) or copy to a symmetric matrix
-      this_gas.inv_background = inv_background;
+      this_gas.inv_background_shape = inv_background;
+
+      // Estimate the prior error of the logarithm of absorption for
+      // each g point as 0.25*[log(max_molar_abs)-log(min_molar_abs)],
+      // or if min is zero, 0.5*[log(max_molar_abs)-log(molar_abs)]
+      if (prior_error <= 0.0) {
+	for (int ig = 0; ig < ng_; ++ig) {
+	  Real local_sum = 0.0;
+	  int local_count = 0;
+	  for (int ip = 0; ip < np_; ++ip) {
+	    for (int it = 0; it < nt_; ++it) {
+	      if (this_gas.molar_abs(it,ip,ig) > 0.0) {
+		if (this_gas.min_molar_abs(it,ip,ig) > 0.0) {
+		  local_sum += 0.25 * log(this_gas.max_molar_abs(it,ip,ig)/this_gas.min_molar_abs(it,ip,ig));
+		}
+		else {
+		  local_sum += 0.5 * log(this_gas.max_molar_abs(it,ip,ig)/value(this_gas.molar_abs(it,ip,ig)));
+		}
+		++local_count;
+	      }
+	    }
+	  }
+	  if (local_count > 0) {
+	    this_gas.background_error(ig) = prior_error_scaling * local_sum / local_count;
+	  }
+	}
+	if (min_prior_error > 0.0) {
+	  this_gas.background_error = max(min_prior_error, this_gas.background_error);
+	}
+	if (max_prior_error > 0.0) {
+	  this_gas.background_error = min(this_gas.background_error, max_prior_error);
+	}
+	LOG << "    prior errors for " << this_gas.Molecule << " per g-point: "
+	    << this_gas.background_error<< "\n";
+      }
     }
     else {
       int nconc = this_gas.vmr.size();
@@ -583,7 +741,7 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
 
       Matrix background(nx,nx);
 
-      background = (err*err)*pow(temperature_corr,1.0*abs(spread<0>(t_index_vec,nx)-spread<1>(t_index_vec,nx)));
+      background = pow(temperature_corr,1.0*abs(spread<0>(t_index_vec,nx)-spread<1>(t_index_vec,nx)));
       background *= pow(pressure_corr,1.0*abs(spread<0>(p_index_vec,nx)-spread<1>(p_index_vec,nx)));
       background *= pow(conc_corr,1.0*abs(spread<0>(c_index_vec,nx)-spread<1>(c_index_vec,nx)));
 
@@ -593,7 +751,46 @@ CkdModel<true>::create_error_covariances(Real err, Real pressure_corr,
 	/static_cast<Real>(inv_background.size()) << "\n";
       inv_background.where(fabs(inv_background) < MIN_ERROR_COVARIANCE) = 0.0;
       // Save as a sparse matrix
-      this_gas.inv_background = inv_background;
+      this_gas.inv_background_shape = inv_background;
+
+      // Estimate the prior error of the logarithm of absorption for
+      // each g point as 0.25*[log(max_molar_abs)-log(min_molar_abs)],
+      // or if min is zero, 0.5*[log(max_molar_abs)-log(molar_abs)]
+      if (prior_error <= 0.0) {
+	int nconc = this_gas.vmr.size();
+	for (int ig = 0; ig < ng_; ++ig) {
+	  Real local_sum = 0.0;
+	  int local_count = 0;
+	  for (int ic = 0; ic < nconc; ++ic) {
+	    for (int ip = 0; ip < np_; ++ip) {
+	      for (int it = 0; it < nt_; ++it) {
+		if (this_gas.molar_abs_conc(ic,it,ip,ig) > 0.0) {
+		  if (this_gas.min_molar_abs_conc(ic,it,ip,ig) > 0.0) {
+		    local_sum += 0.25 * log(this_gas.max_molar_abs_conc(ic,it,ip,ig)
+					   /this_gas.min_molar_abs_conc(ic,it,ip,ig));
+		  }
+		  else {
+		    local_sum += 0.5 * log(this_gas.max_molar_abs_conc(ic,it,ip,ig)
+					   /value(this_gas.molar_abs_conc(ic,it,ip,ig)));
+		  }
+		  ++local_count;
+		}
+	      }
+	    }
+	  }
+	  if (local_count > 0) {
+	    this_gas.background_error(ig) = prior_error_scaling * local_sum / local_count;
+	  }
+	}
+	if (min_prior_error > 0.0) {
+	  this_gas.background_error = max(min_prior_error, this_gas.background_error);
+	}
+	if (max_prior_error > 0.0) {
+	  this_gas.background_error = min(this_gas.background_error, max_prior_error);
+	}
+	LOG << "    prior errors for " << this_gas.Molecule << " per g-point: "
+	    << this_gas.background_error<< "\n";
+     }
     }
   }
   if (rayleigh_prior_error > 0.0 && rayleigh_is_active_) {
@@ -620,7 +817,7 @@ CkdModel<true>::calc_background_cost_function(const Vector& delta_x, Vector grad
   for (int igas = 0; igas < ngas(); ++igas) {
     const SingleGasData<true>& this_gas = single_gas_data_[igas];
     if (this_gas.is_active) {
-      int nx = this_gas.inv_background.dimension(0);
+      int nx = this_gas.inv_background_shape.dimension(0);
       // g-point is fastest varying dimension so need to stride over it
       int nstride = ng_;
       //#pragma omp parallel for schedule (static)
@@ -628,8 +825,10 @@ CkdModel<true>::calc_background_cost_function(const Vector& delta_x, Vector grad
 	int ix = this_gas.ix + ig;
 	Vector delta_x_local = delta_x.soft_link()(stride(ix,ix+(nx-1)*nstride,nstride));
 	//	LOG << "??? " << this_gas.Molecule << " " << delta_x.size() << " " << ix << " " << nx << " " << nstride << " " << ig << " " << delta_x_local.size() << "\n";
-	Vector gradient_local = this_gas.inv_background.soft_link() ** delta_x_local;
+	Vector gradient_local = (1.0/(this_gas.background_error(ig)*this_gas.background_error(ig)))
+	  * (this_gas.inv_background_shape.soft_link() ** delta_x_local);
 	Real cost_fn_local = 0.5*dot_product(delta_x_local,gradient_local);
+
 	gradient.soft_link()(stride(ix,ix+(nx-1)*nstride,nstride)) += gradient_local;
 	//#pragma omp critical
 	{
@@ -931,9 +1130,19 @@ CkdModel<IsActive>::scale_optical_depth(const Vector& pressure_fl, const Matrix&
     SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
     if (this_gas.conc_dependence == LUT) {
       this_gas.molar_abs_conc *= spread<0>(spread<0>(local_scaling, nt_), this_gas.molar_abs_conc.size(0));
+      // If minimum and maximum possible absorption coefficients are
+      // available, check we are still within these bounds
+      if (!this_gas.min_molar_abs_conc.empty()) {
+	this_gas.molar_abs_conc = max(this_gas.min_molar_abs_conc, 
+				      min(this_gas.molar_abs_conc, this_gas.max_molar_abs_conc));
+      }
     }
     else {
       this_gas.molar_abs *= spread<0>(local_scaling, nt_);
+      if (!this_gas.min_molar_abs.empty()) {
+	this_gas.molar_abs = max(this_gas.min_molar_abs, 
+				 min(this_gas.molar_abs, this_gas.max_molar_abs));
+      }
     }
   }
 }

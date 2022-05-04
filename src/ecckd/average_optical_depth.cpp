@@ -27,7 +27,9 @@ average_optical_depth_to_g_point(int ng,                      ///< Number of g p
 				 const Matrix& optical_depth, ///< Optical depth (pressure,wavenumber)
 				 const Matrix& planck_fl,     ///< Planck function, W m-2 (pressure,wavenumber)
 				 const std::string& averaging_method,
-				 Matrix molar_abs)            ///< Molar absorption coefficient, m2 mol-1 (pressure,g-point)
+				 Matrix molar_abs,            ///< Molar absorption coefficient, m2 mol-1 (pressure,g-point)
+				 Matrix min_molar_abs,        ///< Minimum molar absorption coefficient
+				 Matrix max_molar_abs)        ///< Maximum molar absorption coefficient
 
 {
   const Real OD_SCALING = 1.0;
@@ -36,7 +38,7 @@ average_optical_depth_to_g_point(int ng,                      ///< Number of g p
   for (int ig = 0; ig < ng; ++ig) {
     // Fails if index is empty, due to earlier problems...
     intVector index = find(g_point == ig);
-    Vector optical_depth_fit;
+    Vector optical_depth_fit, min_optical_depth, max_optical_depth;
 
     if (averaging_method == "linear") {
       optical_depth_fit = sum(optical_depth.soft_link()(__,index)*planck_fl.soft_link()(__,index), 1)
@@ -85,17 +87,32 @@ average_optical_depth_to_g_point(int ng,                      ///< Number of g p
       ERROR << "averaging_method \"" << averaging_method << "\" not understood";
       THROW(PARAMETER_ERROR);
     }
+    min_optical_depth = minval(optical_depth.soft_link()(__,index), 1);
+    max_optical_depth = maxval(optical_depth.soft_link()(__,index), 1);
+
     // Abs needed because -log(1) is -0 and we want to remove the sign
     // from a negative zero.
     if (reference_surface_vmr > 0.0) {
       molar_abs.soft_link()(__,ig) 
 	= ((ACCEL_GRAVITY * 0.001 * MOLAR_MASS_DRY_AIR) / reference_surface_vmr)
 	* optical_depth_fit / (pressure_hl.soft_link()(range(1,end))-pressure_hl.soft_link()(range(0,end-1)));
+      if (!min_molar_abs.empty()) {
+	min_molar_abs.soft_link()(__,ig)
+	  = ((ACCEL_GRAVITY * 0.001 * MOLAR_MASS_DRY_AIR) / reference_surface_vmr)
+	  * min_optical_depth / (pressure_hl.soft_link()(range(1,end))-pressure_hl.soft_link()(range(0,end-1)));
+	max_molar_abs.soft_link()(__,ig)
+	  = ((ACCEL_GRAVITY * 0.001 * MOLAR_MASS_DRY_AIR) / reference_surface_vmr)
+	  * max_optical_depth / (pressure_hl.soft_link()(range(1,end))-pressure_hl.soft_link()(range(0,end-1)));
+      }
     }
     else {
       // Calculate mean optical depth, rather than molar absorption
       // coefficient
-      molar_abs.soft_link()(__,ig) = optical_depth_fit;
+      molar_abs.soft_link()(__,ig)     = optical_depth_fit;
+      if (!min_molar_abs.empty()) {
+	min_molar_abs.soft_link()(__,ig) = min_optical_depth;
+	max_molar_abs.soft_link()(__,ig) = max_optical_depth;
+      }
     }
   }
 

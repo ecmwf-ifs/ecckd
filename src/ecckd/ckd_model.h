@@ -53,10 +53,19 @@ struct SingleGasData {
   // (temperature,pressure,g_point).
   Array<3,adept::Real,IsActive> molar_abs;
 
+  // Maximum and minimum possible values of the above, computed by
+  // create_look_up_table
+  Array<3,adept::Real> min_molar_abs, max_molar_abs;
+
   // If conc_dependence=2, then we have an additional dimension for
   // concentration.  It is dimensioned
   // (conc,temperature,pressure,g_point).
   Array<4,adept::Real,IsActive> molar_abs_conc;
+
+  // Maximum and minimum possible values of the above, computed by
+  // create_look_up_table
+  Array<4,adept::Real> min_molar_abs_conc, max_molar_abs_conc;
+
 
   // If conc_dependence=3 then the following reference concentration
   // is subtracted from the actual concentration before the result is
@@ -66,9 +75,18 @@ struct SingleGasData {
   // Volume mixing ratio coordinate variable
   Vector vmr;
 
-  // Inverse of the background error covariance matrix for one g point
+  // "Shape" of the inverse of the background (or a-priori) error
+  // covariance matrix for one g point; i.e. this is for a background
+  // error covariance matrix with ones along the diagonal and with the
+  // correct error correlations. It is scaled by
+  // 1/(background_error^2)
   //SparseMatrix inv_background;
-  SymmMatrix inv_background;
+  SymmMatrix inv_background_shape;
+
+  // Background (or a-priori) error per g-point, which can be
+  // specified by the user via prior_error or estimated from the
+  // minimum and maximum molar absorptions.
+  Vector background_error;
 
   // Index of the first element of the full state variable x in the
   // present gas
@@ -235,7 +253,9 @@ public:
   void scale_optical_depth(const Vector& pressure_fl, const Matrix& scaling);
 
   /// Create error covariance matrices
-  void create_error_covariances(Real err, Real pressure_corr, Real temperature_corr, Real conc_corr,
+  void create_error_covariances(Real prior_error, Real min_prior_error, 
+				Real max_prior_error, Real prior_error_scaling,
+				Real pressure_corr, Real temperature_corr, Real conc_corr,
 				Real rayleigh_prior_error = -1.0);
 
   /// Ensure that gases with a "relative-linear" representation cannot
@@ -294,6 +314,10 @@ public:
     do_save_g_points_ = true;
   }
 
+  void save_min_max(bool smm) {
+    do_save_min_max_ = smm;
+  }
+
   bool read_g_points(Vector& wn, intVector& gp) {
     if (!wavenumber_hr_.empty()) {
       wn = wavenumber_hr_;
@@ -322,6 +346,11 @@ public:
   /// linked to parts of this
   Array<1,Real,IsActive> x;
 
+  /// Bounds on the possible values of the logarithm of the state
+  /// vector, used in bounded minimization
+  Vector x_min, x_max;
+
+  /// A-priori state variables
   Vector x_prior;
 
   bool logarithmic_interpolation = false;
@@ -425,6 +454,9 @@ private:
   Vector wavenumber_hr_;
   intVector g_point_;
   bool do_save_g_points_ = false;
+
+  // Do we save the min/max absorption coefficients?
+  bool do_save_min_max_ = true;
 
   /// Number of g points, pressures, temperatures
   int ng_, nt_, np_, nwav_;

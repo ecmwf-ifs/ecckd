@@ -84,13 +84,28 @@ main(int argc, const char* argv[])
   Real flux_weight = 0.02;
   Real flux_profile_weight = 0.0;
   Real broadband_weight = 0.5;
-  Real prior_error = 1.0;
+
+  // A-priori errors can be specified either by as constant (set
+  // prior_error) or estimated from the min and max molar absorption
+  // coefficient. In the latter case, do not use prior_error, but you
+  // may optionally scale the error using prior_error_scaling, and/or
+  // set upper and lower bounds.  Negative numbers or zero values are
+  // are ignored.
+  Real prior_error = -1.0;
+  Real min_prior_error = -1.0;
+  Real max_prior_error = -1.0;
+  Real prior_error_scaling = 1.0;
+
   Real rayleigh_prior_error = 0.0;
   Real spectral_boundary_weight = 0.0;
 
+  // A-priori error correlation coefficients between adjacent points
+  // in the look-up table, in the temperature, pressure and (in the
+  // case of water vapour) concentration
   Real temperature_corr = 0.5;
   Real pressure_corr = 0.5;
   Real conc_corr = 0.5;
+
   Real convergence_criterion = 0.02;
 
   // Wavenumber above which is it not safe to neglect Rayleigh
@@ -108,6 +123,9 @@ main(int argc, const char* argv[])
   config.read(broadband_weight, "broadband_weight");
   config.read(spectral_boundary_weight, "spectral_boundary_weight");
   config.read(prior_error, "prior_error");
+  config.read(min_prior_error, "min_prior_error");
+  config.read(max_prior_error, "max_prior_error");
+  config.read(prior_error_scaling, "prior_error_scaling");
   if (config.read(rayleigh_prior_error, "rayleigh_prior_error")) {
     if (rayleigh_prior_error > 0.0) {
       LOG << "Optimizing Rayleigh scattering coefficients with prior error of " << rayleigh_prior_error << "\n";
@@ -127,6 +145,9 @@ main(int argc, const char* argv[])
   Real negative_od_penalty = 1.0e4;
   config.read(negative_od_penalty, "negative_od_penalty");
 
+  Real is_bounded = true;
+  config.read(is_bounded, "bounded_minimization");
+  
   if (config.exist("band_mapping")) {
     config.read(band_mapping, "band_mapping");
   }
@@ -159,7 +180,9 @@ main(int argc, const char* argv[])
 
   ckd_model.cap_relative_linear_coeffts(0.8);
 
-  ckd_model.create_error_covariances(prior_error, pressure_corr, temperature_corr, conc_corr,
+  ckd_model.create_error_covariances(prior_error,
+				     min_prior_error, max_prior_error, prior_error_scaling,
+				     pressure_corr, temperature_corr, conc_corr,
 				     rayleigh_prior_error);
 
   // Optional: compute radiative transfer of one set of profiles
@@ -193,6 +216,13 @@ main(int argc, const char* argv[])
 							     relative_to_fluxes.band_wavenumber2_);
     }
 
+    if (ckd_model.is_sw()) {
+      // Remove upwelling fluxes affected by Rayleigh scattering since
+      // they will not be adequately modelled by the fast scheme used
+      // for the optimization
+      relative_to_fluxes.mask_rayleigh_up(max_no_rayleigh_wavenumber);
+    }
+
     ADEPT_ACTIVE_STACK->new_recording();
     aArray3D aod;
     calc_total_optical_depth(ckd_model, relative_to_fluxes, aod, true);
@@ -206,6 +236,9 @@ main(int argc, const char* argv[])
   std::string training_file;
 
   std::vector<LblFluxes> training_data;
+
+  bool remove_min_max = false;
+  config.read(remove_min_max, "remove_min_max");
 
   int itrain = 0;
   while (config.read(training_file, "training_input", itrain)) {
@@ -259,13 +292,17 @@ main(int argc, const char* argv[])
 			   flux_weight, flux_profile_weight, broadband_weight,
 			   spectral_boundary_weight, prior_error,
 			   max_iterations, convergence_criterion,
-			   negative_od_penalty,
+		           negative_od_penalty, is_bounded,
 			   relative_ckd_flux_dn, relative_ckd_flux_up);
 
   LOG << "Convergence status: " << adept::minimizer_status_string(status) << "\n";
 
   std::string config_str;
   config.read(config_str);  
+
+  if (remove_min_max) {
+    ckd_model.save_min_max(false);
+  }
 
   //  ckd_model.cap_relative_linear_coeffts(1.0);
   ckd_model.write(output, argc, argv, config_str);
