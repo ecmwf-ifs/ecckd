@@ -38,9 +38,11 @@ COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profil
 COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
 
 COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
-# Tried max_no_rayleigh_wavenumber=15000 but TOA fluxes were improved
-# at the expense of surface fluxes, and it was a disaster for CH4 and
-# N2O
+# Tried max_no_rayleigh_wavenumber=15000 for RGB band structure; TOA
+# fluxes were improved but introducing much larger errors into surface
+# fluxes and tropospheric heating rates.  It does sometimes help
+# slightly, however, when using the "relative" optimization of CH4 and
+# N2O.
 
 # Testing values of spectral_boundary_weight of 0, 0.05 and 0.1
 # clearly show that 0 is best for broadband fluxes because the
@@ -48,12 +50,19 @@ COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profil
 # to slightly better fluxes per g point, but for cloud radiative
 # effect there is nothing to distinguish the three values.
 
-# Test for ecCKD-1.2/fine - slight improvement with the first but the
+# ecCKD-1.2 RGB: find that fixing the prior_error works better than
+# using min_prior_error and max_prior_error. A value of 2.0 was used
+# in ecCKD-1.0, together with unbounded optimization, and is difficult
+# to beat.
+COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 bounded_optimization=0"
+
+# Test for ecCKD-1.2/window/fine - slight improvement with the first but the
 # second mucks up CH4/N2O forcing - need to have adaptive errors
 # according to the range of absorptions being covered by a single g
 # point:
-#COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.5 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 spectral_boundary_weight=0.05"
-#COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.2 flux_weight=0.5 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 spectral_boundary_weight=0.05"
+#COMMON_OPTIONS="min_prior_error=0.1 max_prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
+# This appears to be best with the "window" band structure:
+#COMMON_OPTIONS="min_prior_error=0.2 max_prior_error=2.0 broadband_weight=0.5 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
 
 case "$OPTIMIZE_MODE" in
 
@@ -66,7 +75,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_SW_CKD_DIR}
 	INCODE=raw-ckd-definition
 	OUTCODE=ckd-definition
-        SPECIFIC_OPTIONS="convergence_criterion=0.01"
+        SPECIFIC_OPTIONS="convergence_criterion=0.01 remove_min_max=1"
 	;;
 
     climate-base)
@@ -134,7 +143,7 @@ case "$OPTIMIZE_MODE" in
 	#OPTIONS="prior_error=8.0 broadband_weight=0.2 flux_weight=0.02 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
 	#OPTIONS="prior_error=8.0 broadband_weight=0.2 flux_weight=0.03 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
 	#OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.03 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
-        SPECIFIC_OPTIONS="convergence_criterion=0.0005"
+        SPECIFIC_OPTIONS="convergence_criterion=0.0005 max_no_rayleigh_wavenumber=15000"
 	;;
 
     relative-n2o)
@@ -151,7 +160,7 @@ case "$OPTIMIZE_MODE" in
 	#OPTIONS="prior_error=8.0 broadband_weight=0.2 flux_weight=0.02 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
 	#OPTIONS="prior_error=8.0 broadband_weight=0.2 flux_weight=0.03 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
 	#OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.03 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.0005"
-        SPECIFIC_OPTIONS="convergence_criterion=0.0005"
+        SPECIFIC_OPTIONS="convergence_criterion=0.0005 max_no_rayleigh_wavenumber=15000 remove_min_max=1"
 	;;
 
     relative-minor)
@@ -167,7 +176,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_SW_CKD_DIR}
 	INCODE=raw2-ckd-definition
 	OUTCODE=ckd-definition
-        SPECIFIC_OPTIONS="convergence_criterion=0.0005"
+        SPECIFIC_OPTIONS="convergence_criterion=0.0005 remove_min_max=1"
 	;;
 
     *)

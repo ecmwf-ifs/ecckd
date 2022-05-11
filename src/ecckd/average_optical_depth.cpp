@@ -87,8 +87,26 @@ average_optical_depth_to_g_point(int ng,                      ///< Number of g p
       ERROR << "averaging_method \"" << averaging_method << "\" not understood";
       THROW(PARAMETER_ERROR);
     }
-    min_optical_depth = minval(optical_depth.soft_link()(__,index), 1);
-    max_optical_depth = maxval(optical_depth.soft_link()(__,index), 1);
+
+    if (index.empty()) {
+      WARNING << "No wavenumbers with g_point == " << ig << ": skipping\n";
+      ENDWARNING;
+      optical_depth_fit = 0.0;
+      min_optical_depth = 0.0;
+      max_optical_depth = 0.0;
+    }
+    else {
+      // The calculations above can lead to the fitted optical depth
+      // not lying between min and max, which needs to be fixed or the
+      // bounded optimization will fail
+      min_optical_depth = minval(optical_depth.soft_link()(__,index), 1);
+      max_optical_depth = maxval(optical_depth.soft_link()(__,index), 1);
+      if (any(min_optical_depth > optical_depth_fit)) {
+	WARNING << "min optical depth > average optical depth: correcting\n";
+	ENDWARNING;
+	min_optical_depth.where(min_optical_depth > optical_depth_fit) = optical_depth_fit;
+      }
+    }
 
     // Abs needed because -log(1) is -0 and we want to remove the sign
     // from a negative zero.

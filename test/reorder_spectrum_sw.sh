@@ -17,6 +17,8 @@
 
 mkdir -p ${WORK_SW_ORDER_DIR}
 
+# Negligible difference between these two settings for RGB models with
+# around 32 k terms
 #OPTIONS="ssi=$MMM_SW_SSI threshold_optical_depth=0.5"
 OPTIONS="ssi=$MMM_SW_SSI threshold_optical_depth=0.25"
 

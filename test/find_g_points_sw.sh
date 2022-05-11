@@ -33,7 +33,7 @@ for BANDSTRUCT in $BAND_STRUCTURE
 do
 
 O3_MIN_G_POINTS=""
-CO2_MIN_G_POINTS=""
+#CO2_MIN_G_POINTS=""
 H2O_SPLIT=""
 CH4_MIN_G_POINTS=""
 N2O_MIN_G_POINTS=""
@@ -44,7 +44,8 @@ if [ "$BANDSTRUCT" = "rgb" -o "$BANDSTRUCT" = "gb" ]
 then
     # Need at least 3 g-points for ozone in the UV band
     O3_MIN_G_POINTS="min_g_points 1 1 1 1 3"
-    CO2_MIN_G_POINTS="min_g_points 4 1 1 1 1"
+    # CO2 minimum g points is better specified as a function of TOL later
+    #CO2_MIN_G_POINTS="min_g_points 4 1 1 1 1"
 elif [ "$BANDSTRUCT" = "fine" ]
 then
     CH4_MIN_G_POINTS="min_g_points 2"
@@ -322,14 +323,18 @@ fi
 	unset H2O_SPLIT
 	if [ "$BANDSTRUCT" = rgb ]
 	then
-	    if [ $(echo "$TOL < 0.1" | bc -l) = 1 ]
+	    if [ $(echo "$TOL < 0.025" | bc -l) = 1 ]
 	    then
-		#H2O_SPLIT=(h2o.g_split=0.65 "h2o.subband_wavenumber_boundary=7150 10500")
-		#H2O_SPLIT=(h2o.g_split=0.75 "h2o.subband_wavenumber_boundary=5350 7150 8700 10650")
+		H2O_SPLIT=(h2o.g_split=0.75 "h2o.subband_wavenumber_boundary=3750 5350 7150 8700 10650" co2.min_g_points=7)
+	    elif [ $(echo "$TOL < 0.065" | bc -l) = 1 ]
+	    then
 		H2O_SPLIT=(h2o.g_split=0.7 "h2o.subband_wavenumber_boundary=5350 7150 8700 10650" co2.min_g_points=6 "h2o.max_g_points=256 1")
-		#H2O_SPLIT=(h2o.g_split=0.7 "h2o.subband_wavenumber_boundary=7150 8700 10650" co2.min_g_points=6)
-	    else
-		H2O_SPLIT=(h2o.g_split=0.65 h2o.subband_wavenumber_boundary=7150)
+	    elif [ $(echo "$TOL < 0.15" | bc -l) = 1 ]
+	    then
+		H2O_SPLIT=(h2o.g_split=0.67 "h2o.subband_wavenumber_boundary=7150 10650" co2.min_g_points=5)
+	    elif [ $(echo "$TOL < 0.2" | bc -l) = 1 ]
+	    then
+		H2O_SPLIT=(h2o.g_split=0.65 h2o.subband_wavenumber_boundary=7150 co2.min_g_points=4)
 	    fi
 	fi
 
