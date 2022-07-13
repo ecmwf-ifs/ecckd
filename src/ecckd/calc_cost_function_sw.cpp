@@ -182,6 +182,15 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
       flux_up_fwd(__,iband) = sum(flux_up_fwd_orig(__,index),1);
     }
   }
+  // If we are computing fluxes relative to a reference then
+  // unfortunately the upwelling CKD reference fluxes (from
+  // LblFluxes::calc_ckd_fluxes) sets these to zero. Therefore we set
+  // the forward-modelled upwelling fluxes (minus reference) equal to
+  // the LBL values so that they don't contribute to the cost function
+  // - effectively we only train on the downwelling in this case.
+  //  if (relative_ckd_flux_dn) {
+  //    flux_up_fwd = flux_up;
+  //  }
 
   aMatrix heating_rate_fwd(nlay,nband);
   //heating_rate(pressure_hl, flux_dn_fwd, flux_up_fwd, heating_rate_fwd);

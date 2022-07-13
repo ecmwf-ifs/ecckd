@@ -1,6 +1,14 @@
+version 1.2
+	- Added "fine" and "window" shortwave band structures for
+	reference calculations including high resolution 290-340 nm for UV
+	index calculations
+	- create_look_up_table stores the min and max molar absorption
+	coefficients, which can be used by optimize_lut to set hard bounds
+	on the optimized coefficients and also to set the prior errors
+
 version 1.1
 	- Made use of Adept L-BFGS minimizer the default
-	- Removed lbfgs library 
+	- Removed lbfgs library
 
 version 1.0 (January 2022)
 	- Improved optimization of relative-linear representations (CH4

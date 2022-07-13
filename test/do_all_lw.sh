@@ -34,9 +34,14 @@ fi
 #BAND_STRUCTURE="fsck wide narrow"
 #TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
 
-# Create FSCK models with 16, 20, 24, 28 and 32 g-points
+# FSCK models with 16 and 32 g-points
 BAND_STRUCTURE=fsck
-TOLERANCE="0.061 0.043 0.03 0.02 0.0161"
+TOLERANCE="0.061 0.0161"
+# Or with these number of g-points: 12 16 20 24 28 32 36 40 48 64.
+# Note that the 24-point model has a large heating-rate bias at 0.03
+# hPa, which can be overcome by setting prior_error=4.0 rather than
+# 8.0 in optimize_lut_lw.sh
+#TOLERANCE="0.11 0.061 0.043 0.03 0.02 0.0161 0.013 0.0105 0.00732 0.0047"
 
 # Create a reference CKD model with 64 points
 #BAND_STRUCTURE=narrow

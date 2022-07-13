@@ -40,6 +40,7 @@ adept::MinimizerStatus solve_adept(CkdModel<true>& ckd_model, std::vector<LblFlu
 		Real spectral_boundary_weight, Real prior_error,
 		int max_iterations, Real convergence_criterion,
 		Real negative_od_penalty = 1.0e4,
+	        bool is_bounded = false,
 		Array3* relative_ckd_flux_dn = 0, Array3* relative_ckd_flux_up = 0);
 
 #endif

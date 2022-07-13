@@ -407,9 +407,15 @@ LblFluxes::calc_ckd_fluxes(const Array3D& optical_depth,
   for (int iprof = 0; iprof < nprof; ++iprof) {
     if (is_sw_) {
       Real tsi_scaling = tsi_ / sum(solar_irradiance_);
-      radiative_transfer_direct_sw(mu0_(iprof), tsi_scaling * solar_irradiance_, optical_depth(iprof,__,__),
-				   flux_dn(iprof,__,__));
-      flux_up(iprof,__,__) = 0.0;
+      //      radiative_transfer_direct_sw(mu0_(iprof), tsi_scaling * solar_irradiance_, optical_depth(iprof,__,__),
+      //				   flux_dn(iprof,__,__));
+      Vector albedo_gpoint = effective_spectral_albedo_(iband_per_g);
+      radiative_transfer_norayleigh_sw(mu0_(iprof), tsi_scaling * solar_irradiance_,
+				     optical_depth(iprof,__,__), albedo_gpoint,
+				     flux_dn(iprof,__,__), flux_up(iprof,__,__));
+      //      WARNING << "LblFluxes::calc_ckd_fluxes setting upwelling solar fluxes to zero\n";
+      //      ENDWARNING;
+      //      flux_up(iprof,__,__) = 0.0;
     }
     else {
       radiative_transfer_lw(planck_hl_(iprof,__,__), optical_depth(iprof,__,__),

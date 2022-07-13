@@ -27,9 +27,12 @@ fi
 for OPTIMIZE_MODE in $OPTIMIZE_MODE_LIST
 do
 
-#OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_weight=0.05 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8"
-
+# Optimum settings
 COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 spectral_boundary_weight=0.1"
+
+# ecCKD-1.2 with prior errors calculated from min/max but produces an
+# inferior model to prior_error=8.0
+#COMMON_OPTIONS="min_prior_error=0.5 max_prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 spectral_boundary_weight=0.1"
 
 case "$OPTIMIZE_MODE" in
 
@@ -42,7 +45,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_CKD_DIR}
 	INCODE=raw-ckd-definition
 	OUTCODE=ckd-definition
-	SPECIFIC_OPTIONS="flux_weight=0.2"
+	SPECIFIC_OPTIONS="flux_weight=0.2 remove_min_max=1"
 	;;
 
     zero-minor1)
@@ -80,7 +83,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_CKD_DIR}
 	INCODE=raw2-ckd-definition
 	OUTCODE=ckd-definition
-	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.2"
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.2 remove_min_max=1"
 	;;
     
     climate | all-in-one)
@@ -98,7 +101,7 @@ case "$OPTIMIZE_MODE" in
                   ckdmip_evaluation1_lw_fluxes_n2o-190.h5  ckdmip_evaluation1_lw_fluxes_n2o-270.h5
                   ckdmip_evaluation1_lw_fluxes_n2o-405.h5  ckdmip_evaluation1_lw_fluxes_n2o-540.h5
                   ckdmip_evaluation1_lw_fluxes_cfc11-0.h5  ckdmip_evaluation1_lw_fluxes_cfc11-2000.h5"
-	SPECIFIC_OPTIONS="flux_weight=0.2"
+	SPECIFIC_OPTIONS="flux_weight=0.2 remove_min_max=1"
 	;;
 
     all1)
@@ -183,7 +186,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_CKD_DIR}
 	INCODE=raw3-ckd-definition
 	OUTCODE=ckd-definition
-	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.5"
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.5 remove_min_max=1"
 	;;
 
     relative-n2o)
@@ -213,7 +216,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_CKD_DIR}
 	INCODE=raw4-ckd-definition
 	OUTCODE=ckd-definition
-	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.2"
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.2 remove_min_max=1"
 	;;
 
     relative-cfc)
@@ -227,7 +230,7 @@ case "$OPTIMIZE_MODE" in
 	OUTDIR=${WORK_LW_CKD_DIR}
 	INCODE=raw4-ckd-definition
 	OUTCODE=ckd-definition
-	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.2"
+	SPECIFIC_OPTIONS="convergence_criterion=0.0005 flux_weight=0.2 remove_min_max=1"
 	;;
 
     *)

@@ -17,6 +17,8 @@
 
 mkdir -p ${WORK_SW_ORDER_DIR}
 
+# Negligible difference between these two settings for RGB models with
+# around 32 k terms
 #OPTIONS="ssi=$MMM_SW_SSI threshold_optical_depth=0.5"
 OPTIONS="ssi=$MMM_SW_SSI threshold_optical_depth=0.25"
 
@@ -72,6 +74,16 @@ do
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    ${OPTIONS} \
 		    "wavenumber1=$WN1_SW_GB" "wavenumber2=$WN2_SW_GB"
+	    elif [ "$BANDSTRUCT" = fine ]
+	    then
+		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
+		    ${OPTIONS} \
+		    "wavenumber1=$WN1_SW_FINE" "wavenumber2=$WN2_SW_FINE"
+	    elif [ "$BANDSTRUCT" = window ]
+	    then
+		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
+		    ${OPTIONS} \
+		    "wavenumber1=$WN1_SW_WINDOW" "wavenumber2=$WN2_SW_WINDOW"
 	    elif [ "$BANDSTRUCT" = fsck ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
@@ -133,6 +145,16 @@ do
 	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
 		${OPTIONS} \
 		"wavenumber1=$WN1_SW_GB" "wavenumber2=$WN2_SW_GB"
+	elif [ "$BANDSTRUCT" = fine ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		${OPTIONS} \
+		"wavenumber1=$WN1_SW_FINE" "wavenumber2=$WN2_SW_FINE"
+	elif [ "$BANDSTRUCT" = window ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		${OPTIONS} \
+		"wavenumber1=$WN1_SW_WINDOW" "wavenumber2=$WN2_SW_WINDOW"
 	elif [ "$BANDSTRUCT" = fsck ]
 	then
 	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \

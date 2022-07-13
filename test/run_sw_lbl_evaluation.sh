@@ -22,7 +22,7 @@ unset OMP_NUM_THREADS
 
 SET=evaluation1
 
-INDIR=$TRAINING_SW_SPECTRA_DIR
+INDIR=${CKDMIP_DATA_DIR}/${SET}/sw_spectra
 
 OUTDIR=$WORK_SW_LBL_FLUX_DIR
 
@@ -34,6 +34,7 @@ PROGRAM=$CKDMIP_SW
 
 BANDCODE=fluxes
 #BANDCODE=fluxes-rgb
+#BANDCODE=fluxes-fine
 
 OUTPREFIX="ckdmip_${SET}_sw_${BANDCODE}"
 SUFFIX=h5
@@ -60,6 +61,8 @@ band_wavenumber2(1:13) = 2600, 3250, 4000, 4650, 5150, 6150, 8050, 12850, 16000,
 !band_wavenumber2(1:9) = 2500, 4000, 8000, 14286, 16667, 20000, 25000, 31746, 50000,
 !band_wavenumber1(1:9) = 250, 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750,
 !band_wavenumber2(1:9) = 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750, 50000,
+!band_wavenumber1(1:26) = 250, 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 14300, 15400, 16650, 18200, 20000, 22200, 25000, 28550, 30250, 30750, 31250, 31750, 32250, 32750, 33250, 33750, 34250, 
+!band_wavenumber2(1:26) = 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 14300, 15400, 16650, 18200, 20000, 22200, 25000, 28550, 30250, 30750, 31250, 31750, 32250, 32750, 33250, 33750, 34250, 50000, 
 iverbose = 3
 /
 EOF
@@ -70,6 +73,10 @@ SCENARIOS="rel-180 rel-280 rel-415 rel-560 rel-1120 rel-2240"
 
 # This scenario may be run separately with do_write_spectral_boundary_fluxes=true:
 #SCENARIOS="rel-415"
+
+# ...in which case the following scenarios are run with
+# do_write_spectral_boundary_fluxes=false (the default)
+#SCENARIOS="rel-180 rel-280 rel-560 rel-1120 rel-2240"
 
 for SCENARIO in $SCENARIOS
 do

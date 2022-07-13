@@ -66,8 +66,8 @@
 \author{Robin J. Hogan\\ \emph{European Centre for Medium Range
     Weather Forecasts, Reading, UK}}
 
-\date{Document version 1.1 (January 2022) applicable to 
-  \ecckd\ version 1.1\thanks{This document is copyright
+\date{Document version 1.2 (May 2022) applicable to 
+  \ecckd\ version 1.2\thanks{This document is copyright
     \copyright\ 2021-- ECMWF. If you have any queries about
     \ecckd\ that are not answered by this document
 %
@@ -82,15 +82,17 @@
 \section{Introduction}
 \Ecckd\ is a software tool for generating gas-optics models based on
 the correlated $k$-distribution (CKD) technique, for use atmospheric
-radiation schemes. The tool offers the user complete flexibility in
+radiation schemes. Its scientific basis and a summary of the
+performance of the gas-optics models it produces are given by
+\cite{Hogan&2022}. The tool offers the user complete flexibility in
 which gases to represent, the concentration and pressure ranges to
 cover, and how much accuracy is required (at the expense of
 efficiency). It has, however, only been tested on terrestrial
 atmospheres.  The resulting gas optics models are encoded in a
-\emph{ckd-definition} file in self-describing netCDF format,
-which can be read by the ecRad radiation scheme
-\citep{Hogan&2018}. The idea of flexibly defining a gas-optics model
-entirely by a single file originates with \cite{Edwards&1996}
+\emph{ckd-definition} file in self-describing netCDF format, which can
+be read by the ecRad radiation scheme \citep{Hogan&2018}. The idea of
+flexibly defining a gas-optics model entirely by a single file
+originates with \cite{Edwards&1996}
 
 Running the tool consists of performing a sequence of tasks in the
 form of C++ executables, each of which reads a netCDF file (or files)
@@ -147,7 +149,7 @@ CKDMIP dataset on which \ecckd\ depends.
 \item You need the NCO tools to be installed on your system; these are
   a collection of command-line utilities for manipulating netCDF
   files.
-\item Install the Adept library, version 2.1 or later
+\item Install the Adept library, version 2.1.1 or later
   \citep{Hogan2014}, from
   \url{http://www.met.reading.ac.uk/clouds/adept2} or
   \url{https://github.com/rjhogan/Adept-2}. This provides array,
@@ -341,16 +343,21 @@ sequence. The variables are as follows:
   will be simulated.  In the longwave these may be \code{fsck}
   \citep[the full-spectrum correlated-$k$ method, FSCK, described
     by][]{Hogan2010}, \code{wide} or \code{narrow} \citep[the band
-    structures proposed by][]{Hogan&2020}. In the shortwave the
+    structures proposed by][]{Hogan&2020}. In the shortwave
   \code{wide} and \code{narrow} structures are available, plus
   \code{rgb} which uses FSCK in a large near-infrared band, three
-  visible bands for red green and blue, and one ultraviolet band.  New
-  band structures can be defined, but it requires defining a unique
-  name for the structure and then editing numerous of the scripts so
-  that the correct behaviour is then invoked. Furthermore, fluxes in
-  each of the new bands need to be recomputed for the
-  \emph{Evaluation-1} dataset in each scenario by editing and running
-  the scripts described in section \ref{sec:datasets} and
+  visible bands for red green and blue, and one ultraviolet band
+  \citep{Hogan&2022}. The \code{window} and \code{fine} band
+  structures provide a larger number of bands suitable for reference
+  calculations; the band locations in the near infrared coincide with
+  atmospheric windows, and an additional set of fine bands are
+  included between 290 and 340~nm for computing the UV index. New band
+  structures can be defined, but it requires defining a unique name
+  for the structure and then editing numerous of the scripts so that
+  the correct behaviour is then invoked. Furthermore, fluxes in each
+  of the new bands need to be recomputed for the \emph{Evaluation-1}
+  dataset in each scenario by editing and running the scripts
+  described in section \ref{sec:datasets} and
   \ref{sec:additional}. Note that rerunning the scripts may not be
   needed if your band structure involves only groupings of the bands
   of an existing band structure (e.g.\ the \code{wide} CKDMIP band
@@ -529,7 +536,8 @@ look-up table file shown in Fig.\ \ref{fig:flowchart}.
 
 The \code{conc\_dependence} configuration parameter for each gas
 specifies one of several ways in which the concentration dependence is
-to be represented:
+to be represented \cite[see][for the mathematical
+  definition]{Hogan&2022}:
 \begin{description}
 \item[\code{none}] -- This is used for composite gases that encompass
   the contribution from all gases that are assumed to have a constant
@@ -609,7 +617,11 @@ written to the \code{\$WORK\_DIR/sw\_ckd-definition} and
 \hline
 Setting & Typical & Description\\
 \hline
-prior\_error & 2.0 & Error assigned to the prior values of the look-up table coefficients read in \\
+bounded\_minimization & 1 & Do we bound the possible values of the look-up-table coefficients by the minimum and maximum molar absorptions that they are representing? \\
+prior\_error\_scaling & 1.0 & By default the a-priori error in the natural logarithm of the coefficients is estimated as 0.25 of the difference between the maximum and minimum values; this parameter scales the error up or down\\
+min\_prior\_error & 0.2 & Set the minimum value for the prior error estimated as above\\
+max\_prior\_error & 2.0 & Set the maximum value for the prior error estimated as above\\
+prior\_error & 2.0 & Override the a-priori error in the natural logarithm of the look-up table coefficients, setting it to this fixed value \\
 broadband\_weight & 0.0--0.8 & Weight assigned to broadband fluxes and heating rates in the penalty function, as opposed to band fluxes; if this is non-zero then it allows errors in one band to be traded against errors in another which may or may not be desirable\\
 flux\_weight & 0.01--0.3 & Weight of fluxes at TOA/surface to penalty function\\
 flux\_profile\_weight & 0.05 & Weight of flux profile to penalty function \\
@@ -619,6 +631,7 @@ pressure\_corr & 0.8  & Background error correlation between adjacent look-up ta
 conc\_corr & 0.8  & Background error correlation between adjacent look-up table elements in the concentration dimension\\
 max\_iterations & 2000 & Maximum number of iterations to perform \\
 convergence\_criterion & 0.0005--0.02 & Norm of the gradient of the penalty function at which convergence is deemed to have occurred \\
+save\_min\_max & 0 & Do we save the minimum and maximum molar absorption coefficients for each gas in the output file?  This needs to be 1 if further optimization steps will be performed, but since the minimum and maximum values are not required by the user it is typically 0 for the final optimization step.\\
 \hline
 \end{tabular}
 \end{center}
@@ -769,6 +782,11 @@ intergovernmental organisation nor does it submit to any jurisdiction.
   \textbf{13,} {6501--6521,}
   \url{https://doi.org/10.5194/gmd-13-6501-2020}.
 %
+\bibitem[{Hogan and Matricardi(2022)}]{Hogan&2022}Hogan, R. J., and
+  M. Matricardi, 2022: A tool for generating fast $k$-distribution
+  gas-optics models for weather and climate
+  applications. \textit{J. Modeling Earth Sys.,} in review. Available
+  at \url{https://confluence.ecmwf.int/x/XwU0Dw}.
 \end{thebibliography}
 
 \end{document}

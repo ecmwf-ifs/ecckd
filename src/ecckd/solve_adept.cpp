@@ -264,6 +264,9 @@ public:
 	gradient[ix] = 0.0;
       }
     }
+    // Sometimes tiny gradients can cause problems in the minimization
+    // - set to zero
+    gradient.where(fabs(gradient) < 1.0e-80) = 0.0;
     
     J += J_prior;
     ///  std::cout << J << " " << J_prior << " infinity norm " << maxval(fabs(gradient)) << " " << maxval(fabs(gradient_prior)) << std::endl;
@@ -297,6 +300,7 @@ solve_adept(CkdModel<true>& ckd_model,
 	    int max_iterations,
 	    Real convergence_criterion,
 	    Real negative_od_penalty,
+	    bool is_bounded,
 	    Array3D* relative_ckd_flux_dn,
 	    Array3D* relative_ckd_flux_up)
 {
@@ -308,12 +312,26 @@ solve_adept(CkdModel<true>& ckd_model,
   minimizer.set_max_step_size(2.0);
   minimizer.set_converged_gradient_norm(convergence_criterion);
 
+  // State vector holds the logarithm of the molar absorption coefficients
   Vector x(ckd_model.nx());
+
   // Values of zero are held at zero
   x = MIN_X;
   x.where(ckd_model.x > 0.0) = log(ckd_model.x.inactive_link());
 
   ckd_model.x_prior = x;
+
+  Vector x_min, x_max;
+  if (is_bounded) {
+    adept::minimizer_initialize_bounds(ckd_model.nx(), x_min, x_max);
+    x_min.where(ckd_model.x_min > 0.0) = log(ckd_model.x_min.inactive_link());
+    x_max.where(ckd_model.x_max > 0.0) = log(ckd_model.x_max.inactive_link());
+    // For g points where the minimum absorption is zero, we set it to
+    // a more realistic value, which is twice as far on the negative
+    // side (in log space) as x_max is from x
+    x_min.where(ckd_model.x_min == 0 && ckd_model.x > 0.0 && ckd_model.x_max > 0.0)
+      = 3.0*x - 2.0*x_max;
+  }
 
   MyData& data = ckd_optimizable.data;
   data.ckd_model = &ckd_model;
@@ -340,6 +358,16 @@ solve_adept(CkdModel<true>& ckd_model,
   data.timer.start(data.minimizer_id);
 
   // Call Adept minimizer
-  return minimizer.minimize(ckd_optimizable, x);
+  if (is_bounded) {
+    LOG << "  Minimization is bounded\n";
+    LOG << "    number bounded below: " << count(ckd_model.x_min>0)
+	<< ", above: " << count(ckd_model.x_max>0)
+	<< ", out of non-zero elements: " << count(ckd_model.x > 0) << "\n";
+    return minimizer.minimize(ckd_optimizable, x, x_min, x_max);
+  }
+  else {
+    LOG << "  Minimization is unbounded\n";
+    return minimizer.minimize(ckd_optimizable, x);
+  }
 }
 
