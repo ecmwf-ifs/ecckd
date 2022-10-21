@@ -80,7 +80,8 @@ do
 		NEW_MODEL_CODE=${NEW_MODEL_CODE}b
 	    fi
 
-	    NEW_CKD_FILE=${CKDMIP_RESULTS_DIR}/lw_spectral-definition/${ECCKD_PREFIX}_lw_${NEW_MODEL_CODE}_spectral-definition.nc
+
+	    NEW_CKD_FILE=${CKDMIP_RESULTS_DIR}/lw_spectral-definition/${ECCKD_PREFIX}_lw_${NEW_MODEL_CODE}${VER_SUFFIX}_spectral-definition.nc
 
 	    echo "  Copying $CKD_FILE -> $NEW_CKD_FILE"
 	    cp -f $CKD_FILE $NEW_CKD_FILE

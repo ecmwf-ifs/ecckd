@@ -56,6 +56,18 @@ average_optical_depth_to_g_point(int ng,                      ///< Number of g p
 			    / sum(planck_fl.soft_link()(__,index),1));
       optical_depth_fit = abs(-log(1.0-optical_depth_fit)/(LW_DIFFUSIVITY*OD_SCALING*2.0));
     }
+    else if (averaging_method == "transmission-3") {
+      optical_depth_fit = min(0.9999999999999999,sum((1.0-exp(-optical_depth.soft_link()(__,index)*(LW_DIFFUSIVITY*OD_SCALING*3.0)))
+					    * planck_fl.soft_link()(__,index), 1)
+			    / sum(planck_fl.soft_link()(__,index),1));
+      optical_depth_fit = abs(-log(1.0-optical_depth_fit)/(LW_DIFFUSIVITY*OD_SCALING*3.0));
+    }
+    else if (averaging_method == "transmission-10") {
+      optical_depth_fit = min(0.9999999999999999,sum((1.0-exp(-optical_depth.soft_link()(__,index)*(LW_DIFFUSIVITY*OD_SCALING*10.0)))
+					    * planck_fl.soft_link()(__,index), 1)
+			    / sum(planck_fl.soft_link()(__,index),1));
+      optical_depth_fit = abs(-log(1.0-optical_depth_fit)/(LW_DIFFUSIVITY*OD_SCALING*10.0));
+    }
     else if (averaging_method == "square-root") {
       optical_depth_fit = sum(sqrt(optical_depth.soft_link()(__,index))*planck_fl.soft_link()(__,index), 1)
 	/ sum(planck_fl.soft_link()(__,index),1);

@@ -247,7 +247,8 @@ main(int argc, const char* argv[])
     std::string Gas = gas_str;
     std::transform(Gas.begin(), Gas.end(), Gas.begin(), ::toupper);
     LOG << "Creating look-up table for " << Gas << " (gas number " << ngas << ")\n";
-
+    LOG << "  Averaging method = " << averaging_method << "\n";
+    
     single_gas_data.push_back(SingleGasData<false>(gas_str));
     SingleGasData<false>& this_gas = single_gas_data[ngas];
 

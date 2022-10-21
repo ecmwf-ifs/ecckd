@@ -22,7 +22,7 @@ unset OMP_NUM_THREADS
 . version.h
 
 # CKDMIP installation directory and CKDMIP executables
-CKDMIP_DIR=/home/pa/parr/src/ckdmip-1.0
+CKDMIP_DIR=/home/parr/src/ckdmip-1.1
 CKDMIP_TOOL=${CKDMIP_DIR}/bin/ckdmip_tool
 CKDMIP_LW=${CKDMIP_DIR}/bin/ckdmip_lw
 CKDMIP_SW=${CKDMIP_DIR}/bin/ckdmip_sw
@@ -40,7 +40,7 @@ LW_CKD=${BINDIR}/run_ckd
 SW_CKD=${BINDIR}/run_ckd
 
 # CKDMIP data directories
-CKDMIP_DATA_DIR=/hugetmp/parr/ckdmip
+CKDMIP_DATA_DIR=/perm/parr/ckdmip
 
 # Median/minimum/maximum dataset
 MMM_CODE=mmm
@@ -83,7 +83,7 @@ EVALUATION_SW_FLUXES_DIR=${EVALUATION_DIR}/sw_fluxes
 CLOUD_SPECTRUM=../data/mie_droplet_scattering.nc
 
 # Work directory
-WORK_DIR=/hugetmp/parr/ecckd
+WORK_DIR=/perm/parr/ecckd
 WORK_LW_SPECTRA_DIR=${WORK_DIR}/lw_spectra
 WORK_LW_ORDER_DIR=${WORK_DIR}/lw_order
 WORK_LW_GPOINTS_DIR=${WORK_DIR}/lw_gpoints

@@ -17,6 +17,15 @@
 . config.h
 . check_configuration.h
 
+# Default spectral averaging method matches the transmittance of a
+# layer (a tenth of a decade in pressure)
+OUTPUT_CODE=_raw
+
+# Alternative is to match the transmittance of three layers (a third
+# of a decade in pressure)
+#EXTRA_ARGS=averaging_method=transmission-3
+#OUTPUT_CODE=_raw-transmission3
+
 # Create configuration file
 if [ "$APP" = nwp ]
 then
@@ -232,13 +241,13 @@ do
 	${BANNER} Creating raw CKD model: $MODEL_CODE
 
 	INPUT=${ECCKD_PREFIX}_lw_gpoints_${MODEL_CODE}.h5
-	OUTPUT=${WORK_LW_RAW_CKD_DIR}/${ECCKD_PREFIX}_lw_raw-ckd-definition_${MODEL_CODE}.nc
+	OUTPUT=${WORK_LW_RAW_CKD_DIR}/${ECCKD_PREFIX}_lw${OUTPUT_CODE}-ckd-definition_${MODEL_CODE}.nc
 	$CREATE_LOOK_UP_TABLE \
 	    input=${INPUT} \
 	    output=${OUTPUT} \
 	    $EXTRA_ARGS \
 	    config_create_lut_${APP}.cfg \
-	    |& tee ${WORK_LW_RAW_CKD_DIR}/${ECCKD_PREFIX}_lw_raw-ckd-definition_${MODEL_CODE}.log
+	    |& tee ${WORK_LW_RAW_CKD_DIR}/${ECCKD_PREFIX}_lw${OUTPUT_CODE}-ckd-definition_${MODEL_CODE}.log
 	test "${PIPESTATUS[0]}" -eq 0
     done
 done
