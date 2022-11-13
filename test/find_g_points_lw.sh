@@ -301,20 +301,30 @@ flux_weight 0.0
 min_pressure ${MIN_PRESSURE}
 max_iterations 60
 
-gases o2 h2o
+gases o2n2 h2o o3
 
 \begin h2o
   # Water vapour in median present-day concentrations
   input ckdmip_mmm_lw_spectra_h2o_median.h5
   reordering_input lw_order_${BANDSTRUCT}_h2o.h5
-  background_input "ckdmip_mmm_lw_spectra_o2_constant.h5"
+  background_input "ckdmip_mmm_lw_spectra_o2n2_constant.h5
+ckdmip_mmm_lw_spectra_o3_minimum.h5"
 \end h2o
 
-\begin o2
-  input ckdmip_mmm_lw_spectra_o2_constant.h5
-  reordering_input lw_order_${BANDSTRUCT}_o2.h5
-  background_input "ckdmip_mmm_lw_spectra_h2o_minimum.h5"
-\end o2
+\begin o2n2
+  input "ckdmip_mmm_lw_spectra_o2_constant.h5
+ckdmip_mmm_lw_spectra_n2_constant.h5"
+  reordering_input lw_order_${BANDSTRUCT}_o2n2.h5
+  background_input "ckdmip_mmm_lw_spectra_h2o_minimum.h5
+ckdmip_mmm_lw_spectra_o3_minimum.h5"
+\end o2n2
+
+\begin o3
+  input ckdmip_mmm_lw_spectra_o3_median.h5
+  reordering_input lw_order_${BANDSTRUCT}_o3.h5
+  background_input "ckdmip_mmm_lw_spectra_o2n2_constant.h5
+ckdmip_mmm_lw_spectra_h2o_minimum.h5"
+\end o3
 
 EOF
 else
