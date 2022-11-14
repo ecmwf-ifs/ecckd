@@ -4,7 +4,7 @@
 AC_PREREQ([2.63])
 
 # Remember to update the version number for a new release
-AC_INIT([ecCKD], [1.3], [r.j.hogan@ecmwf.int], [ecckd])
+AC_INIT([ecCKD], [1.4], [r.j.hogan@ecmwf.int], [ecckd])
 
 # Most code is C++
 AC_LANG([C++])

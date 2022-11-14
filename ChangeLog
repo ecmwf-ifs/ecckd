@@ -1,3 +1,7 @@
+version 1.4
+	- Save solar spectral irradiance (corresponding to
+	gpoint_fraction) in output file
+
 version 1.3
 	- Added capability to create-LUT to use transmission averaging
 	over 2, 3 and 10 layers instead of just 1.

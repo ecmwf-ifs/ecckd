@@ -162,6 +162,7 @@ public:
 	   const std::string& config = std::string()) 
     : single_gas_data_(single_gas_data),
       solar_irradiance_(eval(solar_irradiance)),
+      ssi_(eval(ssi_intervals)),
       log_pressure_(log(pressure)),
       temperature_(eval(temperature)),
       wavenumber1_(eval(wavenumber1)),
@@ -416,6 +417,9 @@ private:
   /// Solar irradiance in each g point (W m-2)
   Vector solar_irradiance_;
 
+  /// Solar irradiance in each wavenumber interval (W m-2)
+  Vector ssi_;
+  
   /// Rayleigh molar scattering coefficient (m2 mol-1) in each g-point
   Array<1,adept::Real,IsActive> rayleigh_molar_scat_;
 

@@ -38,6 +38,9 @@ CkdModel<IsActive>::read(const std::string& file_name,
   file.throw_exceptions(true);
   if (file.exist("solar_irradiance")) {
     file.read(solar_irradiance_, "solar_irradiance");
+    if (file.exist("solar_spectral_irradiance")) {
+      file.read(ssi_, "solar_spectral_irradiance");
+    }
   }
   else {
     file.read(temperature_planck_, "temperature_planck");
@@ -321,6 +324,12 @@ CkdModel<IsActive>::write(const std::string& file_name,
     file.define_variable("solar_irradiance", FLOAT, "g_point");
     file.write_long_name("Solar irradiance across each g point", "solar_irradiance");
     file.write_units("W m-2", "solar_irradiance");
+
+    if (!ssi_.empty()) {
+      file.define_variable("solar_spectral_irradiance", FLOAT, "wavenumber");
+      file.write_long_name("Solar irradiance in each spectral interval", "solar_spectral_irradiance");
+      file.write_units("W m-2", "solar_spectral_irradiance");
+    }
   }
   else {
     file.define_variable("temperature_planck", FLOAT, "temperature_planck");
@@ -536,6 +545,9 @@ CkdModel<IsActive>::write(const std::string& file_name,
   if (is_sw()) {
     file.write(solar_irradiance_, "solar_irradiance");
     file.write(rayleigh_molar_scat_.inactive_link(), "rayleigh_molar_scattering_coeff");
+    if (!ssi_.empty()) {
+      file.write(ssi_, "solar_spectral_irradiance");
+    }
   }   
   else {
     file.write(temperature_planck_, "temperature_planck");
