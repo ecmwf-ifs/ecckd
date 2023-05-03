@@ -307,5 +307,14 @@ main(int argc, const char* argv[])
   //  ckd_model.cap_relative_linear_coeffts(1.0);
   ckd_model.write(output, argc, argv, config_str);
 
-  return 0;
+  if (static_cast<int>(status)
+      >= static_cast<int>(MINIMIZER_STATUS_INVALID_COST_FUNCTION)) {
+    // Anomalous exit from Adept minimizer
+    return 1;
+  }
+  else {
+    // Normal exit from Adept minimizer, which may be failure to
+    // converge
+    return 0;
+  }
 }

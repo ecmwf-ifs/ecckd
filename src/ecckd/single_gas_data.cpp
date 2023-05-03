@@ -18,7 +18,8 @@
 #include "Error.h"
 
 // Overlap the g-points of the various gases using the hypercube
-// partition method of Hogan (2010)
+// partition method of Hogan (2010), storing the results in the g_min
+// and g_max members of each element of gas_data.
 int
 overlap_g_points(std::vector<SingleGasData>& gas_data,
 		 intVector& band_number) {

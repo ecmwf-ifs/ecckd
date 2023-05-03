@@ -1,13 +1,20 @@
-version 1.4
+version 1.5
+	- Added hybrid-logarithmic-transmission-3 averaging method
+	- optimize_lut exits with a non-zero error code if minimizer
+	returns anomalous status (e.g. NaNs or dodgy bounds)
+	- If absorption coefficient min=0 and max>0, then ensure minimizer
+	bounds in log space are at least 1.0 apart
+
+version 1.4 (November 2022)
 	- Save solar spectral irradiance (corresponding to
 	gpoint_fraction) in output file
 
-version 1.3
+version 1.3 (October 2022)
 	- Added capability to create-LUT to use transmission averaging
 	over 2, 3 and 10 layers instead of just 1.
 	- Scripts use directories on ECMWF's Bologna HPC
 
-version 1.2
+version 1.2 (May 2022)
 	- Added "fine" and "window" shortwave band structures for
 	reference calculations including high resolution 290-340 nm for UV
 	index calculations
@@ -15,7 +22,7 @@ version 1.2
 	coefficients, which can be used by optimize_lut to set hard bounds
 	on the optimized coefficients and also to set the prior errors
 
-version 1.1
+version 1.1 (January 2022)
 	- Made use of Adept L-BFGS minimizer the default
 	- Removed lbfgs library
 

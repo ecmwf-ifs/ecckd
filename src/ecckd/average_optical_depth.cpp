@@ -95,6 +95,38 @@ average_optical_depth_to_g_point(int ng,                      ///< Number of g p
 	}
       }
     }
+    else if (averaging_method == "hybrid-logarithmic-transmission-3") {
+      optical_depth_fit.resize(optical_depth.size(0));
+      for (int iz = 0; iz < optical_depth.size(0); ++iz) {
+	if (pressure_fl(iz) > 100.0e2) {
+	  // Logarithmic averaging for pressure larger than 100 hPa
+	  intVector iindex = find(g_point == ig && optical_depth.soft_link()(iz,__) > 0.0);
+	  Vector od_nonzero = optical_depth.soft_link()(iz,iindex);
+	  if (od_nonzero.size() == index.size()) {
+	    // Pure logarithmic average
+	    optical_depth_fit(iz) = exp(sum(log(od_nonzero)*planck_fl.soft_link()(iz,index))
+					/ sum(planck_fl.soft_link()(iz,index)));
+	  }
+	  else if (od_nonzero.empty()) {
+	    // No non-zero data
+	    optical_depth_fit(iz) = 0.0;
+	  }
+	  else {
+	    // Some zeros: logarithmic average of non-zeros then linear average with zeros
+	    optical_depth_fit(iz) = exp(sum(log(od_nonzero)*planck_fl.soft_link()(iz,iindex))
+					/ sum(planck_fl.soft_link()(iz,iindex)))
+	      * (static_cast<Real>(iindex.size())/static_cast<Real>(index.size()));
+	  }
+	}
+	else {
+	  // Transmission-3 averaging for smaller pressures
+	  optical_depth_fit(iz) = std::min(0.9999999999999999,sum((1.0-exp(-optical_depth.soft_link()(iz,index)*(LW_DIFFUSIVITY*OD_SCALING*3.0)))
+							     * planck_fl.soft_link()(iz,index))
+				      / sum(planck_fl.soft_link()(iz,index)));
+	  optical_depth_fit(iz) = abs(-log(1.0-optical_depth_fit(iz))/(LW_DIFFUSIVITY*OD_SCALING*3.0));
+	}
+      }
+    }
     else {
       ERROR << "averaging_method \"" << averaging_method << "\" not understood";
       THROW(PARAMETER_ERROR);

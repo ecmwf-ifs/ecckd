@@ -102,12 +102,17 @@ struct SingleGasData {
   }
 
   // Data
-  std::string molecule, Molecule;
-  intVector n_g_points, band_number;
-  intVector rank1, rank2;
-  intVector g_min, g_max;
-  Vector error, sorting_variable;
-  intVector g_point;
+
+  std::string molecule, Molecule;  // Molecule name, lower and upper case
+  // Properties of the g-points for this specific gas
+  intVector n_g_points;    // Number of g-points in each band
+  intVector band_number;   // Band associated with each g-point
+  intVector rank1, rank2;  // Wavenumber rank lower/upper bound for each g-point
+  Vector error;            // Heating-rate error for each g-point
+  Vector sorting_variable; // Median sorting variable for each g-point
+  intVector g_point;       // G-point associated with each wavenumber (long vector)
+  // Descriptors of how this gas maps into the final merged g-points
+  intVector g_min, g_max;  // For each merged g-point, index of start/end g-points for this specific gas
 };
 
 int overlap_g_points(std::vector<SingleGasData>& gas_data,

@@ -328,9 +328,22 @@ solve_adept(CkdModel<true>& ckd_model,
     x_max.where(ckd_model.x_max > 0.0) = log(ckd_model.x_max.inactive_link());
     // For g points where the minimum absorption is zero, we set it to
     // a more realistic value, which is twice as far on the negative
-    // side (in log space) as x_max is from x
+    // side (in log space) as x_max is from x, but in case x==x_max,
+    // we ensure x_min is no more than x_max-1 (both in log space).
     x_min.where(ckd_model.x_min == 0 && ckd_model.x > 0.0 && ckd_model.x_max > 0.0)
-      = 3.0*x - 2.0*x_max;
+      = min(3.0*x - 2.0*x_max, x_max-1.0);
+    intVector bad_loc = find(ckd_model.x_max > 0.0 && x_min>=x_max);
+    if (!bad_loc.empty()) {
+      WARNING << bad_loc.size() << " bounds on the state variables have x_min>=x_max, starting at index "
+
+	      << bad_loc(0);
+      LOG << "x_min(bad)=" << x_min(bad_loc) << "\n";
+      LOG << "x_max(bad)=" << x_max(bad_loc) << "\n";
+      LOG << "ckd_model.x_min(bad)=" << ckd_model.x_min(bad_loc) << "\n";
+      LOG << "ckd_model.x_prior(bad)=" << ckd_model.x_prior(bad_loc) << "\n";
+      LOG << "ckd_model.x_max(bad)=" << ckd_model.x_max(bad_loc) << "\n";
+      ENDWARNING;
+    }
   }
 
   MyData& data = ckd_optimizable.data;
