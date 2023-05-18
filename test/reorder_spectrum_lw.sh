@@ -19,7 +19,7 @@ mkdir -p ${WORK_LW_ORDER_DIR}
 
 GAS_LIST="composite h2o_median o3_median co2_present ch4_present n2o_present o2n2_constant"
 # In the microwave we consider limited number of gases
-GAS_LIST="o2n2_constant h2o_median o3_median"
+#GAS_LIST="o2n2_constant h2o_median o3_median"
 
 # Loop through the median/present concentrations of each gas and
 # reorder

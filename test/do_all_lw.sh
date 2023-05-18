@@ -20,6 +20,14 @@
 #APPLICATION=global-nwp
 APPLICATION=climate
 
+# Optionally specify a suffix to use for a particular experiment
+MODEL_CODE_SUFFIX=
+#MODEL_CODE_SUFFIX=-caviar
+
+# Optionally select alternative water vapour continuum model
+H2OCONTINUUM=
+#H2OCONTINUUM=caviar
+
 if [ "$APPLICATION" = climate ]
 then
     # The best strategy for climate CKD models is to optimize first
@@ -34,9 +42,11 @@ fi
 #BAND_STRUCTURE="fsck wide narrow"
 #TOLERANCE="0.16 0.08 0.04 0.02 0.01 0.005"
 
-# FSCK models with 16 and 32 g-points
+# FSCK models with 16 and/or 32 g-points
 BAND_STRUCTURE=fsck
-TOLERANCE="0.061 0.0161"
+#TOLERANCE="0.061 0.0161"
+TOLERANCE="0.0161"
+
 # Or with these number of g-points: 12 16 20 24 28 32 36 40 48 64.
 # Note that the 24-point model has a large heating-rate bias at 0.03
 # hPa, which can be overcome by setting prior_error=4.0 rather than
@@ -47,10 +57,21 @@ TOLERANCE="0.061 0.0161"
 #BAND_STRUCTURE=narrow
 #TOLERANCE=0.013
 
+# H2O suffix to accommodate different continuum models
+if [ ! "$H2OCONTINUUM" ]
+then
+    # Default continuum
+    H2OSUFFIX=
+else
+    H2OSUFFIX=-$H2OCONTINUUM
+fi
+
 # Make variables available to scripts find_g_points_lw.sh onwards
 export TOLERANCE
 export APPLICATION
 export BAND_STRUCTURE
+export MODEL_CODE_SUFFIX
+export H2OSUFFIX
 
 # 1. Merge well-mixed gases
 ./merge_well_mixed_lw.sh
@@ -71,7 +92,7 @@ export BAND_STRUCTURE
 # for CKDMIP scenarios; first optionally specify which CKD models to
 # run radiative transfer on (default is the final one, i.e. "ckd", but
 # "raw", "raw2" etc are also possible)
-#export VERSIONS="ckd"
+#export VERSIONS="ckd "
 ./run_ckd_lw.sh
 
 # 7. Copy to the CKDMIP directory, changing file names from stating
