@@ -337,11 +337,22 @@ solve_adept(CkdModel<true>& ckd_model,
       WARNING << bad_loc.size() << " bounds on the state variables have x_min>=x_max, starting at index "
 
 	      << bad_loc(0);
-      LOG << "x_min(bad)=" << x_min(bad_loc) << "\n";
-      LOG << "x_max(bad)=" << x_max(bad_loc) << "\n";
-      LOG << "ckd_model.x_min(bad)=" << ckd_model.x_min(bad_loc) << "\n";
-      LOG << "ckd_model.x_prior(bad)=" << ckd_model.x_prior(bad_loc) << "\n";
-      LOG << "ckd_model.x_max(bad)=" << ckd_model.x_max(bad_loc) << "\n";
+      int nbad = bad_loc.size();
+      if (nbad > 10) {
+	intVector bad_loc2 = bad_loc(range(0,9));
+	LOG << "x_min(bad)=" << x_min(bad_loc2) << "...\n";
+	LOG << "x_max(bad)=" << x_max(bad_loc2) << "...\n";
+	LOG << "ckd_model.x_min(bad)=" << ckd_model.x_min(bad_loc2) << "...\n";
+	LOG << "ckd_model.x_prior(bad)=" << ckd_model.x_prior(bad_loc2) << "...\n";
+	LOG << "ckd_model.x_max(bad)=" << ckd_model.x_max(bad_loc2) << "...\n";
+      }
+      else {
+	LOG << "x_min(bad)=" << x_min(bad_loc) << "\n";
+	LOG << "x_max(bad)=" << x_max(bad_loc) << "\n";
+	LOG << "ckd_model.x_min(bad)=" << ckd_model.x_min(bad_loc) << "\n";
+	LOG << "ckd_model.x_prior(bad)=" << ckd_model.x_prior(bad_loc) << "\n";
+	LOG << "ckd_model.x_max(bad)=" << ckd_model.x_max(bad_loc) << "\n";
+      }
       ENDWARNING;
     }
   }

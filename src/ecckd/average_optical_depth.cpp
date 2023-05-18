@@ -145,16 +145,32 @@ average_optical_depth_to_g_point(int ng,                      ///< Number of g p
       // bounded optimization will fail
       min_optical_depth = minval(optical_depth.soft_link()(__,index), 1);
       max_optical_depth = maxval(optical_depth.soft_link()(__,index), 1);
+
+      // Sometimes transmission averaging goes inaccurate for low
+      // optical depths: ensure it is in the range max to min
+      optical_depth_fit = max(min_optical_depth, min(optical_depth_fit, max_optical_depth));
+      
       if (any(min_optical_depth > optical_depth_fit)) {
-	WARNING << "min optical depth > average optical depth: correcting\n";
+	WARNING << "G-point " << ig << ": min optical depth > average optical depth: correcting; length(index) = " << index.size() << "\n";
 	ENDWARNING;
 	min_optical_depth.where(min_optical_depth > optical_depth_fit) = optical_depth_fit;
+      }
+      if (any(min_optical_depth > 0.0 && min_optical_depth >= max_optical_depth)) {
+	WARNING << "G-point " << ig << ": min optical depth >= max_optical_depth: length(index) = " << index.size() << "\n";
+	ENDWARNING;
+	// Bounded minimization can't cope with equal bounds
+	intVector index2 = find(min_optical_depth > 0.0 && min_optical_depth >= max_optical_depth);
+	min_optical_depth(index2) *= 0.99;
+	max_optical_depth(index2) *= 1.01;
       }
     }
 
     // Abs needed because -log(1) is -0 and we want to remove the sign
     // from a negative zero.
     if (reference_surface_vmr > 0.0) {
+      // Molar absorption coefficient, where reference_surface_vmr
+      // actually refers to the volume mixing ratio at all heights in
+      // this Idealized dataset
       molar_abs.soft_link()(__,ig) 
 	= ((ACCEL_GRAVITY * 0.001 * MOLAR_MASS_DRY_AIR) / reference_surface_vmr)
 	* optical_depth_fit / (pressure_hl.soft_link()(range(1,end))-pressure_hl.soft_link()(range(0,end-1)));

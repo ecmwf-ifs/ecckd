@@ -456,6 +456,12 @@ main(int argc, const char* argv[])
 	      this_gas.vmr.resize(nconc);
 	      temperature_fl.resize(ncol,nlay);
 	    }
+
+	    if (reference_surface_vmr < 0.0) {
+	      ERROR << "Invalid reference_surface_vmr for constructing VMR-dependent look-up table";
+	      THROW(PARAMETER_ERROR);
+	    }
+	    
 	    this_gas.vmr(iconc) = reference_surface_vmr;
 
 	    Vector t_x_p = temperature_hl * pressure_hl;
