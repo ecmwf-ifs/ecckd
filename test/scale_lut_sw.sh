@@ -21,12 +21,13 @@ SET=mmm
 LBLINDIR=$MMM_SW_SPECTRA_DIR
 LBLDIR=$WORK_SW_LBL_FLUX_DIR
 LBLINPREFIX=$LBLINDIR/ckdmip_${SET}_sw_spectra_
+LBLALTINPREFIX=$WORK_SW_SPECTRA_DIR/ckdmip_${SET}_sw_spectra_
 CONFIG="config_sw_lbl_${SET}.nam"
 BANDCODE=fluxes-raw
 LBLPREFIX="ckdmip_${SET}_sw_${BANDCODE}"
 SUFFIX=h5
 ICOL=1
-LBLFILE=$LBLDIR/${LBLPREFIX}_present_${ICOL}.$SUFFIX
+LBLFILE=$LBLDIR/${LBLPREFIX}${H2OSUFFIX}_present_${ICOL}.$SUFFIX
 SCENARIO=present
 
 INDIR=${WORK_SW_RAW_CKD_DIR}
@@ -64,7 +65,13 @@ EOF
   CH4_VMR=1921e-9
   N2O_VMR=332e-9
 
-  H2O_FILE=${LBLINPREFIX}h2o_median.h5
+  H2O_FILE=${LBLINPREFIX}h2o${H2OSUFFIX}_median.h5
+  # Alternative continuum files might be in user's directory
+  if [ ! -r "$H2O_FILE" ]
+  then
+      H2O_FILE=${LBLALTINPREFIX}h2o${H2OSUFFIX}_median.h5
+  fi    
+
   CO2_FILE=${LBLINPREFIX}co2_${SCENARIO}.h5
   O3_FILE=${LBLINPREFIX}o3_median.h5
   CH4_FILE=${LBLINPREFIX}ch4_${SCENARIO}.h5
@@ -87,6 +94,8 @@ EOF
       $RAYLEIGH_FILE \
       --output $LBLFILE
 
+else
+    ${BANNER_SKIP} Skipping reference LBL calculation as file present: ${LBLFILE}
 fi
 
 

@@ -79,6 +79,11 @@ do
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    ${OPTIONS} \
 		    "wavenumber1=$WN1_SW_FINE" "wavenumber2=$WN2_SW_FINE"
+	    elif [ "$BANDSTRUCT" = vfine ]
+	    then
+		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
+		    ${OPTIONS} \
+		    "wavenumber1=$WN1_SW_VFINE" "wavenumber2=$WN2_SW_VFINE"
 	    elif [ "$BANDSTRUCT" = window ]
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
@@ -150,6 +155,11 @@ do
 	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
 		${OPTIONS} \
 		"wavenumber1=$WN1_SW_FINE" "wavenumber2=$WN2_SW_FINE"
+	elif [ "$BANDSTRUCT" = vfine ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+		${OPTIONS} \
+		"wavenumber1=$WN1_SW_VFINE" "wavenumber2=$WN2_SW_VFINE"
 	elif [ "$BANDSTRUCT" = window ]
 	then
 	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
@@ -166,7 +176,7 @@ do
 		    ${OPTIONS} \
 		    "wavenumber1=$WN1_SW_CUSTOM" "wavenumber2=$WN2_SW_CUSTOM"
 	    else
-		${BANNER_ERROR} "Band structure\"$BANDSTRUCT\" not understood"
+		${BANNER_ERROR} "Band structure \"$BANDSTRUCT\" not understood"
 		exit 1
 	    fi
 	fi

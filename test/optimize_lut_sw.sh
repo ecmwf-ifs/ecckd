@@ -38,6 +38,7 @@ COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profil
 COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.3 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
 
 COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
+
 # Tried max_no_rayleigh_wavenumber=15000 for RGB band structure; TOA
 # fluxes were improved but introducing much larger errors into surface
 # fluxes and tropospheric heating rates.  It does sometimes help
@@ -56,6 +57,12 @@ COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profil
 # to beat.
 COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 bounded_optimization=0"
 
+# ECCKD 1.4 testing
+#COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.9 pressure_corr=0.9 conc_corr=0.9 max_iterations=2000"
+
+# Trying to remove noise in forecasts...
+#COMMON_OPTIONS="prior_error=1.0 broadband_weight=0.4 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.97 pressure_corr=0.97 conc_corr=0.99 max_iterations=2000"
+
 # Test for ecCKD-1.2/window/fine - slight improvement with the first but the
 # second mucks up CH4/N2O forcing - need to have adaptive errors
 # according to the range of absorptions being covered by a single g
@@ -69,7 +76,7 @@ case "$OPTIMIZE_MODE" in
     nwp)
 	# NWP optimization is a single step using present-day gas
 	# concentrations
-	TRAINING=ckdmip_evaluation1_sw_fluxes_present.h5
+	TRAINING=ckdmip_${TRAINING_CODE}_sw_fluxes_present.h5
 	GASLIST="h2o o3 composite"
 	INDIR=${WORK_SW_RAW_CKD_DIR}
 	OUTDIR=${WORK_SW_CKD_DIR}
@@ -84,9 +91,12 @@ case "$OPTIMIZE_MODE" in
 	# gases in the following passes.
 
 	# First pass
-	TRAINING="ckdmip_evaluation1_sw_fluxes_co2-180.h5  ckdmip_evaluation1_sw_fluxes_co2-280.h5
-                  ckdmip_evaluation1_sw_fluxes_present.h5  ckdmip_evaluation1_sw_fluxes_co2-560.h5
-                  ckdmip_evaluation1_sw_fluxes_co2-1120.h5 ckdmip_evaluation1_sw_fluxes_co2-2240.h5"
+	TRAINING="ckdmip_${TRAINING_CODE}_sw_fluxes_co2-180.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_co2-280.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_present.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_co2-560.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_co2-1120.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_co2-2240.h5"
 	GASLIST="o2n2 h2o o3 co2"
 	INDIR=${WORK_SW_RAW_CKD_DIR}
 	OUTDIR=${WORK_SW_RAW_CKD_DIR}
@@ -107,14 +117,17 @@ case "$OPTIMIZE_MODE" in
 	# gases in the following passes.
 
 	# First pass
-	TRAINING="ckdmip_evaluation1_sw_fluxes_rel-180.h5  ckdmip_evaluation1_sw_fluxes_rel-280.h5
-                  ckdmip_evaluation1_sw_fluxes_rel-415.h5  ckdmip_evaluation1_sw_fluxes_rel-560.h5
-                  ckdmip_evaluation1_sw_fluxes_rel-1120.h5 ckdmip_evaluation1_sw_fluxes_rel-2240.h5"
+	TRAINING="ckdmip_${TRAINING_CODE}_sw_fluxes_rel-180.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_rel-280.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_rel-415.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_rel-560.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_rel-1120.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_rel-2240.h5"
 	# Optionally add one present-day-like scenario from
 	# Evaluation-2 to increase the scope of the training data
 	if [ "$TRAINING_BOTH" = yes ]
 	then
-	    TRAINING="$TRAINING ckdmip_evaluation2_sw_fluxes_rel-415.h5"
+	    TRAINING="$TRAINING ckdmip_${TRAINING_CODE2}_sw_fluxes_rel-415.h5"
 	fi
 	GASLIST="composite h2o o3 co2"
 	INDIR=${WORK_SW_RAW_CKD_DIR}
@@ -131,11 +144,14 @@ case "$OPTIMIZE_MODE" in
 
     relative-ch4)
 	# Second pass
-	TRAINING="ckdmip_evaluation1_sw_fluxes_present.h5  ckdmip_evaluation1_sw_fluxes_ch4-350.h5
-                  ckdmip_evaluation1_sw_fluxes_ch4-700.h5  ckdmip_evaluation1_sw_fluxes_ch4-1200.h5
-                  ckdmip_evaluation1_sw_fluxes_ch4-2600.h5 ckdmip_evaluation1_sw_fluxes_ch4-3500.h5"
+	TRAINING="ckdmip_${TRAINING_CODE}_sw_fluxes_present.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-350.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-700.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-1200.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-2600.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-3500.h5"
 	GASLIST="ch4"
-	EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_evaluation1_sw_fluxes_rel-415.h5"
+	EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_${TRAINING_CODE}_sw_fluxes_rel-415.h5"
 	INDIR=${WORK_SW_RAW_CKD_DIR}
 	OUTDIR=${WORK_SW_RAW_CKD_DIR}
 	INCODE=raw2-ckd-definition
@@ -148,10 +164,12 @@ case "$OPTIMIZE_MODE" in
 
     relative-n2o)
 	# Third pass
-        TRAINING="ckdmip_evaluation1_sw_fluxes_present.h5
-                  ckdmip_evaluation1_sw_fluxes_n2o-190.h5    ckdmip_evaluation1_sw_fluxes_n2o-270.h5
-                  ckdmip_evaluation1_sw_fluxes_n2o-405.h5    ckdmip_evaluation1_sw_fluxes_n2o-540.h5"
-	EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_evaluation1_sw_fluxes_rel-415.h5"
+        TRAINING="ckdmip_${TRAINING_CODE}_sw_fluxes_present.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_n2o-190.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_n2o-270.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_n2o-405.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_n2o-540.h5"
+	EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_${TRAINING_CODE}_sw_fluxes_rel-415.h5"
 	GASLIST="n2o"
 	INDIR=${WORK_SW_RAW_CKD_DIR}
 	OUTDIR=${WORK_SW_CKD_DIR}
@@ -165,13 +183,18 @@ case "$OPTIMIZE_MODE" in
 
     relative-minor)
 	# Second pass doing both CH4 and N2O
-	TRAINING="ckdmip_evaluation1_sw_fluxes_present.h5  ckdmip_evaluation1_sw_fluxes_ch4-350.h5
-                  ckdmip_evaluation1_sw_fluxes_ch4-700.h5  ckdmip_evaluation1_sw_fluxes_ch4-1200.h5
-                  ckdmip_evaluation1_sw_fluxes_ch4-2600.h5 ckdmip_evaluation1_sw_fluxes_ch4-3500.h5
-                  ckdmip_evaluation1_sw_fluxes_n2o-190.h5  ckdmip_evaluation1_sw_fluxes_n2o-270.h5
-                  ckdmip_evaluation1_sw_fluxes_n2o-405.h5  ckdmip_evaluation1_sw_fluxes_n2o-540.h5"
+	TRAINING="ckdmip_${TRAINING_CODE}_sw_fluxes_present.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-350.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-700.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-1200.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-2600.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_ch4-3500.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_n2o-190.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_n2o-270.h5
+                  ckdmip_${TRAINING_CODE}_sw_fluxes_n2o-405.h5
+		  ckdmip_${TRAINING_CODE}_sw_fluxes_n2o-540.h5"
 	GASLIST="ch4 n2o"
-	EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_evaluation1_sw_fluxes_rel-415.h5"
+	EXTRA_ARGS="$EXTRA_ARGS relative_to=ckdmip_${TRAINING_CODE}_sw_fluxes_rel-415.h5"
 	INDIR=${WORK_SW_RAW_CKD_DIR}
 	OUTDIR=${WORK_SW_CKD_DIR}
 	INCODE=raw2-ckd-definition
@@ -233,6 +256,14 @@ do
 	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-fine|g')
 	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
 	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
+    elif [ "$BANDSTRUCT" = vfine ]
+    then
+	# Assume we are training from the sw_fluxes-vfine LBL files
+	BANDMAPPING="band_mapping=0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43"
+	# Modify training files and directory
+	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-vfine|g')
+	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-vfine_/g')
+	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-vfine_/g')
     else
 	# narrow
 	BANDMAPPING="band_mapping=0 1 2 3 4 5 6 7 8 9 10 11 12"

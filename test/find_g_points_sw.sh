@@ -51,6 +51,11 @@ then
     CH4_MIN_G_POINTS="min_g_points 2"
     N2O_MIN_G_POINTS="min_g_points 3"
     O3_MIN_G_POINTS="min_g_points 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 4"
+elif [ "$BANDSTRUCT" = "vfine" ]
+then
+    CH4_MIN_G_POINTS="min_g_points 2"
+    N2O_MIN_G_POINTS="min_g_points 3"
+    O3_MIN_G_POINTS="min_g_points 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 5"
 elif [ "$BANDSTRUCT" = "window" ]
 then
     CH4_MIN_G_POINTS="min_g_points 2"
@@ -86,7 +91,7 @@ gases composite h2o o3
 
 \begin h2o
   # Water vapour in median present-day concentrations
-  input ckdmip_mmm_sw_spectra_h2o_median.h5
+  input ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_median.h5
   reordering_input sw_order_${BANDSTRUCT}_h2o.h5
   # Other gases in present-day concentrations, except ozone which uses
   # the minimum concentration
@@ -100,7 +105,7 @@ gases composite h2o o3
   input ckdmip_mmm_sw_spectra_o3_median.h5
   reordering_input sw_order_${BANDSTRUCT}_o3.h5
   background_input "ckdmip_mmm_sw_spectra_composite_minimum.h5
-            ckdmip_mmm_sw_spectra_h2o_minimum.h5"
+            ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5"
   min_scaling 0.5
   max_scaling 2.0
   $O3_MIN_G_POINTS
@@ -109,7 +114,7 @@ gases composite h2o o3
 \begin composite
   input ckdmip_mmm_sw_spectra_composite_present.h5
   reordering_input sw_order_${BANDSTRUCT}_composite.h5
-  background_input "ckdmip_mmm_sw_spectra_h2o_minimum.h5
+  background_input "ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
 \end composite
 
@@ -147,7 +152,7 @@ gases h2o o3 ch4 n2o co2 o2n2
 
 \begin h2o
   # Water vapour in median present-day concentrations
-  input ckdmip_mmm_sw_spectra_h2o_median.h5
+  input ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_median.h5
   reordering_input sw_order_${BANDSTRUCT}_h2o.h5
   # Other gases in present-day concentrations, except ozone which uses
   # the minimum concentration
@@ -161,7 +166,7 @@ ckdmip_mmm_sw_spectra_o3_minimum.h5"
   input ckdmip_mmm_sw_spectra_o3_median.h5
   reordering_input sw_order_${BANDSTRUCT}_o3.h5
   background_input "ckdmip_mmm_sw_spectra_composite_minimum.h5
-ckdmip_mmm_sw_spectra_h2o_minimum.h5"
+ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5"
   min_scaling 0.5
   max_scaling 2.0
   $O3_MIN_G_POINTS
@@ -170,7 +175,7 @@ ckdmip_mmm_sw_spectra_h2o_minimum.h5"
 \begin co2
   input ckdmip_mmm_sw_spectra_co2_present.h5
   reordering_input sw_order_${BANDSTRUCT}_co2.h5
-  background_input "ckdmip_mmm_sw_spectra_h2o_minimum.h5
+  background_input "ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5
 ckdmip_mmm_sw_spectra_o3_minimum.h5
 ckdmip_mmm_sw_spectra_ch4_present.h5
 ckdmip_mmm_sw_spectra_n2o_present.h5
@@ -184,7 +189,7 @@ ckdmip_mmm_sw_spectra_o2n2_constant.h5"
 \begin ch4
   input ckdmip_mmm_sw_spectra_ch4_present.h5
   reordering_input sw_order_${BANDSTRUCT}_ch4.h5
-  background_input "ckdmip_mmm_sw_spectra_h2o_minimum.h5
+  background_input "ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5
 ckdmip_mmm_sw_spectra_o3_minimum.h5
 ckdmip_mmm_sw_spectra_co2_present.h5
 ckdmip_mmm_sw_spectra_n2o_present.h5
@@ -198,7 +203,7 @@ ckdmip_mmm_sw_spectra_o2n2_constant.h5"
 \begin n2o
   input ckdmip_mmm_sw_spectra_n2o_present.h5
   reordering_input sw_order_${BANDSTRUCT}_n2o.h5
-  background_input "ckdmip_mmm_sw_spectra_h2o_minimum.h5
+  background_input "ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5
 ckdmip_mmm_sw_spectra_o3_minimum.h5
 ckdmip_mmm_sw_spectra_co2_present.h5
 ckdmip_mmm_sw_spectra_ch4_present.h5
@@ -212,7 +217,7 @@ ckdmip_mmm_sw_spectra_o2n2_constant.h5"
 \begin o2n2
   input ckdmip_mmm_sw_spectra_o2n2_constant.h5
   reordering_input sw_order_${BANDSTRUCT}_o2n2.h5
-  background_input "ckdmip_mmm_sw_spectra_h2o_minimum.h5
+  background_input "ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5
 ckdmip_mmm_sw_spectra_o3_minimum.h5
 ckdmip_mmm_sw_spectra_co2_present.h5
 ckdmip_mmm_sw_spectra_ch4_present.h5
@@ -247,7 +252,7 @@ gases composite h2o o3
 
 \begin h2o
   # Water vapour in median present-day concentrations
-  input ckdmip_mmm_sw_spectra_h2o_median.h5
+  input ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_median.h5
   reordering_input sw_order_${BANDSTRUCT}_h2o.h5
   # Other gases in present-day concentrations, except ozone which uses
   # the minimum concentration
@@ -262,7 +267,7 @@ gases composite h2o o3
 
   reordering_input sw_order_${BANDSTRUCT}_o3.h5
   background_input "ckdmip_mmm_sw_spectra_composite_present.h5
-            ckdmip_mmm_sw_spectra_h2o_minimum.h5"
+            ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5"
   min_scaling 0.5
   max_scaling 2.0
   $O3_MIN_G_POINTS
@@ -271,14 +276,14 @@ gases composite h2o o3
 \begin composite
   input ckdmip_mmm_sw_spectra_composite_present.h5
   reordering_input sw_order_${BANDSTRUCT}_composite.h5
-  background_input "ckdmip_mmm_sw_spectra_h2o_minimum.h5
+  background_input "ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5
             ckdmip_mmm_sw_spectra_o3_minimum.h5"
 \end composite
 
 \begin rayleigh
   input ckdmip_mmm_sw_spectra_rayleigh_present.h5
   reordering_input sw_order_${BANDSTRUCT}_rayleigh.h5
-  background_input "ckdmip_mmm_sw_spectra_h2o_minimum.h5
+  background_input "ckdmip_mmm_sw_spectra_h2o${H2OSUFFIX}_minimum.h5
             ckdmip_mmm_sw_spectra_o3_minimum.h5
             ckdmip_mmm_sw_spectra_composite_present.h5"
 \end rayleigh

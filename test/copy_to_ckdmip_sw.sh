@@ -61,14 +61,14 @@ do
 	    # Get number of g points
 	    NG=$(ncdump -h $CKD_FILE | head -10 | grep g_point | awk '{print $3}')
 
-	    NEW_MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-${NG}
-
 	    # Use "b" suffix to indicate that training used both
 	    # evaluation1 and evaluation2 LBL reference data
 	    if [ "$TRAINING_BOTH" = yes ]
 	    then
-		NEW_MODEL_CODE=${NEW_MODEL_CODE}b
+		NG=${NG}b
 	    fi
+
+	    NEW_MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-${NG}${MODEL_CODE_SUFFIX}
 
 	    NEW_CKD_FILE=${CKDMIP_RESULTS_DIR}/sw_spectral-definition/${ECCKD_PREFIX}_sw_${NEW_MODEL_CODE}_spectral-definition.nc
 

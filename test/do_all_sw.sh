@@ -20,6 +20,14 @@
 #APPLICATION=global-nwp
 APPLICATION=climate
 
+# Optionally specify a suffix to use for a particular experiment
+MODEL_CODE_SUFFIX=
+#MODEL_CODE_SUFFIX=-caviar
+
+# Optionally select alternative water vapour continuum model
+H2OCONTINUUM=
+#H2OCONTINUUM=caviar
+
 if [ "$APPLICATION" = climate ]
 then
     # The best strategy for climate CKD models is to optimize first
@@ -38,9 +46,11 @@ TOLERANCE="0.6 0.4 0.2 0.15 0.1 0.05 0.025"
 BAND_STRUCTURE="wide"
 TOLERANCE="0.2"
 
-# "Red-green-blue" band structure with 16 and 32 g-points
+# "Red-green-blue" band structure with 16 and/or 32 g-points
 BAND_STRUCTURE="rgb"
-TOLERANCE="0.16 0.047"
+#TOLERANCE="0.16 0.047"
+TOLERANCE="0.047"
+
 # Or with these number of g-points: 12 16 20 24 28 32 36 40 48 64.
 #TOLERANCE="0.3 0.16 0.11 0.072 0.062 0.047 0.04 0.03 0.0235 0.0121"
 
@@ -60,10 +70,25 @@ TOLERANCE="0.16 0.047"
 #BAND_STRUCTURE=window
 #TOLERANCE=0.020
 
+# Very fine band structure for diagnostics (96 g-points)
+#BAND_STRUCTURE="vfine"
+#TOLERANCE=0.02
+
+# H2O suffix to accommodate different continuum models
+if [ ! "$H2OCONTINUUM" ]
+then
+    # Default continuum
+    H2OSUFFIX=
+else
+    H2OSUFFIX=-$H2OCONTINUUM
+fi
+
 # Make variables available to scripts find_g_points_sw.sh onwards
 export TOLERANCE
 export APPLICATION
 export BAND_STRUCTURE
+export MODEL_CODE_SUFFIX
+export H2OSUFFIX
 
 # 1. Merge well-mixed gases
 ./merge_well_mixed_sw.sh
