@@ -20,7 +20,30 @@ module load nco
 
 unset OMP_NUM_THREADS
 
+# The band code defines what bands the fluxes will be computed in,
+# needed for training different band models
+if [ "$#" -ge 1 ]
+then
+    BANDCODE=$1
+else
+    echo "Usage:"
+    echo "  $0 <band>"
+    echo 'where <band> can be fluxes (for the "narrow" band structure), fluxes-rgb, fluxes-fine or fluxes-vfine'
+    exit 1
+fi
+#BANDCODE=fluxes-rgb
+#BANDCODE=fluxes-fine
+#BANDCODE=fluxes-vfine
+
 SET=evaluation1
+
+# This scenario only will also include spectral boundary fluxes
+SPECTRAL_SCENARIO=rel-415
+
+# Either use default water vapour continuum
+H2OCONTINUUM=
+# ...or another continuum model
+#H2OCONTINUUM=mt-ckd-4.1.1
 
 INDIR=${CKDMIP_DATA_DIR}/${SET}/sw_spectra
 
@@ -28,19 +51,53 @@ OUTDIR=$WORK_SW_LBL_FLUX_DIR
 
 INPREFIX=$INDIR/ckdmip_${SET}_sw_spectra_
 
-CONFIG="config_sw_lbl_evaluation.nam"
+# H2O prefix to accommodate different continuum models
+if [ ! "$H2OCONTINUUM" ]
+then
+    # Default continuum
+    H2OPREFIX=$INDIR/ckdmip_${SET}_sw_spectra_
+    H2OSUFFIX=
+else
+    H2OPREFIX=$WORK_SW_SPECTRA_DIR/ckdmip_${SET}_sw_spectra_
+    H2OSUFFIX=-$H2OCONTINUUM
+fi
+
+CONFIG="config_sw_lbl_evaluation_pid$$.nam"
+CONFIG_SPECTRAL="config_spectral_sw_lbl_evaluation_pid$$.nam"
 
 PROGRAM=$CKDMIP_SW
 
-BANDCODE=fluxes
-#BANDCODE=fluxes-rgb
-#BANDCODE=fluxes-fine
-
-OUTPREFIX="ckdmip_${SET}_sw_${BANDCODE}"
+OUTPREFIX="ckdmip_${SET}${H2OSUFFIX}_sw_${BANDCODE}"
 SUFFIX=h5
 
 STRIDE=1
 
+# Specify bands corresponding to each band model
+if [ "$BANDCODE" = fluxes ]
+then
+    BAND_WAVENUMBER1="band_wavenumber1(1:13) = 250, 2600, 3250, 4000, 4650, 5150, 6150, 8050, 12850, 16000, 22650, 29000, 38000,"
+    BAND_WAVENUMBER2="band_wavenumber2(1:13) = 2600, 3250, 4000, 4650, 5150, 6150, 8050, 12850, 16000, 22650, 29000, 38000, 50000,"
+elif [ "$BANDCODE" = fluxes-rgb ]
+then
+    BAND_WAVENUMBER1="band_wavenumber1(1:9) = 250, 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750,"
+    BAND_WAVENUMBER2="band_wavenumber2(1:9) = 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750, 50000,"
+elif [ "$BANDCODE" = fluxes-fine ]
+then
+    BAND_WAVENUMBER1="band_wavenumber1(1:26) = 250, 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 14300, 15400, 16650, 18200, 20000, 22200, 25000, 28550, 30250, 30750, 31250, 31750, 32250, 32750, 33250, 33750, 34250,"
+    BAND_WAVENUMBER2="band_wavenumber2(1:26) = 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 14300, 15400, 16650, 18200, 20000, 22200, 25000, 28550, 30250, 30750, 31250, 31750, 32250, 32750, 33250, 33750, 34250, 50000,"
+elif [ "$BANDCODE" = fluxes-vfine ]
+then
+    BAND_WAVENUMBER1="band_wavenumber1(1:44) = 250, 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 13800, 14300, 14800, 15400, 16000, 16650, 17400, 18200, 19050, 20000, 21050, 22200, 23550, 25000, 26300, 26650, 27050, 27400, 27800, 28150, 28550, 29000, 29400, 29850, 30300, 30750, 31250, 31750, 32250, 32800, 33350, 33900, 34500, 35100, 35700,"
+    BAND_WAVENUMBER2="band_wavenumber2(1:44) = 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 13800, 14300, 14800, 15400, 16000, 16650, 17400, 18200, 19050, 20000, 21050, 22200, 23550, 25000, 26300, 26650, 27050, 27400, 27800, 28150, 28550, 29000, 29400, 29850, 30300, 30750, 31250, 31750, 32250, 32800, 33350, 33900, 34500, 35100, 35700, 50000,"
+else
+    echo "BANDCODE=$BANDCODE not understood"
+    exit 1
+fi
+
+echo "Using BANDCODE=$BANDCODE"
+
+
+# Standard namelist with band output
 cat > $CONFIG <<EOF
 &shortwave_config
 optical_depth_name = "optical_depth",
@@ -48,39 +105,60 @@ wavenumber_name = "wavenumber",
 pressure_name = "pressure_hl",
 temperature_name = "temperature_hl",
 do_write_spectral_fluxes = false,
-!do_write_spectral_boundary_fluxes = true,
+do_write_spectral_boundary_fluxes = false, ! Note !
 do_write_optical_depth   = false,
 surf_albedo = 0.15,
 use_mu0_dimension = true,
 cos_solar_zenith_angle(1:5) = 0.1, 0.3, 0.5, 0.7, 0.9,
 nspectralstride = $STRIDE,
 nblocksize = 1000,
-band_wavenumber1(1:13) = 250, 2600, 3250, 4000, 4650, 5150, 6150, 8050, 12850, 16000, 22650, 29000, 38000,
-band_wavenumber2(1:13) = 2600, 3250, 4000, 4650, 5150, 6150, 8050, 12850, 16000, 22650, 29000, 38000, 50000,
-!band_wavenumber1(1:9) = 250, 2500, 4000, 8000, 14286, 16667, 20000, 25000, 31746,
-!band_wavenumber2(1:9) = 2500, 4000, 8000, 14286, 16667, 20000, 25000, 31746, 50000,
-!band_wavenumber1(1:9) = 250, 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750,
-!band_wavenumber2(1:9) = 2500, 4000, 8000, 14300, 16650, 20000, 25000, 31750, 50000,
-!band_wavenumber1(1:26) = 250, 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 14300, 15400, 16650, 18200, 20000, 22200, 25000, 28550, 30250, 30750, 31250, 31750, 32250, 32750, 33250, 33750, 34250, 
-!band_wavenumber2(1:26) = 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 14300, 15400, 16650, 18200, 20000, 22200, 25000, 28550, 30250, 30750, 31250, 31750, 32250, 32750, 33250, 33750, 34250, 50000, 
+$BAND_WAVENUMBER1
+$BAND_WAVENUMBER2
+iverbose = 3
+/
+EOF
+
+# Spectral namelist also outputting spectral boundary fluxes
+cat > $CONFIG_SPECTRAL <<EOF
+&shortwave_config
+optical_depth_name = "optical_depth",
+wavenumber_name = "wavenumber",
+pressure_name = "pressure_hl",
+temperature_name = "temperature_hl",
+do_write_spectral_fluxes = false,
+do_write_spectral_boundary_fluxes = true, ! Note !
+do_write_optical_depth   = false,
+surf_albedo = 0.15,
+use_mu0_dimension = true,
+cos_solar_zenith_angle(1:5) = 0.1, 0.3, 0.5, 0.7, 0.9,
+nspectralstride = $STRIDE,
+nblocksize = 1000,
+$BAND_WAVENUMBER1
+$BAND_WAVENUMBER2
 iverbose = 3
 /
 EOF
 
 mkdir -p $OUTDIR
 
-SCENARIOS="rel-180 rel-280 rel-415 rel-560 rel-1120 rel-2240"
-
-# This scenario may be run separately with do_write_spectral_boundary_fluxes=true:
-#SCENARIOS="rel-415"
-
-# ...in which case the following scenarios are run with
-# do_write_spectral_boundary_fluxes=false (the default)
-#SCENARIOS="rel-180 rel-280 rel-560 rel-1120 rel-2240"
+# ecCKD requires the following scenarios: for the first optimization
+# step, well-mixed GHGs are set to CONSTANT except for CO2
+SCENARIOS_REL="rel-180 rel-280 rel-415 rel-560 rel-1120 rel-2240"
+# ...and in the subsequent steps the other gases are optimized
+SCENARIOS_CKDMIP="present ch4-350 ch4-700 ch4-1200 ch4-2600 ch4-3500 n2o-190 n2o-270 n2o-405 n2o-540"
+# Combine the scenarios
+SCENARIOS="$SCENARIOS_REL $SCENARIOS_CKDMIP"
 
 for SCENARIO in $SCENARIOS
 do
-
+    CONFIG_LOCAL=$CONFIG
+    # Is this the spectral scenario?  If so, use a different namelist
+    # file
+    if [ "$SCENARIO" = "$SPECTRAL_SCENARIO" ]
+    then
+	CONFIG_LOCAL=$CONFIG_SPECTRAL
+    fi
+    
     OUTPREFIXFULL=${OUTPREFIX}_${SCENARIO}
 
     # Default concentrations are present-day ones
@@ -212,7 +290,7 @@ do
 	ENDCOL=$(expr $STARTCOL + 9)
 	COLS=${STARTCOL}-${ENDCOL}
 	
-	H2O_FILE=${INPREFIX}h2o_present_${COLS}.h5
+	H2O_FILE=${H2OPREFIX}h2o${H2OSUFFIX}_present_${COLS}.h5
 	CO2_FILE=${INPREFIX}co2_present_${COLS}.h5
 	O3_FILE=${INPREFIX}o3_present_${COLS}.h5
 	CH4_FILE=${INPREFIX}ch4_present_${COLS}.h5
@@ -229,7 +307,7 @@ do
 	
 	if [ "$ONLY5GASES" = yes ]
 	then
-	    $PROGRAM --config $CONFIG \
+	    $PROGRAM --config $CONFIG_LOCAL \
 		--scenario "$SCENARIO" \
 		--ssi "$TRAINING_SW_SSI" \
 		$H2O_FILE \
@@ -241,7 +319,7 @@ do
 		--output $OUTFILE
 	elif [ "$RELATIVE" = yes ]
 	then
-	    $PROGRAM --config $CONFIG \
+	    $PROGRAM --config $CONFIG_LOCAL \
 		--scenario "$SCENARIO" \
 		--ssi "$TRAINING_SW_SSI" \
 		$H2O_FILE \
@@ -254,7 +332,7 @@ do
 		$RAYLEIGH_FILE \
 		--output $OUTFILE
 	else
-	    $PROGRAM --config $CONFIG \
+	    $PROGRAM --config $CONFIG_LOCAL \
 		--scenario "$SCENARIO" \
 		--ssi "$TRAINING_SW_SSI" \
 		$H2O_FILE \
@@ -283,3 +361,5 @@ do
     fi
 
 done
+
+rm -f $CONFIG $CONFIG_SPECTRAL

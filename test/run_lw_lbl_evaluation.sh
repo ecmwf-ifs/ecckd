@@ -20,16 +20,38 @@ module load nco
 
 SET=evaluation1
 
-INDIR=$TRAINING_LW_SPECTRA_DIR
+# This scenario only will also include spectral boundary fluxes
+SPECTRAL_SCENARIO=rel-415
+
+# Either use default water vapour continuum
+H2OCONTINUUM=
+# ...or another continuum model
+#H2OCONTINUUM=mt-ckd-4.1.1
+
+INDIR=${CKDMIP_DATA_DIR}/${SET}/lw_spectra
+
 OUTDIR=$WORK_LW_LBL_FLUX_DIR
 
 INPREFIX=$INDIR/ckdmip_${SET}_lw_spectra_
 
-CONFIG="config_lw_lbl_evaluation.nam"
+
+# H2O prefix to accommodate different continuum models
+if [ ! "$H2OCONTINUUM" ]
+then
+    # Default continuum
+    H2OPREFIX=$INDIR/ckdmip_${SET}_lw_spectra_
+    H2OSUFFIX=
+else
+    H2OPREFIX=$WORK_LW_SPECTRA_DIR/ckdmip_${SET}_lw_spectra_
+    H2OSUFFIX=-$H2OCONTINUUM
+fi
+
+CONFIG="config_lw_lbl_evaluation_pid$$.nam"
+CONFIG_SPECTRAL="config_spectral_lw_lbl_evaluation_pid$$.nam"
 
 PROGRAM=$CKDMIP_LW
 
-OUTPREFIX="ckdmip_${SET}_lw_fluxes"
+OUTPREFIX="ckdmip_${SET}${H2OSUFFIX}_lw_fluxes"
 SUFFIX=h5
 
 STRIDE=1
@@ -37,6 +59,7 @@ STRIDE=1
 # Number of angles per hemisphere (0=classic two-stream)
 NANGLE=0
 
+# Standard namelist with band output
 cat > $CONFIG <<EOF
 &longwave_config
 optical_depth_name = "optical_depth",
@@ -48,7 +71,27 @@ nspectralstride = $STRIDE,
 nangle          = $NANGLE,
 do_write_planck = .false.,
 do_write_spectral_fluxes = .false.,
-!do_write_spectral_boundary_fluxes = true,
+do_write_spectral_boundary_fluxes = false, ! Note !
+do_write_optical_depth = .false.,
+band_wavenumber1(1:13) = 0, 350, 500, 630, 700, 820, 980, 1080, 1180, 1390, 1480, 1800, 2080,
+band_wavenumber2(1:13) = 350, 500, 630, 700, 820, 980, 1080, 1180, 1390, 1480, 1800, 2080, 3260,
+iverbose = 3
+/
+EOF
+
+# Spectral namelist also outputting spectral boundary fluxes
+cat > $CONFIG_SPECTRAL <<EOF
+&longwave_config
+optical_depth_name = "optical_depth",
+wavenumber_name = "wavenumber",
+pressure_name = "pressure_hl",
+pressure_scaling = 1.0,
+temperature_name = "temperature_hl",
+nspectralstride = $STRIDE,
+nangle          = $NANGLE,
+do_write_planck = .false.,
+do_write_spectral_fluxes = .false.,
+do_write_spectral_boundary_fluxes = true, ! Note !
 do_write_optical_depth = .false.,
 band_wavenumber1(1:13) = 0, 350, 500, 630, 700, 820, 980, 1080, 1180, 1390, 1480, 1800, 2080,
 band_wavenumber2(1:13) = 350, 500, 630, 700, 820, 980, 1080, 1180, 1390, 1480, 1800, 2080, 3260,
@@ -65,15 +108,25 @@ fi
 
 mkdir -p $OUTDIR
 
-#SCENARIOS="5gas-180 5gas-280 5gas-415 5gas-560 5gas-1120 5gas-2240"
-SCENARIOS="rel-180 rel-280 rel-415 rel-560 rel-1120 rel-2240"
-
-# This scenario may be run separately with do_write_spectral_boundary_fluxes=true:
-#SCENARIOS="rel-415"
+# ecCKD requires the following scenarios: for the first optimization
+# step, well-mixed GHGs are set to CONSTANT except for CO2
+SCENARIOS_REL="rel-180 rel-280 rel-415 rel-560 rel-1120 rel-2240"
+# ...and in the subsequent steps the other gases are optimized
+SCENARIOS_CKDMIP="present ch4-350 ch4-700 ch4-1200 ch4-2600 ch4-3500 n2o-190 n2o-270 n2o-405 n2o-540"
+SCENARIOS_CKDMIP_CFC="cfc11-0 cfc11-2000 cfc12-0 cfc12-550"
+# Combine the scenarios
+SCENARIOS="$SCENARIOS_REL $SCENARIOS_CKDMIP $SCENARIOS_CKDMIP_CFC"
 
 for SCENARIO in $SCENARIOS
 do
-
+    CONFIG_LOCAL=$CONFIG
+    # Is this the spectral scenario?  If so, use a different namelist
+    # file
+    if [ "$SCENARIO" = "$SPECTRAL_SCENARIO" ]
+    then
+	CONFIG_LOCAL=$CONFIG_SPECTRAL
+    fi
+    
     OUTPREFIXFULL=${OUTPREFIX}_${SCENARIO}
 
     # Default concentrations are present-day ones
@@ -202,7 +255,7 @@ do
 	ENDCOL=$(expr $STARTCOL + 9)
 	COLS=${STARTCOL}-${ENDCOL}
 	
-	H2O_FILE=${INPREFIX}h2o_present_${COLS}.h5
+	H2O_FILE=${H2OPREFIX}h2o${H2OSUFFIX}_present_${COLS}.h5
 	CO2_FILE=${INPREFIX}co2_present_${COLS}.h5
 	O3_FILE=${INPREFIX}o3_present_${COLS}.h5
 	CH4_FILE=${INPREFIX}ch4_present_${COLS}.h5
@@ -217,7 +270,7 @@ do
 	
 	if [ "$ONLY5GASES" = yes ]
 	then
-	    $PROGRAM --config $CONFIG \
+	    $PROGRAM --config $CONFIG_LOCAL \
 		--scenario "$SCENARIO" \
 		$H2O_FILE \
 		$O3_FILE \
@@ -227,7 +280,7 @@ do
 		--output $OUTFILE
 	elif [ "$RELATIVE" = yes ]
 	then
-	    $PROGRAM --config $CONFIG \
+	    $PROGRAM --config $CONFIG_LOCAL \
 		--scenario "$SCENARIO" \
 		$H2O_FILE \
 		$O3_FILE \
@@ -238,7 +291,7 @@ do
 		--conc   $CO2_VMR   $CO2_FILE \
 		--output $OUTFILE
 	else
-	    $PROGRAM --config $CONFIG \
+	    $PROGRAM --config $CONFIG_LOCAL \
 		--scenario "$SCENARIO" \
 		$H2O_FILE \
 		$O3_FILE \

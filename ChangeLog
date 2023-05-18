@@ -4,6 +4,9 @@ version 1.5
 	returns anomalous status (e.g. NaNs or dodgy bounds)
 	- If absorption coefficient min=0 and max>0, then ensure minimizer
 	bounds in log space are at least 1.0 apart
+	- test/run_[lw|sw]_lbl_evaluation.sh can now do the radiative
+	transfer to provide all the training data needed in the longwave
+	and shortwave
 
 version 1.4 (November 2022)
 	- Save solar spectral irradiance (corresponding to
