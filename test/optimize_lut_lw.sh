@@ -35,7 +35,7 @@ COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 tem
 #COMMON_OPTIONS="min_prior_error=0.5 max_prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 spectral_boundary_weight=0.1"
 
 # Experimental values to try to improve near-surface heating rates
-#COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.95 conc_corr=0.8 spectral_boundary_weight=0.1"
+#COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.9 conc_corr=0.8 spectral_boundary_weight=0.1"
 #COMMON_OPTIONS="prior_error=6.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.95 pressure_corr=0.95 conc_corr=0.95 spectral_boundary_weight=0.1"
 ######COMMON_OPTIONS="prior_error=4.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.97 pressure_corr=0.97 conc_corr=0.97 spectral_boundary_weight=0.1"
 #COMMON_OPTIONS="prior_error=2.5 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.97 pressure_corr=0.97 conc_corr=0.99 spectral_boundary_weight=0.1"
@@ -43,6 +43,11 @@ COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 tem
 
 # ecCKD-1.4 test with cropsurf3/2
 #COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 spectral_boundary_weight=0.1"
+
+# ecCKD-1.4: these are the best settings in offline tests for both
+# forcing and fluxes, but not necessarily the best for online use in
+# the IFS
+COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.95 conc_corr=0.8 spectral_boundary_weight=0.1"
 
 case "$OPTIMIZE_MODE" in
 
@@ -313,7 +318,7 @@ EOF
 	OUTPUT=${OUTDIR}/${ECCKD_PREFIX}_lw_${OUTCODE}_${MODEL_CODE}.nc
 	LOG=${OUTDIR}/${ECCKD_PREFIX}_lw_${OUTCODE}_${MODEL_CODE}.log
 
-	$OPTIMIZE_LUT \
+        $OPTIMIZE_LUT \
 	    input=${INPUT} \
 	    output=${OUTPUT} \
 	    gpointfile=${GPOINTFILE} \

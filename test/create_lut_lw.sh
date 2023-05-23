@@ -22,11 +22,13 @@
 OUTPUT_CODE=_raw
 
 # Alternative is to match the transmittance of three layers (a third
-# of a decade in pressure)
-EXTRA_ARGS="averaging_method=transmission-3"
-EXTRA_ARGS="averaging_method=logarithmic"
-EXTRA_ARGS="averaging_method=hybrid-logarithmic-transmission-3"
-#OUTPUT_CODE=_raw-transmission3
+# of a decade in pressure), which seems to be very slightly worse
+#EXTRA_ARGS="averaging_method=transmission-3"
+# Or a hybrid between logarithmic averaging in the troposphere and
+# transmission-3 in the stratosphere, but this appears to totally ruin
+# calculations of methane radiative forcing
+#EXTRA_ARGS="averaging_method=logarithmic"
+#EXTRA_ARGS="averaging_method=hybrid-logarithmic-transmission-3"
 
 # Create configuration file
 if [ "$APP" = nwp ]
