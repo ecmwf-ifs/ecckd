@@ -145,6 +145,12 @@ main(int argc, const char* argv[])
     }
     else {
       std::getline(molecules_s, molecule, ' ');
+      std::size_t first_hyphen = molecule.find_first_of("-");
+      if (first_hyphen != std::string::npos) {
+	std::string new_molecule = molecule.substr(0,first_hyphen);
+	LOG << "  Renaming " << molecule << " to " << new_molecule << "\n";
+	molecule = new_molecule;
+     }
     }
     // calc_optical_depth requires arguments to have a column
     // dimension, but we are processing only one column so add a

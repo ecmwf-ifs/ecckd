@@ -293,10 +293,19 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping,
   std::string molecules_str, molecule;
   file.read(molecules_str, DATA_FILE_GLOBAL_SCOPE, "constituent_id");
   std::stringstream molecules_s(molecules_str);
-  while (std::getline(molecules_s, molecule, ' ')) {
-    molecules_.push_back(molecule);
-  }
   LOG << "  Contains " << molecules_str << "\n";
+  while (std::getline(molecules_s, molecule, ' ')) {
+    std::size_t first_hyphen = molecule.find_first_of("-");
+    if (first_hyphen == std::string::npos) {
+      molecules_.push_back(molecule);
+    }
+    else {
+      // If we have h2o-no-continuum then rename to h2o
+      std::string new_molecule = molecule.substr(0,first_hyphen);
+      LOG << "  Renaming " << molecule << " to " << new_molecule << "\n";
+      molecules_.push_back(new_molecule);
+    }
+  }
 
   int nspec   = spectral_flux_up_.dimension(2);
   //  int nband= band_flux_up_.dimension(2);
