@@ -23,10 +23,11 @@ SET=evaluation1
 # This scenario only will also include spectral boundary fluxes
 SPECTRAL_SCENARIO=rel-415
 
-# Either use default water vapour continuum
+# Either use default water vapour continuum...
 H2OCONTINUUM=
 # ...or another continuum model
 #H2OCONTINUUM=mt-ckd-4.1.1
+#H2OCONTINUUM=no-continuum
 
 INDIR=${CKDMIP_DATA_DIR}/${SET}/lw_spectra
 

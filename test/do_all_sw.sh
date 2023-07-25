@@ -21,12 +21,12 @@
 APPLICATION=climate
 
 # Optionally specify a suffix to use for a particular experiment
+#MODEL_CODE_SUFFIX=-no-continuum
 MODEL_CODE_SUFFIX=
-#MODEL_CODE_SUFFIX=-caviar
 
 # Optionally select alternative water vapour continuum model
+#H2OCONTINUUM=no-continuum
 H2OCONTINUUM=
-#H2OCONTINUUM=caviar
 
 if [ "$APPLICATION" = climate ]
 then

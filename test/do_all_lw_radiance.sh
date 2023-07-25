@@ -22,9 +22,9 @@ APP=nwp-microwave
 TOLERANCE=0.5
 
 # Nominal central frequency (GHz): 31 166
-# Bandpass (GHz): 0.2 2
-WN1_LW_CUSTOM="1.03071 5.50381"
-WN2_LW_CUSTOM="1.03738 5.57052"
+# Bandpass (GHz): 0.2 2.8
+WN1_LW_CUSTOM="1.03071 5.47379"
+WN2_LW_CUSTOM="1.03738 5.60054"
 
 # Make variables available to scripts find_g_points_lw.sh onwards
 export TOLERANCE

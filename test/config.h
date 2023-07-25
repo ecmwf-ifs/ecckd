@@ -59,9 +59,8 @@ IDEALIZED_LW_SPECTRA_DIR=${IDEALIZED_DIR}/lw_spectra
 IDEALIZED_SW_SPECTRA_DIR=${IDEALIZED_DIR}/sw_spectra
 
 # Training and evaluation dataset (usually evaluation1)
+#TRAINING_CODE=evaluation1-no-continuum
 TRAINING_CODE=evaluation1
-#TRAINING_CODE=evaluation1-caviar
-#TRAINING_CODE=evaluation1-cropsurf2
 TRAINING_DIR=${CKDMIP_DATA_DIR}/${TRAINING_CODE}
 TRAINING_CONC_DIR=${TRAINING_DIR}/conc
 TRAINING_LW_SPECTRA_DIR=${TRAINING_DIR}/lw_spectra
