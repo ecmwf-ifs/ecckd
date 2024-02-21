@@ -43,7 +43,7 @@ SPECTRAL_SCENARIO=rel-415
 # Either use default water vapour continuum
 H2OCONTINUUM=
 # ...or another continuum model
-#H2OCONTINUUM=mt-ckd-4.1.1
+#H2OCONTINUUM=mt-ckd-4.2
 
 INDIR=${CKDMIP_DATA_DIR}/${SET}/sw_spectra
 

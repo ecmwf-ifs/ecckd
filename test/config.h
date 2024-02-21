@@ -68,6 +68,11 @@ TRAINING_LW_FLUXES_DIR=${TRAINING_DIR}/lw_fluxes
 TRAINING_SW_SPECTRA_DIR=${TRAINING_DIR}/sw_spectra
 TRAINING_SW_FLUXES_DIR=${TRAINING_DIR}/sw_fluxes
 
+# Additional more idealized training dataset to span parameter space
+# in the longwave (or leave blank to omit)
+#ADDITIONAL_TRAINING_CODE=training1
+ADDITIONAL_TRAINING_CODE=
+
 #TRAINING_SW_SSI=${TRAINING_SW_SPECTRA_DIR}/ckdmip_ssi.h5
 TRAINING_SW_SSI=${CKDMIP_DATA_DIR}/evaluation1/sw_spectra/ckdmip_ssi.h5
 

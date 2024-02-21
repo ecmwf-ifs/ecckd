@@ -1,3 +1,17 @@
+version 1.6
+	- Added erythemal_weight option to shortwave optimization (see
+	optimize_lut_sw.sh) to add extra weight to surface ultraviolet
+	spectral fluxes improving the accuracy of UV index for the
+	"window", "fine" and "vfine" band structures
+	- Added capability to use "training1" line-by-line dataset of 50
+	profiles, new quasi-idealized profiles that sample parameter space
+	better, via ADDITIONAL_TRAINING_CODE in test/config.h. The
+	generated files then have a "t" suffix (possibly in addition to
+	the "b" suffix indicating that both the evaluation1 and
+	evaluation2 datasets are used in training). The additional
+	training1 dataset does not necessarily improve the quality of the
+	CKD models generated.
+
 version 1.5 (July 2023)
 	- Added hybrid-logarithmic-transmission-3 averaging method
 	- optimize_lut exits with a non-zero error code if minimizer

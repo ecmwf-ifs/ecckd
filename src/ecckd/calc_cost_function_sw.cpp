@@ -126,7 +126,7 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
 			  adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
 			  adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
 			  adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
-			  adept::Real spectral_boundary_weight,   ///< Weight of spectral boundary fluxes
+			  const adept::Vector& spectral_boundary_weights, ///< Weight of spectral boundary fluxes (g-point)
 			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
 			  adept::Matrix* relative_ckd_flux_dn,    ///< Subtract relative-to flux dn, if not NULL
 			  adept::Matrix* relative_ckd_flux_up,    ///< Subtract relative-to flux up, if not NULL
@@ -268,10 +268,9 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
     }
   }
 
-  if (spectral_boundary_weight > 0.0 && !spectral_flux_dn_surf.empty()) {
-    cost_fn += spectral_boundary_weight
-      * sum(  (flux_dn_fwd_orig(end,__)-spectral_flux_dn_surf)
-	    * (flux_dn_fwd_orig(end,__)-spectral_flux_dn_surf));
+  if (!spectral_boundary_weights.empty() && !spectral_flux_dn_surf.empty()) {
+    cost_fn += sum( spectral_boundary_weights * (flux_dn_fwd_orig(end,__)-spectral_flux_dn_surf)
+		    * (flux_dn_fwd_orig(end,__)-spectral_flux_dn_surf));
   }
 
   return cost_fn;

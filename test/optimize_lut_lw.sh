@@ -49,6 +49,14 @@ COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 tem
 # the IFS
 COMMON_OPTIONS="prior_error=8.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.95 conc_corr=0.8 spectral_boundary_weight=0.1"
 
+# ecCKD-1.5: some degradation found in the IFS, so testing various settings...
+#COMMON_OPTIONS="prior_error=4.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.97 pressure_corr=0.97 conc_corr=0.97 spectral_boundary_weight=0.1"
+# Reduced constraint if training1 covers parameter space?
+#COMMON_OPTIONS="prior_error=4.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.95 pressure_corr=0.95 conc_corr=0.95 spectral_boundary_weight=0.1"
+#COMMON_OPTIONS="prior_error=4.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.95 pressure_corr=0.95 conc_corr=0.95 spectral_boundary_weight=0.1 pressure_weight_power=1"
+#COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 spectral_boundary_weight=0.1"
+#COMMON_OPTIONS="prior_error=1 broadband_weight=0.8 flux_profile_weight=0.2 temperature_corr=0.97 pressure_corr=0.97 conc_corr=0.99 spectral_boundary_weight=0.1"
+
 case "$OPTIMIZE_MODE" in
 
     nwp)
@@ -180,6 +188,13 @@ case "$OPTIMIZE_MODE" in
 		  ckdmip_${TRAINING_CODE}_lw_fluxes_rel-560.h5
                   ckdmip_${TRAINING_CODE}_lw_fluxes_rel-1120.h5
 		  ckdmip_${TRAINING_CODE}_lw_fluxes_rel-2240.h5"
+	if [ "$ADDITIONAL_TRAINING_CODE" ]
+	then
+	    TRAINING="$TRAINING
+		  ckdmip_${ADDITIONAL_TRAINING_CODE}_lw_fluxes_rel-280.h5
+		  ckdmip_${ADDITIONAL_TRAINING_CODE}_lw_fluxes_rel-415.h5
+		  ckdmip_${ADDITIONAL_TRAINING_CODE}_lw_fluxes_rel-560.h5"
+	fi
 	# Optionally add one present-day-like scenario from
 	# Evaluation-2 to increase the scope of the training data
 	if [ "$TRAINING_BOTH" = yes ]

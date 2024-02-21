@@ -191,6 +191,43 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping,
 	int ng = maxval(g_point)+1;
 	spectral_flux_dn_surf_.resize(ncol_new,ng);
 	spectral_flux_up_toa_.resize(ncol_new,ng);
+
+	// Compute erythemal spectrum in case we want to add a
+	// constraint to ensure UV index is accurate
+	Vector wavenumber_cm_1, d_wavenumber_cm_1, wavelength_nm, erythemal_spectrum;
+	file.read(wavenumber_cm_1, "wavenumber"); // cm-1
+	wavelength_nm = 1.0e7/wavenumber_cm_1;
+	erythemal_spectrum.resize(wavenumber_cm_1.size());
+	erythemal_spectrum = 0.0;
+	// See Webb et al. (Photochemistry and Photobiology, 2011)
+	erythemal_spectrum.where(wavelength_nm > 250.0 && wavelength_nm <= 298.0) = 1.0;
+	erythemal_spectrum.where(wavelength_nm > 298.0 && wavelength_nm <= 328.0)
+	  = pow(10.0, 0.094*(298.0-wavelength_nm));
+	erythemal_spectrum.where(wavelength_nm > 328.0 && wavelength_nm <= 400.0)
+	    = pow(10.0, 0.015*(140.0-wavelength_nm));
+
+	// Using the erythemal spectrum directly underweights the
+	// longer wavelengths, so we take the square-root.
+	erythemal_spectrum = sqrt(erythemal_spectrum);
+	
+	// Compute approximate solar emission spectrum (Planck
+	// function at 5777 K)
+	d_wavenumber_cm_1.resize(wavenumber_cm_1.size());
+	d_wavenumber_cm_1(range(1,end-1))
+	  = 0.5 * (wavenumber_cm_1(range(2,end))
+		   -wavenumber_cm_1(range(0,end-2)));
+	d_wavenumber_cm_1(0) = 0.5*d_wavenumber_cm_1(1);
+	d_wavenumber_cm_1(end) = 0.5*d_wavenumber_cm_1(end-1);
+	Vector planck(wavenumber_cm_1.size());
+	planck_function(5777.0, wavenumber_cm_1, d_wavenumber_cm_1, planck);
+	
+	// Compute erythemal spectrum per g-point
+	erythemal_spectrum_.resize(ng);
+	for (int ig = 0; ig < ng; ++ig) {
+	  intVector index = find(g_point == ig);
+	  erythemal_spectrum_(ig) = sum(erythemal_spectrum(index)*planck(index)) / sum(planck(index));
+	}
+	std::cout << "Erythemal weight per g-point (sqrt of erythemal spectrum): " << erythemal_spectrum_ << "\n";
 	
 	int icol_new = 0;
 	Vector spectral_flux_dn_surf, spectral_flux_up_toa;
@@ -272,11 +309,11 @@ LblFluxes::read(const std::string& file_name, const intVector& band_mapping,
 	int ng = maxval(g_point)+1;
 	spectral_flux_dn_surf_.resize(ncol,ng);
 	spectral_flux_up_toa_.resize(ncol,ng);
-	
+
 	Vector spectral_flux_dn_surf, spectral_flux_up_toa;
 	for (int icol = 0; icol < ncol; ++icol) {
 	  LOG << ".";
-	  file.read(spectral_flux_up_toa, "spectral_flux_up_toa_lw", icol);
+	  file.read(spectral_flux_up_toa,  "spectral_flux_up_toa_lw",  icol);
 	  file.read(spectral_flux_dn_surf, "spectral_flux_dn_surf_lw", icol);
 	  for (int ig = 0; ig < ng; ++ig) {
 	    intVector index = find(g_point == ig);
@@ -385,7 +422,7 @@ LblFluxes::mask_rayleigh_up(Real max_no_rayleigh_wavenumber)
     flux_up_ = 0.0;
     if (!done_message) {
       LOG << "Ignoring upwelling for bands " << index << " because Rayleigh scattering not modelled\n";
-      LOG << "  Effective albedo (up/direct_dn) in each bands is " << effective_spectral_albedo_ << "\n";
+      LOG << "  Effective albedo (up/direct_dn) in each band is " << effective_spectral_albedo_ << "\n";
       done_message = true;
     }
   }

@@ -53,7 +53,7 @@ calc_cost_function_ckd_sw(adept::Real cos_sza,
 			  adept::Real flux_weight,                ///< Weight applied to TOA and surface fluxes
 			  adept::Real flux_profile_weight,        ///< Weight applied to other fluxes
 			  adept::Real broadband_weight,           ///< Weight of broadband vs spectral (0-1)
-			  adept::Real spectral_boundary_weight,   ///< Weight of spectral boundary fluxes
+			  const adept::Vector& spectral_boundary_weights, ///< Weight of spectral boundary fluxes
 			  const adept::Vector& layer_weight,      ///< Weight applied to heating rates in each layer
 			  adept::Matrix* relative_ckd_flux_dn,    ///< Subtract relative-to flux dn, if not NULL
 			  adept::Matrix* relative_ckd_flux_up,    ///< Subtract relative-to flux up, if not NULL

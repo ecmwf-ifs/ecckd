@@ -71,6 +71,15 @@ COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profil
 # This appears to be best with the "window" band structure:
 #COMMON_OPTIONS="min_prior_error=0.2 max_prior_error=2.0 broadband_weight=0.5 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000"
 
+# Add spectral boundary weight 
+COMMON_OPTIONS="prior_error=2.0 broadband_weight=0.4 flux_weight=0.4 flux_profile_weight=0.1 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 max_iterations=2000 bounded_optimization=0 spectral_boundary_weight=0.1"
+
+# Band structures with UV channels for computing UV index
+# (e.g. window, fine and vfine) need this option in order to add extra
+# weight to the UV spectral fluxes
+UV_OPTIONS="erythemal_weight=10.0"
+
+
 case "$OPTIMIZE_MODE" in
 
     nwp)
@@ -138,7 +147,7 @@ case "$OPTIMIZE_MODE" in
 # New 21 May
 	#OPTIONS="prior_error=8.0 broadband_weight=0.5 flux_weight=0.075 flux_profile_weight=0.05 temperature_corr=0.8 pressure_corr=0.8 conc_corr=0.8 convergence_criterion=0.01"
         #SPECIFIC_OPTIONS="convergence_criterion=0.01 spectral_boundary_weight=0.05"
-        SPECIFIC_OPTIONS="convergence_criterion=0.01 spectral_boundary_weight=0.0"
+	SPECIFIC_OPTIONS="convergence_criterion=0.01"
 	#"rayleigh_prior_error=1.0"
 	;;
 
@@ -247,7 +256,7 @@ do
 	# Modify training files and directory
 	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-fine|g')
 	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
-	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
+	EXTRA_ARGS="$UV_OPTIONS $(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-fine_/g')"
     elif [ "$BANDSTRUCT" = window ]
     then
 	# Assume we are training from the sw_fluxes-fine LBL files
@@ -255,7 +264,7 @@ do
 	# Modify training files and directory
 	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-fine|g')
 	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
-	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-fine_/g')
+	EXTRA_ARGS="$UV_OPTIONS $(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-fine_/g')"
     elif [ "$BANDSTRUCT" = vfine ]
     then
 	# Assume we are training from the sw_fluxes-vfine LBL files
@@ -263,7 +272,7 @@ do
 	# Modify training files and directory
 	TRAINING_SW_FLUXES_DIR=$(echo $TRAINING_SW_FLUXES_DIR | sed 's|sw_fluxes$|sw_fluxes-vfine|g')
 	TRAINING=$(echo $TRAINING | sed 's/sw_fluxes_/sw_fluxes-vfine_/g')
-	EXTRA_ARGS=$(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-vfine_/g')
+	EXTRA_ARGS="$UV_OPTIONS $(echo $EXTRA_ARGS | sed 's/sw_fluxes_/sw_fluxes-vfine_/g')"
     else
 	# narrow
 	BANDMAPPING="band_mapping=0 1 2 3 4 5 6 7 8 9 10 11 12"

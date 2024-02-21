@@ -76,7 +76,9 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 				Real flux_profile_weight,
 				Real broadband_weight,
 				Real spectral_boundary_weight,
+				Real erythemal_weight,
 				Real negative_od_penalty,
+				Real pressure_weight_power,
 				Array3D* relative_ckd_flux_dn,
 				Array3D* relative_ckd_flux_up)
 {
@@ -127,7 +129,17 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 
     // Loop over profiles in one scene
     for (int iprof = 0; iprof < nprof; ++iprof) {
-      Vector layer_weight = sqrt(lbl1.pressure_hl_(iprof,range(1,end)))-sqrt(lbl1.pressure_hl_(iprof,range(0,end-1)));
+      Vector layer_weight;
+      if (pressure_weight_power == 0.5) {
+	layer_weight = sqrt(lbl1.pressure_hl_(iprof,range(1,end)))-sqrt(lbl1.pressure_hl_(iprof,range(0,end-1)));
+      }
+      else if (pressure_weight_power == 1.0) {
+	layer_weight = lbl1.pressure_hl_(iprof,range(1,end)) - lbl1.pressure_hl_(iprof,range(0,end-1));
+      }
+      else {
+	layer_weight = pow(lbl1.pressure_hl_(iprof,range(1,end)),pressure_weight_power)
+	  -pow(lbl1.pressure_hl_(iprof,range(0,end-1)),pressure_weight_power);
+      }
       layer_weight /= sum(layer_weight);
 
       // Make a soft link to a slice of the relative-to fluxes
@@ -167,6 +179,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 	  spectral_flux_dn_surf >>= lbl1.spectral_flux_dn_surf_(iprof,__);
 	  spectral_flux_up_toa  >>= lbl1.spectral_flux_up_toa_(iprof,__);
 	}
+	Vector spectral_boundary_weights = erythemal_weight * lbl1.erythemal_spectrum_;
 	cost += calc_cost_function_ckd_sw(lbl1.mu0_(iprof),
 					  lbl1.pressure_hl_(iprof,__),
 					  tsi_scaling * ckd_model.solar_irradiance(),
@@ -178,7 +191,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 					  spectral_flux_dn_surf,
 					  spectral_flux_up_toa,
 					  flux_weight, flux_profile_weight, broadband_weight,
-					  spectral_boundary_weight,
+					  spectral_boundary_weights,
 					  layer_weight, rel_ckd_flux_dn, rel_ckd_flux_up, 
 					  lbl1.iband_per_g, cost_fn_per_band);
       }
@@ -209,6 +222,8 @@ struct MyData {
   std::vector<LblFluxes>* lbl;
   Real flux_weight, flux_profile_weight, broadband_weight, prior_error;
   Real spectral_boundary_weight, negative_od_penalty;
+  Real pressure_weight_power = 0.5;
+  Real erythemal_weight = 0.0;
   Array3D* relative_ckd_flux_dn;
   Array3D* relative_ckd_flux_up;
   Timer timer;
@@ -241,7 +256,9 @@ public:
 					     data.flux_profile_weight,
 					     data.broadband_weight,
 					     data.spectral_boundary_weight,
+					     data.erythemal_weight,
 					     data.negative_od_penalty,
+					     data.pressure_weight_power,
 					     data.relative_ckd_flux_dn,
 					     data.relative_ckd_flux_up);
     data.timer.start(data.background_id);
@@ -296,10 +313,12 @@ solve_adept(CkdModel<true>& ckd_model,
 	    Real flux_profile_weight,
 	    Real broadband_weight,
 	    Real spectral_boundary_weight,
+	    Real erythemal_weight,
 	    Real prior_error,
 	    int max_iterations,
 	    Real convergence_criterion,
 	    Real negative_od_penalty,
+	    Real pressure_weight_power,
 	    bool is_bounded,
 	    Array3D* relative_ckd_flux_dn,
 	    Array3D* relative_ckd_flux_up)
@@ -364,10 +383,12 @@ solve_adept(CkdModel<true>& ckd_model,
   data.flux_profile_weight=flux_profile_weight;
   data.broadband_weight=broadband_weight;
   data.spectral_boundary_weight = spectral_boundary_weight;
+  data.erythemal_weight = erythemal_weight;
   data.prior_error = prior_error;
   data.relative_ckd_flux_dn = relative_ckd_flux_dn;
   data.relative_ckd_flux_up = relative_ckd_flux_up;
   data.negative_od_penalty = negative_od_penalty;
+  data.pressure_weight_power = pressure_weight_power;
 
   LOG << "Optimizing coefficients with Adept LBFGS algorithm: max iterations = "
       << max_iterations << ", convergence criterion = " << convergence_criterion << "\n";

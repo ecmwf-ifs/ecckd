@@ -71,11 +71,21 @@ do
 	    # Get number of g points
 	    NG=$(ncdump -h $CKD_FILE | head -10 | grep g_point | awk '{print $3}')
 
-	    # Use "b" suffix to indicate that training used both
-	    # evaluation1 and evaluation2 LBL reference data
+	    # Suffixes to indicate training data used:
+	    #   (no suffix): evaluation1
+	    #   b: evaluation1 and evaluation2
+	    #   t: evaluation1 and training1
+	    #   bt: evaluation1, evaluation2 and training1
+	    # Note that a better model will result from using the most
+	    # data, but leaving out evaluation2 means it can be used
+	    # for independent evaluation
 	    if [ "$TRAINING_BOTH" = yes ]
 	    then
 		NG=${NG}b
+	    fi
+	    if [ "$ADDITIONAL_TRAINING_CODE" ]
+	    then
+		NG=${NG}t
 	    fi
 
 	    NEW_MODEL_CODE=${APPLICATION}_${BANDSTRUCT}-${NG}${MODEL_CODE_SUFFIX}

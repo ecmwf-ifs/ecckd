@@ -32,14 +32,15 @@ adept::Real calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
 					    adept::Real broadband_weight,
 					    adept::Real spectral_boundary_weight,
 					    adept::Real negative_od_penalty,
+					    adept::Real pressure_weight_power,
 					    adept::Array3D* relative_ckd_flux_dn,
 					    adept::Array3D* relative_ckd_flux_up);
 
 adept::MinimizerStatus solve_adept(CkdModel<true>& ckd_model, std::vector<LblFluxes>& lbl,
 		Real flux_weight, Real flux_profile_weight, Real broadband_weight,
-		Real spectral_boundary_weight, Real prior_error,
+                Real spectral_boundary_weight, Real erythemal_weight, Real prior_error,
 		int max_iterations, Real convergence_criterion,
-		Real negative_od_penalty = 1.0e4,
+		Real negative_od_penalty = 1.0e4, Real pressure_weight_power = 0.5,
 	        bool is_bounded = false,
 		Array3* relative_ckd_flux_dn = 0, Array3* relative_ckd_flux_up = 0);
 

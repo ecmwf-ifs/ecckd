@@ -19,6 +19,7 @@ module load nco
 . config.h
 
 SET=evaluation1
+#SET=training1
 
 # This scenario only will also include spectral boundary fluxes
 SPECTRAL_SCENARIO=rel-415
@@ -26,7 +27,7 @@ SPECTRAL_SCENARIO=rel-415
 # Either use default water vapour continuum...
 H2OCONTINUUM=
 # ...or another continuum model
-#H2OCONTINUUM=mt-ckd-4.1.1
+#H2OCONTINUUM=mt-ckd-4.2
 #H2OCONTINUUM=no-continuum
 
 INDIR=${CKDMIP_DATA_DIR}/${SET}/lw_spectra
@@ -59,6 +60,16 @@ STRIDE=1
 
 # Number of angles per hemisphere (0=classic two-stream)
 NANGLE=0
+
+# Define the profile type for well-mixed greenhouse gases: the
+# "training" datasets use constant profiles whereas the evaluation
+# ones allow for vertical variation
+if [ "$SET" = training1 ]
+then
+    WMGHG_PROFTYPE=constant
+else
+    WMGHG_PROFTYPE=present
+fi
 
 # Standard namelist with band output
 cat > $CONFIG <<EOF
@@ -117,6 +128,7 @@ SCENARIOS_CKDMIP="present ch4-350 ch4-700 ch4-1200 ch4-2600 ch4-3500 n2o-190 n2o
 SCENARIOS_CKDMIP_CFC="cfc11-0 cfc11-2000 cfc12-0 cfc12-550"
 # Combine the scenarios
 SCENARIOS="$SCENARIOS_REL $SCENARIOS_CKDMIP $SCENARIOS_CKDMIP_CFC"
+#SCENARIOS="rel-180 rel-280 rel-560 rel-1120 rel-2240"
 
 for SCENARIO in $SCENARIOS
 do
@@ -257,12 +269,12 @@ do
 	COLS=${STARTCOL}-${ENDCOL}
 	
 	H2O_FILE=${H2OPREFIX}h2o${H2OSUFFIX}_present_${COLS}.h5
-	CO2_FILE=${INPREFIX}co2_present_${COLS}.h5
+	CO2_FILE=${INPREFIX}co2_${WMGHG_PROFTYPE}_${COLS}.h5
 	O3_FILE=${INPREFIX}o3_present_${COLS}.h5
-	CH4_FILE=${INPREFIX}ch4_present_${COLS}.h5
-	N2O_FILE=${INPREFIX}n2o_present_${COLS}.h5
-	CFC11_FILE=${INPREFIX}cfc11_present-equivalent_${COLS}.h5
-	CFC12_FILE=${INPREFIX}cfc12_present_${COLS}.h5
+	CH4_FILE=${INPREFIX}ch4_${WMGHG_PROFTYPE}_${COLS}.h5
+	N2O_FILE=${INPREFIX}n2o_${WMGHG_PROFTYPE}_${COLS}.h5
+	CFC11_FILE=${INPREFIX}cfc11_${WMGHG_PROFTYPE}-equivalent_${COLS}.h5
+	CFC12_FILE=${INPREFIX}cfc12_${WMGHG_PROFTYPE}_${COLS}.h5
 	N2_FILE=${INPREFIX}n2_constant_${COLS}.h5
 	O2_FILE=${INPREFIX}o2_constant_${COLS}.h5
 	

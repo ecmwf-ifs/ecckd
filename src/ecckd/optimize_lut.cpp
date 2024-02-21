@@ -98,6 +98,8 @@ main(int argc, const char* argv[])
 
   Real rayleigh_prior_error = 0.0;
   Real spectral_boundary_weight = 0.0;
+  Real erythemal_weight = 0.0;
+  Real pressure_weight_power = 0.5;
 
   // A-priori error correlation coefficients between adjacent points
   // in the look-up table, in the temperature, pressure and (in the
@@ -122,6 +124,8 @@ main(int argc, const char* argv[])
   config.read(flux_profile_weight, "flux_profile_weight");
   config.read(broadband_weight, "broadband_weight");
   config.read(spectral_boundary_weight, "spectral_boundary_weight");
+  config.read(erythemal_weight, "erythemal_weight");
+  config.read(pressure_weight_power, "pressure_weight_power");
   config.read(prior_error, "prior_error");
   config.read(min_prior_error, "min_prior_error");
   config.read(max_prior_error, "max_prior_error");
@@ -290,9 +294,10 @@ main(int argc, const char* argv[])
 
   adept::MinimizerStatus status = solve_adept(ckd_model, training_data,
 			   flux_weight, flux_profile_weight, broadband_weight,
-			   spectral_boundary_weight, prior_error,
+			   spectral_boundary_weight, erythemal_weight, prior_error,
 			   max_iterations, convergence_criterion,
-		           negative_od_penalty, is_bounded,
+			   negative_od_penalty, pressure_weight_power,
+			   is_bounded,
 			   relative_ckd_flux_dn, relative_ckd_flux_up);
 
   LOG << "Convergence status: " << adept::minimizer_status_string(status) << "\n";

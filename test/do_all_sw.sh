@@ -117,4 +117,4 @@ export H2OSUFFIX
 
 # 7. Copy to the CKDMIP directory, changing file names from stating
 # tolerance to stating the total number of g points
-#./copy_to_ckdmip_sw.sh
+./copy_to_ckdmip_sw.sh

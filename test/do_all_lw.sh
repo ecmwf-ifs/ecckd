@@ -52,10 +52,15 @@ TOLERANCE="0.0161"
 # hPa, which can be overcome by setting prior_error=4.0 rather than
 # 8.0 in optimize_lut_lw.sh
 #TOLERANCE="0.11 0.061 0.043 0.03 0.02 0.0161 0.013 0.0105 0.00732 0.0047"
+#TOLERANCE=0.00732
 
 # Create a reference CKD model with 64 points
 #BAND_STRUCTURE=narrow
 #TOLERANCE=0.013
+
+# Wide band structure with 64 points
+#BAND_STRUCTURE=wide
+#TOLERANCE=0.0083
 
 # H2O suffix to accommodate different continuum models
 if [ ! "$H2OCONTINUUM" ]
@@ -97,4 +102,4 @@ export H2OSUFFIX
 
 # 7. Copy to the CKDMIP directory, changing file names from stating
 # tolerance to stating the total number of g points
-#./copy_to_ckdmip_lw.sh
+./copy_to_ckdmip_lw.sh
