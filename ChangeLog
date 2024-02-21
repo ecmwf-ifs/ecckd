@@ -1,4 +1,4 @@
-version 1.5
+version 1.5 (July 2023)
 	- Added hybrid-logarithmic-transmission-3 averaging method
 	- optimize_lut exits with a non-zero error code if minimizer
 	returns anomalous status (e.g. NaNs or dodgy bounds)
