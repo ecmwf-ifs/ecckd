@@ -39,10 +39,10 @@ CH4_MIN_G_POINTS=""
 N2O_MIN_G_POINTS=""
 O2_SPLIT=""
 
+# In the case of photolysis, the final digits of $TOLERANCE are
+# treated in a particular way
 if [ "$BANDSTRUCT" = "photolysis" ]
 then
-   #PHOTOLYSIS_O3_MIN_G=5
-   #PHOTOLYSIS_O2_MIN_G=9
    # Final digit
    PHOTOLYSIS_O3_MIN_G=${TOLERANCE: -1:1}
    # Penultimate digit
