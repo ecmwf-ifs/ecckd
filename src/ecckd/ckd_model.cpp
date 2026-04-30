@@ -41,6 +41,13 @@ CkdModel<IsActive>::read(const std::string& file_name,
     if (file.exist("solar_spectral_irradiance")) {
       file.read(ssi_, "solar_spectral_irradiance");
     }
+    if (file.exist("reference_total_solar_irradiance")) {
+      file.read(reference_total_solar_irradiance_,
+		"reference_total_solar_irradiance");
+    }
+    else {
+      reference_total_solar_irradiance_ = -1.0;
+    }
   }
   else {
     file.read(temperature_planck_, "temperature_planck");
@@ -321,6 +328,12 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write_units("Pa", "pressure");
 
   if (is_sw()) {
+    if (reference_total_solar_irradiance_ > 0.0) {
+      file.define_variable("reference_total_solar_irradiance", FLOAT);
+      file.write_long_name("Reference total solar irradiance", "reference_total_solar_irradiance");
+      file.write_units("W m-2", "reference_total_solar_irradiance");
+    }
+      
     file.define_variable("solar_irradiance", FLOAT, "g_point");
     file.write_long_name("Solar irradiance across each g point", "solar_irradiance");
     file.write_units("W m-2", "solar_irradiance");
@@ -543,6 +556,9 @@ CkdModel<IsActive>::write(const std::string& file_name,
   file.write(eval(exp(log_pressure_)), "pressure");
   file.write(temperature_, "temperature");
   if (is_sw()) {
+    if (reference_total_solar_irradiance_ > 0.0) {
+      file.write(reference_total_solar_irradiance_, "reference_total_solar_irradiance");
+    }
     file.write(solar_irradiance_, "solar_irradiance");
     file.write(rayleigh_molar_scat_.inactive_link(), "rayleigh_molar_scattering_coeff");
     if (!ssi_.empty()) {

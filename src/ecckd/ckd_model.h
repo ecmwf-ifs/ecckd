@@ -159,7 +159,8 @@ public:
 	   const Vector& wavenumber2_band,
 	   const intVector& band_number,
 	   const std::string& history = std::string(),
-	   const std::string& config = std::string()) 
+	   const std::string& config = std::string(),
+	   Real reference_total_solar_irradiance = -1.0)
     : single_gas_data_(single_gas_data),
       solar_irradiance_(eval(solar_irradiance)),
       ssi_(eval(ssi_intervals)),
@@ -172,7 +173,8 @@ public:
       wavenumber2_band_(eval(wavenumber2_band)),
       band_number_(eval(band_number)),
       history_(history),
-      config_(config) {
+      config_(config),
+      reference_total_solar_irradiance_(reference_total_solar_irradiance) {
     ng_ = solar_irradiance.size();
     nt_ = temperature.size(0);
     np_ = pressure.size();
@@ -416,6 +418,15 @@ private:
 
   /// Solar irradiance in each g point (W m-2)
   Vector solar_irradiance_;
+
+  /// Some gas optics models do not span the full solar spectrum. In
+  /// order for downstream applications to scale the spectral solar
+  /// irradiances to a user specified solar irradiance (which might
+  /// account for the sun-earth distance or the solar cycle), we need
+  /// to provide the user with the reference total (broadband )solar
+  /// irradiance (W m-2) that the spectral irradiances are consistent
+  /// with
+  Real reference_total_solar_irradiance_ = -1.0;
 
   /// Solar irradiance in each wavenumber interval (W m-2)
   Vector ssi_;

@@ -11,6 +11,10 @@ version 1.6
 	evaluation2 datasets are used in training). The additional
 	training1 dataset does not necessarily improve the quality of the
 	CKD models generated.
+	- Shortwave CKD model files store
+	reference_total_solar_irradiance, which helps downstream
+	applications in the case of shortwave files that don't cover the
+	full solar spectrum, such as for photolysis or radiances
 
 version 1.5 (July 2023)
 	- Added hybrid-logarithmic-transmission-3 averaging method
