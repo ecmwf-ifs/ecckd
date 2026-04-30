@@ -63,6 +63,11 @@ ECMWF, the copyright of several support files in the `src/include` and
 University of Reading, as stated in the copyright statements at the
 top of each file.
 
+## CONTRIBUTING
+
+Contributions to ecCKD are welcome. 
+In order to do so, please create a pull request with your contribution and sign the [contributors license agreement (CLA)](https://bol-claassistant.ecmwf.int/ecmwf-ifs/ecckd).
+
 ## CONTACT
 
 Please email Robin Hogan <r.j.hogan@ecmwf.int> with any queries or bug
