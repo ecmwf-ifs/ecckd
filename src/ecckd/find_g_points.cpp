@@ -738,8 +738,10 @@ main(int argc, const char* argv[])
     intVector min_g_points(nband);
     min_g_points = 1;
     if (config.read(min_g_points_raw, gas_str, "min_g_points")) {
+      LOG << "Requested minimum number of g points in each band: " << min_g_points_raw << "\n";
       int nsize = std::min(nband, min_g_points_raw.size());
       min_g_points(range(0,nsize-1)) = min_g_points_raw(range(0,nsize-1));
+      LOG << "Actual minimum number of g points in each band:    " << min_g_points << "\n";
     }
 
     // The maximum number of g points to use in each band (default 256)
@@ -1205,9 +1207,22 @@ main(int argc, const char* argv[])
 	  LOG << "  Final overrarching subband: g range " << g_start << "-" << g_end << "\n";
 	  istatus = Eq.equipartition_e(heating_rate_tolerance(jband), 
 				       g_start, g_end, nsubg, subbounds, suberror);
+	  if (ng+nsubg < min_g_points(jband)) {
+	    std::cout << "      computational cost = " << Eq.total_comp_cost << "\n";
+	    LOG << "  " << ng+nsubg << " intervals is fewer than minimum of " << min_g_points(jband) << "\n";
+	    nsubg = min_g_points(jband)-ng;
+	    subbounds.resize(nsubg+1);
+	    suberror.resize(nsubg);
+	    // Set initial bounds
+	    for (int ibound = 0; ibound < nsubg+1; ++ibound) {
+	      subbounds[ibound] = g_split(jband) + (1.0-g_split(jband))
+		* sqrt(static_cast<Real>(ibound) / static_cast<Real>(nsubg));
+	    }
+	    istatus = Eq.equipartition_n(nsubg, &subbounds[0], &suberror[0]);
+	  }
 	  bounds.insert(bounds.begin()+ng, subbounds.begin(), subbounds.end());
 	  error.insert(error.end(), suberror.begin(), suberror.end());
-	  ng += nsubg; 
+	  ng += nsubg;
 	}
 	bounds.resize(ng+1);
       }
@@ -1238,7 +1253,7 @@ main(int argc, const char* argv[])
 	  for (int ibound = 0; ibound < ng+1; ++ibound) {
 	    bounds[ibound] = sqrt(static_cast<Real>(ibound) / static_cast<Real>(ng));
 	  }
-	  istatus = Eq.equipartition_n(ng, &bounds[0], &error[0]);	
+	  istatus = Eq.equipartition_n(ng, &bounds[0], &error[0]);
 	}
       }
 #else

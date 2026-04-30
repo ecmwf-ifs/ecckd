@@ -12,6 +12,7 @@
 // Author:  Robin Hogan
 // Email:   r.j.hogan@ecmwf.int
 
+#include <cmath>
 #include "read_spectrum.h"
 #include "read_merged_spectrum.h"
 #include "planck_function.h"
@@ -498,7 +499,6 @@ main(int argc, const char* argv[])
       }
     }
 
-
     ++ngas;
   }
 
@@ -509,16 +509,25 @@ main(int argc, const char* argv[])
   // intervals are bounded by wavenumber1 and wavenumber2.
   int dwav, startwav, endwav;
 
+  // Wavenumber intervals of gpoint_fraction grid are different for
+  // shortwave and longwave
   if (!do_sw) {
     dwav = 10;
-    startwav = 0;
-    endwav = 3260;
   }
   else {
     dwav = 50;
-    startwav = 250;
-    endwav = 50000;
   }
+
+  // Previously we hardcoded the longwave grid to startwav=0,
+  // endwav=3260 in the longwave and startwav=250, endwav=50000 in the
+  // shortwave, but now we adapt to the bands, but allow for the fact
+  // that they might not be increasing in wavenumber.
+  startwav = std::floor(minval(band_wn1)/dwav)*dwav;
+  endwav   = std::ceil (maxval(band_wn2)/dwav)*dwav;
+
+  LOG << "  using wavenumber grid " << startwav << "-" << endwav << " cm-1 with "
+      << dwav << " cm-1 intervals";
+
   Vector wavenumber1 = static_cast<Real>(dwav) * range(startwav/dwav,endwav/dwav-1);
   Vector wavenumber2 = static_cast<Real>(dwav) * range(startwav/dwav+1,endwav/dwav);
   nwav = wavenumber1.size();

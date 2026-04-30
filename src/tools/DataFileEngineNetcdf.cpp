@@ -187,7 +187,7 @@ read(Real& x, const std::string& scope,
     varid = NC_GLOBAL;
   }
   else {
-    NC_CHECK(nc_inq_varid(ncid_, varname.c_str(), &varid), varname);
+    NC_CHECK(nc_inq_varid(ncid_, scope.c_str(), &varid), scope);
   }
   size_t n;
   NC_CHECK(nc_inq_attlen(ncid_, varid, varname.c_str(), &n), varname);
@@ -238,7 +238,7 @@ read(int& x, const std::string& scope,
     varid = NC_GLOBAL;
   }
   else {
-    NC_CHECK(nc_inq_varid(ncid_, varname.c_str(), &varid), varname);
+    NC_CHECK(nc_inq_varid(ncid_, scope.c_str(), &varid), scope);
   }
   size_t n;
   NC_CHECK(nc_inq_attlen(ncid_, varid, varname.c_str(), &n), varname);
@@ -288,7 +288,7 @@ read(bool& x, const std::string& scope,
     varid = NC_GLOBAL;
   }
   else {
-    NC_CHECK(nc_inq_varid(ncid_, varname.c_str(), &varid), varname);
+    NC_CHECK(nc_inq_varid(ncid_, scope.c_str(), &varid), scope);
   }
   size_t n;
   NC_CHECK(nc_inq_attlen(ncid_, varid, varname.c_str(), &n), varname);
