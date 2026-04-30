@@ -21,12 +21,13 @@
 APPLICATION=climate
 
 # Optionally specify a suffix to use for a particular experiment
-#MODEL_CODE_SUFFIX=-no-continuum
 MODEL_CODE_SUFFIX=
+#MODEL_CODE_SUFFIX=-no-continuum
 
 # Optionally select alternative water vapour continuum model
-#H2OCONTINUUM=no-continuum
 H2OCONTINUUM=
+#H2OCONTINUUM=no-continuum
+#H2OCONTINUUM=mt-ckd-4.2
 
 if [ "$APPLICATION" = climate ]
 then
@@ -55,8 +56,9 @@ TOLERANCE="0.0161"
 #TOLERANCE=0.00732
 
 # Create a reference CKD model with 64 points
-#BAND_STRUCTURE=narrow
-#TOLERANCE=0.013
+BAND_STRUCTURE=narrow
+TOLERANCE=0.013 # 64 points
+#TOLERANCE="0.003" # 128 points
 
 # Wide band structure with 64 points
 #BAND_STRUCTURE=wide
@@ -98,7 +100,7 @@ export H2OSUFFIX
 # run radiative transfer on (default is the final one, i.e. "ckd", but
 # "raw", "raw2" etc are also possible)
 #export VERSIONS="ckd "
-./run_ckd_lw.sh
+ ./run_ckd_lw.sh
 
 # 7. Copy to the CKDMIP directory, changing file names from stating
 # tolerance to stating the total number of g points

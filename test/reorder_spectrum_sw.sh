@@ -93,6 +93,11 @@ do
 	    then
 		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
 		    ${OPTIONS}
+	    elif [ "$BANDSTRUCT" = photolysis ]
+	    then
+		${REORDER_SPECTRUM} iprofile=0 input=$INPUT output=$OUTPUT \
+		    ${OPTIONS} \
+		    "wavenumber1=$WN1_SWUV_PHOTOLYSIS" "wavenumber2=$WN2_SWUV_PHOTOLYSIS"
 	    else
 		if [ "$WN1_SW_CUSTOM" ]
 		then
@@ -169,6 +174,11 @@ do
 	then
 	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
 		${OPTIONS}
+	elif [ "$BANDSTRUCT" = photolysis ]
+	then
+	    ${REORDER_CLOUD_SPECTRUM} input=$INPUT output=$OUTPUT \
+				      ${OPTIONS} \
+				      "wavenumber1=$WN1_SWUV_PHOTOLYSIS" "wavenumber2=$WN2_SWUV_PHOTOLYSIS"
 	else
 	    if [ "$WN1_SW_CUSTOM" ]
 	    then

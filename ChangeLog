@@ -11,6 +11,9 @@ version 1.6
 	evaluation2 datasets are used in training). The additional
 	training1 dataset does not necessarily improve the quality of the
 	CKD models generated.
+	- Script options in test/ to produce gas optics model optimized
+	for photolysis, newer TSIS1 solar spectrum, and shortwave spectrum
+	with a far UV extension to 86,000 cm-1
 	- Shortwave CKD model files store
 	reference_total_solar_irradiance, which helps downstream
 	applications in the case of shortwave files that don't cover the

@@ -21,12 +21,14 @@
 APPLICATION=climate
 
 # Optionally specify a suffix to use for a particular experiment
-#MODEL_CODE_SUFFIX=-no-continuum
 MODEL_CODE_SUFFIX=
+#MODEL_CODE_SUFFIX=-no-continuum
+#MODEL_CODE_SUFFIX=-mt-ckd-4.2
 
 # Optionally select alternative water vapour continuum model
-#H2OCONTINUUM=no-continuum
 H2OCONTINUUM=
+#H2OCONTINUUM=no-continuum
+#H2OCONTINUUM=mt-ckd-4.2
 
 if [ "$APPLICATION" = climate ]
 then
@@ -62,13 +64,22 @@ TOLERANCE="0.047"
 #TOLERANCE="0.065"
 
 # "Reference" model with 64 points
-#BAND_STRUCTURE=narrow
-#TOLERANCE=0.019
+BAND_STRUCTURE=narrow
+TOLERANCE=0.019 # 64 points
+#TOLERANCE="0.004725" # 128 points
 
 # Another 64-point model with bands organised around the near-IR
 # windows plus fine structure in the UV for UV index calculations
 #BAND_STRUCTURE=window
 #TOLERANCE=0.020
+
+# Note that for photolysis we have to hardwire numbers of g points in
+# certain bands. Therefore the last three characters are interpreted
+# differently: the last character is the minimum number of O3 g-points
+# in the penultimate band, the second-last character is the minimum
+# number of O2 g-points in the final band (highest wavenumber range).
+#BAND_STRUCTURE=photolysis
+#TOLERANCE=0.500255 # 24 g-points
 
 # Very fine band structure for diagnostics (96 g-points)
 #BAND_STRUCTURE="vfine"

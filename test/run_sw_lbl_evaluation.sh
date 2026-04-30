@@ -28,12 +28,14 @@ then
 else
     echo "Usage:"
     echo "  $0 <band>"
-    echo 'where <band> can be fluxes (for the "narrow" band structure), fluxes-rgb, fluxes-fine or fluxes-vfine'
+    echo 'where <band> can be fluxes (for the "narrow" band structure), fluxes-rgb, fluxes-fine, fluxes-vfine or fluxes-full'
     exit 1
 fi
+
 #BANDCODE=fluxes-rgb
 #BANDCODE=fluxes-fine
 #BANDCODE=fluxes-vfine
+#BANDCODE=fluxes-full
 
 SET=evaluation1
 
@@ -45,7 +47,7 @@ H2OCONTINUUM=
 # ...or another continuum model
 #H2OCONTINUUM=mt-ckd-4.2
 
-INDIR=${CKDMIP_DATA_DIR}/${SET}/sw_spectra
+INDIR=${CKDMIP_DATA_DIR}/${SET}/${SW_TAG}_spectra
 
 OUTDIR=$WORK_SW_LBL_FLUX_DIR
 
@@ -72,6 +74,7 @@ SUFFIX=h5
 
 STRIDE=1
 
+BAND_WAVENUMBER_RANGE=
 # Specify bands corresponding to each band model
 if [ "$BANDCODE" = fluxes ]
 then
@@ -89,13 +92,17 @@ elif [ "$BANDCODE" = fluxes-vfine ]
 then
     BAND_WAVENUMBER1="band_wavenumber1(1:44) = 250, 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 13800, 14300, 14800, 15400, 16000, 16650, 17400, 18200, 19050, 20000, 21050, 22200, 23550, 25000, 26300, 26650, 27050, 27400, 27800, 28150, 28550, 29000, 29400, 29850, 30300, 30750, 31250, 31750, 32250, 32800, 33350, 33900, 34500, 35100, 35700,"
     BAND_WAVENUMBER2="band_wavenumber2(1:44) = 2600, 3750, 5350, 7150, 8700, 10650, 12100, 13350, 13800, 14300, 14800, 15400, 16000, 16650, 17400, 18200, 19050, 20000, 21050, 22200, 23550, 25000, 26300, 26650, 27050, 27400, 27800, 28150, 28550, 29000, 29400, 29850, 30300, 30750, 31250, 31750, 32250, 32800, 33350, 33900, 34500, 35100, 35700, 50000,"
+elif [ "$BANDCODE" = fluxes-full ]
+then
+    BAND_WAVENUMBER1=
+    BAND_WAVENUMBER2=
+    BAND_WAVENUMBER_RANGE="band_wavenumber_range(1:3) = 250,86000,50,"
 else
     echo "BANDCODE=$BANDCODE not understood"
     exit 1
 fi
 
 echo "Using BANDCODE=$BANDCODE"
-
 
 # Standard namelist with band output
 cat > $CONFIG <<EOF
@@ -114,6 +121,7 @@ nspectralstride = $STRIDE,
 nblocksize = 1000,
 $BAND_WAVENUMBER1
 $BAND_WAVENUMBER2
+$BAND_WAVENUMBER_RANGE
 iverbose = 3
 /
 EOF
@@ -135,6 +143,7 @@ nspectralstride = $STRIDE,
 nblocksize = 1000,
 $BAND_WAVENUMBER1
 $BAND_WAVENUMBER2
+$BAND_WAVENUMBER_RANGE
 iverbose = 3
 /
 EOF
@@ -148,6 +157,7 @@ SCENARIOS_REL="rel-180 rel-280 rel-415 rel-560 rel-1120 rel-2240"
 SCENARIOS_CKDMIP="present ch4-350 ch4-700 ch4-1200 ch4-2600 ch4-3500 n2o-190 n2o-270 n2o-405 n2o-540"
 # Combine the scenarios
 SCENARIOS="$SCENARIOS_REL $SCENARIOS_CKDMIP"
+#SCENARIO=rel-415
 
 for SCENARIO in $SCENARIOS
 do

@@ -18,13 +18,30 @@
 # 0. Settings
 APPLICATION=global-nwp
 BAND_STRUCTURE=microwave
-APP=nwp-microwave
+#APP=nwp-microwave
 TOLERANCE=0.5
+
+APPLICATION=global-nwp
+BAND_STRUCTURE=msi
 
 # Nominal central frequency (GHz): 31 166
 # Bandpass (GHz): 0.2 2.8
 WN1_LW_CUSTOM="1.03071 5.47379"
 WN2_LW_CUSTOM="1.03738 5.60054"
+
+# MSI thermal channels
+WN1_LW_CUSTOM="1084 885 800"
+WN2_LW_CUSTOM="1195 976 870"
+
+# MODIS thermal channels
+#6.535–6.895
+#8.400–8.700
+#10.780–11.280
+#11.770–12.270
+
+BAND_STRUCTURE=modis
+WN1_LW_CUSTOM="1450 1149 887 815"
+WN2_LW_CUSTOM="1530 1190 928 850"
 
 # Make variables available to scripts find_g_points_lw.sh onwards
 export TOLERANCE
@@ -32,13 +49,13 @@ export APPLICATION
 export BAND_STRUCTURE
 export WN1_LW_CUSTOM
 export WN2_LW_CUSTOM
-export APP
+#export APP
 
 # 1. Merge well-mixed gases
-#./merge_well_mixed_lw.sh
+./merge_well_mixed_lw.sh
 
 # 2. Reorder spectra
-#./reorder_spectrum_lw.sh
+./reorder_spectrum_lw.sh
 
 # 3. Find g-points
 ./find_g_points_lw.sh
@@ -47,7 +64,7 @@ export APP
 ./create_lut_lw.sh
 
 # 5. Optimize CKD look-up table
-#./optimize_lut_lw.sh $OPTIMIZE_MODE_LIST
+./optimize_lut_lw.sh $OPTIMIZE_MODE_LIST
 
 # 6. Run two-stream radiative transfer or just compute optical depths
 # for CKDMIP scenarios
