@@ -1,4 +1,4 @@
-version 1.6
+version 1.6 (April 2026)
 	- Added erythemal_weight option to shortwave optimization (see
 	optimize_lut_sw.sh) to add extra weight to surface ultraviolet
 	spectral fluxes improving the accuracy of UV index for the
