@@ -75,11 +75,14 @@ TOLERANCE=0.019 # 64 points
 
 # Note that for photolysis we have to hardwire numbers of g points in
 # certain bands. Therefore the last three characters are interpreted
-# differently: the last character is the minimum number of O3 g-points
-# in the penultimate band, the second-last character is the minimum
-# number of O2 g-points in the final band (highest wavenumber range).
+# differently: the last character is the minimum number of O2 g-points
+# in the final Schumann Runge continuum (band with highest
+# wavenumbers), the penultimate character is the minimum of O2
+# g-points in the Schuman-Runge line region, and the third-from-last
+# is the minimum number of O3 g-points in the Hartley band.  the final
+# band.
 #BAND_STRUCTURE=photolysis
-#TOLERANCE=0.500255 # 24 g-points
+#TOLERANCE=0.5002554 # 28 g-points
 
 # Very fine band structure for diagnostics (96 g-points)
 #BAND_STRUCTURE="vfine"

@@ -41,6 +41,13 @@ typedef enum {
 /// Return pointer to a string describing the status
 const char* ep_status_string(EpStatus status);
 
+// In rare situations we can get zero errors; an example is in the
+// Schumann-Runge continuum where the absorption is so strong that it
+// all occurs in a single layer, which can be matched exactly by the
+// CKD model. Therefore we add a small value to avoid division by
+// zero.
+const ep_real ep_min_error = 1.0e-32;
+
 /// Compute statistics from "ni" "error" values: the mean error
 /// "mean_error", chi-squared "chi2" (sum of squared differences from
 /// the mean), and optionally the fractional standard deviation
@@ -100,12 +107,12 @@ public:
     if (do_parallel) {
 #pragma omp parallel for schedule (dynamic)
       for (int ii = 0; ii < ni; ++ii) {
-	error[ii] = calc_error(bounds[ii], bounds[ii+1]);
+	error[ii] = ep_min_error + calc_error(bounds[ii], bounds[ii+1]);
       }
     }
     else {
       for (int ii = 0; ii < ni; ++ii) {
-	error[ii] = calc_error(bounds[ii], bounds[ii+1]);
+	error[ii] = ep_min_error + calc_error(bounds[ii], bounds[ii+1]);
       }
     }
 

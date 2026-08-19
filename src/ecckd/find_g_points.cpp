@@ -26,9 +26,9 @@
 #include "equipartition.h"
 #include "write_standard_attributes.h"
 #include "cumsum.h"
+#include "floating_point_exceptions.h"
 
 using namespace adept;
-
 
 // Return the Planck-weighted-median of the sorting variable indexed
 // by "index", where "rank" provides the ordering of sorting_variable
@@ -257,7 +257,7 @@ public:
     
     set_resolution(1.0 / npoints);
     set_parallel(true);
-    set_verbose(true);
+    set_verbose(2);
     set_minimize_frac_range(true);
     debug_partition = false;
 
@@ -308,6 +308,8 @@ public:
     else if (ibound2+1 < ibound1) {
       std::cout << "*** ERROR: requested indices out of order: " 
 		<< ibound1 << "-" << ibound2 << std::endl;
+      std::cout << "   corresponding to bounds: " 
+		<< bound1 << "-" << bound2 << std::endl;
       throw(PROCESSING_ERROR);
     }
     else if (ibound2 < ibound1) {
@@ -456,6 +458,8 @@ main(int argc, const char* argv[])
   // Allow debugging
   //  set_trace_exceptions(true);
 
+  enable_floating_point_exceptions();
+  
   // Name of output file
   std::string output, ssi_file_name;
 
@@ -1006,7 +1010,7 @@ main(int argc, const char* argv[])
 				   total_optical_depth, flux_dn);
 
       if (averaging_method == "total-transmission") {
-	// We generat two further benchmark spectral radiation fields,
+	// We generate two further benchmark spectral radiation fields,
 	// one with the optical depths scaled down, the other with
 	// them scaled up
 	flux_dn_low.resize(nlay+1,nwav);
@@ -1154,7 +1158,7 @@ main(int argc, const char* argv[])
       intVector band_index = find(iband == jband);
       int ibegin = band_index(0);
       int iend   = band_index(end);
-
+ 
       CkdEquipartition Eq;
       EpStatus istatus;
 
@@ -1311,9 +1315,9 @@ main(int argc, const char* argv[])
 	if (nwavsplit > 1) {
 	  // First we modify the rank of each wavenumber to insert
 	  // sub-bands
-	  int ind1 = Eq.lower_index(bounds[0])+ibegin;
+	  //int ind1 = Eq.lower_index(bounds[0])+ibegin;
 	  int ind2 = Eq.upper_index(bounds[1])+ibegin;
-	  int ntot = ind2-ind1+1;
+	  //int ntot = ind2-ind1+1;
 	  iwav1(0) = 0; // Number of wavenumbers treated so far
 	  intVector irank_new;
 	  irank_new = irank;

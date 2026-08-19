@@ -1,3 +1,14 @@
+version 1.7
+	- Use updated Schumann-Runge lines in the "swuv" dataset, and
+	refined the "photolysis" band structure for 28 g-points with
+	better handling of the far far ultraviolet
+	- find_g_points now deals better with the rare situation that a
+	CKD model has zero error: this occurs in the Schumann-Runge
+	continuum where all the absorption occurs in the top-most layer so
+	the heating rates are perfect. If this occurs then it tries to
+	assign one g-point to these extremely absorbing parts of the
+	spectrum, and repartition the less absorbing parts as usual.
+
 version 1.6 (April 2026)
 	- Added erythemal_weight option to shortwave optimization (see
 	optimize_lut_sw.sh) to add extra weight to surface ultraviolet

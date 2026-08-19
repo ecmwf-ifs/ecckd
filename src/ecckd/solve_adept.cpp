@@ -100,7 +100,7 @@ calc_cost_function_and_gradient(CkdModel<true>& ckd_model,
     }
     LblFluxes& lbl1 = lbl[ilbl];
     int nprof = lbl1.pressure_hl_.dimension(0);
-    int nlev  = lbl1.pressure_hl_.dimension(1)-1;
+    //int nlev  = lbl1.pressure_hl_.dimension(1)-1;
     aArray3D optical_depth;
     calc_total_optical_depth(ckd_model, lbl1,
 			     optical_depth, first_call);
@@ -323,7 +323,7 @@ solve_adept(CkdModel<true>& ckd_model,
 	    Array3D* relative_ckd_flux_dn,
 	    Array3D* relative_ckd_flux_up)
 {
-  int status=0;
+  //  int status=0;
 
   CkdOptimizable ckd_optimizable;
   adept::Minimizer minimizer(MINIMIZER_ALGORITHM_LIMITED_MEMORY_BFGS);

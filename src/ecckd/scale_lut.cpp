@@ -131,8 +131,6 @@ main(int argc, const char* argv[])
     }
   }
 
-  
-
   LOG << "Running CKD model\n";
   spectral_flux_dn.clear();
   Matrix od_total(nz, ng);
@@ -178,6 +176,7 @@ main(int argc, const char* argv[])
   }
 
   LOG << "Scaling coefficients in CKD look-up tables\n";
+
   Matrix scaling = od_best / od_total;
   scaling.where(od_best <= 0.0) = 1.0;
   Vector pressure_fl = 0.5*(pressure_hl(range(0,end-1))+pressure_hl(range(1,end)));

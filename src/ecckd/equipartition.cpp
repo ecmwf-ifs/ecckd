@@ -18,7 +18,6 @@
 
 #include "equipartition.h"
 
-
 // abound <= ascale*abound + bscale*bbound
 static void merge_bounds(int ni, ep_real* abound, const ep_real* bbound,
 			 ep_real ascale, ep_real bscale) {
@@ -347,6 +346,7 @@ Equipartition::equipartition_2(ep_real* bounds, ep_real* error)
 EpStatus
 Equipartition::equipartition_n(int ni, ep_real* bounds_out, ep_real* error)
 {
+
   if (ni == 2) {
     return equipartition_2(bounds_out, error);
   }
@@ -372,6 +372,40 @@ Equipartition::equipartition_n(int ni, ep_real* bounds_out, ep_real* error)
     bounds[ib] = bounds_out[ib];
   }
 
+  ep_real tmperr = calc_error(bounds[ni-1],bounds[ni]);
+  if (tmperr == 0.0) {
+    // The uppermost error is zero! Try to find the highest
+    // penultimate bound that leads to a nonzero error...
+    if (iverbose) {
+      std::cout << "Warning: zero error in highest interval! Finding highest bound yielding non-zero error\n";
+    }
+    ep_real step = 0.5 * (bounds[ni-1]-bounds[0]);
+    bounds[ni-1] -= step;
+    ep_real lowest_bound = bounds[ni-1];
+    for (int irep = 0; irep < 8; ++irep) {
+      step *= 0.5;
+      if (calc_error(bounds[ni-1],bounds[ni]) == 0.0) {
+	bounds[ni-1] -= step;
+	lowest_bound = bounds[ni-1];
+      }
+      else {
+	bounds[ni-1] += step;
+      }
+      step *= 0.5;
+    }
+    // Now repartition all but the highest interval
+    bounds[ni-1] = lowest_bound;
+    for (int ib = 1; ib < ni-1; ++ib) {
+      bounds[ib] = ((lowest_bound - bounds[0]) * ib) / (ni-1);
+    }
+    istatus = equipartition_n(ni-1,&bounds[0],error);
+    for (int ib = 0; ib < ni+1; ++ib) {
+      bounds_out[ib] = bounds[ib];
+    }
+    errors_up_to_date = false;
+    return istatus;
+  }
+  
   int iterations_remaining = partition_max_iterations;
 
   if (ni == 2) {
@@ -653,7 +687,7 @@ Equipartition::next_bound_below(ep_real target_error,
   }
 
   if (*error_test_value < 0.0) {
-    error_test = calc_error(bound1_test, bound2);
+    error_test = ep_min_error + calc_error(bound1_test, bound2);
   }
   else {
     error_test = *error_test_value;
@@ -704,7 +738,7 @@ Equipartition::next_bound_below(ep_real target_error,
 	     -0.5*target_error*(bound2-bound1_high) / error_high);
     }
 
-    error_test = calc_error(bound1_test, bound2);
+    error_test = ep_min_error + calc_error(bound1_test, bound2);
     --iterations_remaining;
   }
 
@@ -737,7 +771,7 @@ Equipartition::next_bound_above(ep_real target_error,
     std::cout << "    Finding next bound above " << bound1;
   }
   if (*error_test_value < 0.0) {
-    error_test = calc_error(bound1, bound2_test);
+    error_test = ep_min_error + calc_error(bound1, bound2_test);
   }
   else {
     error_test = *error_test_value;
@@ -789,7 +823,7 @@ Equipartition::next_bound_above(ep_real target_error,
 		     -0.5*target_error*(bound2_low-bound1) / error_low);
     }
 
-    error_test = calc_error(bound1, bound2_test);
+    error_test = ep_min_error + calc_error(bound1, bound2_test);
     --iterations_remaining;
   }
 

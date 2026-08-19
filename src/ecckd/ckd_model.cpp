@@ -1149,11 +1149,24 @@ CkdModel<IsActive>::calc_planck_function(const Vector& temperature)
 template<bool IsActive>
 void
 CkdModel<IsActive>::scale_optical_depth(const Vector& pressure_fl, const Matrix& scaling) {
-  Matrix local_scaling = interp(log(pressure_fl), scaling, log_pressure_);
-  for (int ip = 2; ip < log_pressure_.size(); ip += 10) {
-    LOG << "  Scalings at " << exp(log_pressure_(ip)) << " Pa: " << local_scaling[ip] << "\n";
+
+#ifdef PRINT_EXTRA_INFO
+  adept::set_array_print_style(PRINT_STYLE_PLAIN);
+  
+  LOG << "  ORIGINAL: pressure (Pa), scalings in each g-point\n";
+  for (int ip = 0; ip < pressure_fl.size(); ++ip) {
+    LOG << pressure_fl(ip) << " " << scaling[ip] << "\n";
   }
 
+  Matrix local_scaling = interp(log(pressure_fl), scaling, log_pressure_);
+  LOG << "  INTERPOLATED: pressure (Pa), scalings in each g-point\n";
+  for (int ip = 0; ip < log_pressure_.size(); ++ip) {
+    LOG << exp(log_pressure_(ip)) << " " << local_scaling[ip] << "\n";
+  }
+
+  adept::set_array_print_style(PRINT_STYLE_CURLY);
+#endif
+  
   for (int igas = 0; igas < ngas(); ++igas) {
     SingleGasData<IsActive>& this_gas = single_gas_data_[igas];
     if (this_gas.conc_dependence == LUT) {

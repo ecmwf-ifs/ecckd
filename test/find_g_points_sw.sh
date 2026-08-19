@@ -23,8 +23,15 @@
 . check_configuration.h
 
 # Optional additional arguments
-EXTRA_ARGS="averaging_method=total-transmission max_no_rayleigh_wavenumber=10000"
-
+if [ "$BANDSTRUCT" = "photolysis" ]
+then
+    # Far UV band is so absorbing that zero sunlight penetrates to
+    # surface so we can't use total-transmission averaging
+    EXTRA_ARGS="averaging_method=logarithmic max_no_rayleigh_wavenumber=10000"
+else
+    EXTRA_ARGS="averaging_method=total-transmission max_no_rayleigh_wavenumber=10000"
+fi   
+   
 # Create output directory, if needed
 mkdir -p ${WORK_SW_GPOINTS_DIR}
 
@@ -43,10 +50,18 @@ O2_SPLIT=""
 # treated in a particular way
 if [ "$BANDSTRUCT" = "photolysis" ]
 then
-   # Final digit
-   PHOTOLYSIS_O3_MIN_G=${TOLERANCE: -1:1}
-   # Penultimate digit
-   PHOTOLYSIS_O2_MIN_G=${TOLERANCE: -2:1}
+    # Final digit
+    #PHOTOLYSIS_O3_MIN_G=${TOLERANCE: -1:1}
+    # Penultimate digit
+    #PHOTOLYSIS_O2_MIN_G=${TOLERANCE: -2:1}
+
+    # Hartley band: 3rd from end digit
+    PHOTOLYSIS_O3_MIN_G=${TOLERANCE: -3:1}
+    # Band for Schumann-Runge lines: penultimate digit
+    PHOTOLYSIS_O2_MIN_G=${TOLERANCE: -2:1}
+    # Band for Schumann-Runge continuum and far far UV to Lyman alpha: final digit
+    PHOTOLYSIS_O2FAR_MIN_G=${TOLERANCE: -1:1}
+    
    #O2_SPLIT="g_split -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0.05
    #subband_wavenumber_boundary 53500"
 fi
@@ -79,7 +94,7 @@ elif [ "$BANDSTRUCT" = "photolysis" ]
 then
     # For photolysis we hardwire a good number of g-points for the
     # Hartley ozone band and the Schumann-Runge oxygen band
-    O3_MIN_G_POINTS="min_g_points 1 1 1 1 1 1 1 1 1 1 1 1 1 $PHOTOLYSIS_O3_MIN_G 1 1"
+    O3_MIN_G_POINTS="min_g_points 1 1 1 1 1 1 1 1 1 1 1 1 1 $PHOTOLYSIS_O3_MIN_G 1 1 1"
 fi
 
 # Name of composite gas, either composite (for the nwp application) or
@@ -101,7 +116,7 @@ then
 append_path "${MMM_SW_SPECTRA_DIR}:${WORK_SW_SPECTRA_DIR}:${WORK_SW_ORDER_DIR}"
 ssi $MMM_SW_SSI
 iprofile 0
-averaging_method "total-transmission"
+#averaging_method "total-transmission"
 tolerance_tolerance 0.01 
 #flux_weight 0.02
 flux_weight 0.0002
@@ -376,7 +391,7 @@ fi
 	O2N2_MIN_G_POINTS="${COMPOSITE_NAME}.min_g_points=1"
 	if [ "$BANDSTRUCT" = "photolysis" ]
 	then
-	    O2N2_MIN_G_POINTS="${COMPOSITE_NAME}.min_g_points=1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 $PHOTOLYSIS_O2_MIN_G"
+	    O2N2_MIN_G_POINTS="${COMPOSITE_NAME}.min_g_points=1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 $PHOTOLYSIS_O2_MIN_G $PHOTOLYSIS_O2FAR_MIN_G"
 	elif [ "$BANDSTRUCT" = narrow -a $(echo "$TOL < 0.05" | bc -l) = 1 ]
 	then
 	    O2N2_MIN_G_POINTS="${COMPOSITE_NAME}.min_g_points=1 1 1 1 1 1 1 1 1 2 3 1 1"
