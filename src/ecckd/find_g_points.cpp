@@ -970,22 +970,22 @@ main(int argc, const char* argv[])
       flux_up.resize(nlay+1,nwav);
 
       // COMPUTE PLANCK FUNCTION
-  
-      if (planck_hl.empty()) {
 
-	LOG << "Computing Planck function\n";
-  
-	planck_hl.resize(nlay+1,nwav);
-	planck_function(temperature_hl, wavenumber_cm_1, d_wavenumber_cm_1,
-			planck_hl);
-	surf_planck.resize(nwav);
-	planck_function(temperature_hl(end), wavenumber_cm_1, d_wavenumber_cm_1,
-			surf_planck);
-      }
-      else if (planck_hl.size(0) != nlay+1 || planck_hl.size(1) != nwav) {
-	ERROR << "Existing Planck function matrix is wrong size";
-	THROW(PARAMETER_ERROR);
-      }
+      // The Planck function is evaluated on the reordered wavenumber
+      // axis, and each gas has its own reordering, so it must be
+      // recomputed for every gas. Reusing the matrix computed for the
+      // first gas would pair the optical depth of each subsequent gas
+      // with the Planck function of the wrong wavenumbers (the same
+      // class of error as the shortwave SSI reordering bug fixed in
+      // version 1.0).
+      LOG << "Computing Planck function\n";
+
+      planck_hl.resize(nlay+1,nwav);
+      planck_function(temperature_hl, wavenumber_cm_1, d_wavenumber_cm_1,
+		      planck_hl);
+      surf_planck.resize(nwav);
+      planck_function(temperature_hl(end), wavenumber_cm_1, d_wavenumber_cm_1,
+		      surf_planck);
       
       // RADIATIVE TRANSFER
     

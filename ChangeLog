@@ -1,4 +1,9 @@
 version 1.7
+	- Fixed bug in find_g_points longwave where the Planck function
+	was computed on the reordered wavenumber axis of the first gas
+	only and reused for subsequent gases, whose spectra are
+	reordered differently; it is now recomputed for each gas (the
+	same class of bug as the shortwave SSI fix in version 1.0)
 	- Use updated Schumann-Runge lines in the "swuv" dataset, and
 	refined the "photolysis" band structure for 28 g-points with
 	better handling of the far far ultraviolet
